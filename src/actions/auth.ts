@@ -52,12 +52,12 @@ export async function logout() {
 }
 
 const VALID_TIMEZONES = [
-  'Europe/Bucharest', 'Europe/London', 'Europe/Paris', 'Europe/Berlin',
-  'Europe/Madrid', 'Europe/Rome', 'Europe/Amsterdam', 'Europe/Athens',
-  'Europe/Moscow', 'America/New_York', 'America/Chicago', 'America/Denver',
-  'America/Los_Angeles', 'America/Toronto', 'America/Sao_Paulo',
-  'Asia/Dubai', 'Asia/Istanbul', 'Asia/Tokyo', 'Asia/Kolkata',
-  'Australia/Sydney', 'Pacific/Auckland', 'UTC',
+  'Etc/GMT+12', 'Etc/GMT+11', 'Etc/GMT+10', 'Etc/GMT+9', 'Etc/GMT+8',
+  'Etc/GMT+7',  'Etc/GMT+6',  'Etc/GMT+5',  'Etc/GMT+4', 'Etc/GMT+3',
+  'Etc/GMT+2',  'Etc/GMT+1',  'UTC',
+  'Etc/GMT-1',  'Etc/GMT-2',  'Etc/GMT-3',  'Etc/GMT-4', 'Etc/GMT-5',
+  'Etc/GMT-6',  'Etc/GMT-7',  'Etc/GMT-8',  'Etc/GMT-9', 'Etc/GMT-10',
+  'Etc/GMT-11', 'Etc/GMT-12',
 ]
 
 export async function updateTimezone(timezone: string) {
