@@ -1,6 +1,7 @@
 import { prisma } from '@/lib/db'
 import { requireAuth } from '@/lib/auth'
 import { PredictionForm } from '@/components/prediction-form'
+import { ResetButton } from '@/components/reset-button'
 import { Badge } from '@/components/ui/badge'
 import { formatMatchTime } from '@/lib/format-date'
 
@@ -77,12 +78,17 @@ export default async function PredictionsPage() {
                       <span>{match.awayTeam}</span>
                     </div>
                     {!locked && (
-                      <PredictionForm
-                        matchId={match.id}
-                        existing={existing}
-                        isKnockout={match.stage !== 'GROUP'}
-                        existingAdvanceTeam={advanceByMatch[match.id]}
-                      />
+                      <>
+                        <PredictionForm
+                          matchId={match.id}
+                          existing={existing}
+                          isKnockout={match.stage !== 'GROUP'}
+                          existingAdvanceTeam={advanceByMatch[match.id]}
+                        />
+                        {existing.length > 0 && (
+                          <ResetButton matchId={match.id} />
+                        )}
+                      </>
                     )}
                     {locked && existing.length > 0 && (
                       <div className="mt-2 flex flex-wrap gap-1">

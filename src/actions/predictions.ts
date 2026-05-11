@@ -78,3 +78,19 @@ export async function saveKnockoutAdvance(prevState: unknown, formData: FormData
   revalidatePath('/predictions')
   return { success: true }
 }
+
+export async function resetMatchPredictions(prevState: unknown, formData: FormData) {
+  const session = await requireAuth()
+  const matchId = parseInt(formData.get('matchId') as string, 10)
+  if (!matchId) return { error: 'Missing match ID' }
+
+  const match = await prisma.match.findUnique({ where: { id: matchId } })
+  if (!match) return { error: 'Match not found' }
+  if (match.kickoff <= new Date()) return { error: 'Match has already started — predictions are locked' }
+
+  await prisma.prediction.deleteMany({ where: { userId: session.userId!, matchId } })
+  await prisma.knockoutAdvance.deleteMany({ where: { userId: session.userId!, matchId } })
+
+  revalidatePath('/predictions')
+  return { success: true }
+}
