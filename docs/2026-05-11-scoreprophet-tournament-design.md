@@ -117,12 +117,13 @@ If no GROUP matches exist: show placeholder "Group stage hasn't started yet."
 
 ### Trophy placement
 
-At the top center of the tab, above the Final match slot:
+The trophy occupies the **centre column** of the bracket, sitting above the Final match card. Both bracket halves converge into this column:
 
 ```tsx
-<div className="flex flex-col items-center mb-6">
-  <img src="/trophy.webp" alt="World Cup Trophy" className="h-24 w-auto object-contain drop-shadow-lg" />
-  <p className="text-[#C9A84C] text-xs mt-1 tracking-widest uppercase">World Cup 2026</p>
+<div className="flex flex-col items-center justify-center gap-3 px-6">
+  <img src="/trophy.webp" alt="World Cup Trophy" className="h-28 w-auto object-contain drop-shadow-lg" />
+  <p className="text-[#C9A84C] text-xs tracking-widest uppercase">World Cup 2026</p>
+  {/* Final match card rendered here */}
 </div>
 ```
 
@@ -130,11 +131,16 @@ A World Cup trophy image is downloaded and stored at `public/trophy.webp` during
 
 ### Bracket structure
 
-Stages rendered left → right: `ROUND_OF_32 → ROUND_OF_16 → QUARTER_FINAL → SEMI_FINAL → FINAL`
+The bracket uses a **converging centre** layout: the left half progresses right → centre, the right half progresses left → centre (mirror image), with the trophy and Final match at the centre column:
 
-The Third-place play-off (`THIRD_PLACE`) is shown in a separate row below the main bracket, labeled "3rd Place Play-off".
+```
+R32  →  R16  →  QF  →  SF  →  [🏆 FINAL]  ←  SF  ←  QF  ←  R16  ←  R32
+```
 
-The bracket is split into an **upper half** (the first 16 R32 matches by kickoff date) and **lower half** (the remaining 16), stacked vertically. This halves the required width. Each half flows left → right through all rounds to the Final.
+- **Left half**: first 16 R32 matches by kickoff date, rounds progressing rightward
+- **Right half**: remaining 16 R32 matches by kickoff date, rounds progressing leftward (columns in reverse order so they mirror correctly)
+- **Centre column**: trophy image + "World Cup 2026" label above the Final match card
+- The Third-place play-off (`THIRD_PLACE`) is shown in a separate row below the main bracket, labeled "3rd Place Play-off"
 
 Matches are ordered by kickoff within each round to maintain consistent bracket positioning.
 
