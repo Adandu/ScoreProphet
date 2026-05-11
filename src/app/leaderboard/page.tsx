@@ -1,9 +1,10 @@
 import { prisma } from '@/lib/db'
-import { getCurrentUser } from '@/lib/auth'
+import { getCurrentUser, requireAuth } from '@/lib/auth'
 
 export const revalidate = 60
 
 export default async function LeaderboardPage() {
+  await requireAuth()
   const currentUser = await getCurrentUser()
 
   const users = await prisma.user.findMany({

@@ -27,7 +27,7 @@ export async function Navbar() {
             <>
               <span className="text-sm text-white/50">{user.username}</span>
               <form action={logout}>
-                <Button variant="outline" size="sm" className="border-white/20 text-white/70 hover:text-white bg-transparent">
+                <Button type="submit" variant="outline" size="sm" className="border-white/20 text-white/70 hover:text-white bg-transparent">
                   Logout
                 </Button>
               </form>
