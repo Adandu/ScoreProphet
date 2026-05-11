@@ -23,12 +23,10 @@ export async function Navbar() {
             <>
               <Link href={`/championships/${selectedChampionship.id}/predictions`} className="hover:text-white transition-colors">Predictions</Link>
               <Link href={`/championships/${selectedChampionship.id}/results`} className="hover:text-white transition-colors">Results</Link>
+              <Link href={`/championships/${selectedChampionship.id}/leaderboard`} className="hover:text-white transition-colors">Leaderboard</Link>
             </>
           )}
           <Link href="/tournament" className="hover:text-white transition-colors">Tournament</Link>
-          {selectedChampionship && (
-            <Link href={`/championships/${selectedChampionship.id}/leaderboard`} className="hover:text-white transition-colors">Leaderboard</Link>
-          )}
           <Link href="/teams" className="hover:text-white transition-colors">Teams</Link>
           {user?.isAdmin && (
             <Link href="/admin" className="text-[#C9A84C] hover:text-[#C9A84C]/80 transition-colors">Admin</Link>
