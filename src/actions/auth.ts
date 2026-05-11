@@ -1,7 +1,8 @@
 'use server'
 import { redirect } from 'next/navigation'
+import { revalidatePath } from 'next/cache'
 import { prisma } from '@/lib/db'
-import { hashPassword, verifyPassword } from '@/lib/auth'
+import { hashPassword, verifyPassword, requireAuth } from '@/lib/auth'
 import { getSession } from '@/lib/session'
 
 export async function register(prevState: unknown, formData: FormData) {
@@ -18,6 +19,7 @@ export async function register(prevState: unknown, formData: FormData) {
   session.userId = user.id
   session.username = user.username
   session.isAdmin = user.isAdmin
+  session.timezone = user.timezone
   await session.save()
   redirect('/')
 }
@@ -38,6 +40,7 @@ export async function login(prevState: unknown, formData: FormData) {
   session.userId = user.id
   session.username = user.username
   session.isAdmin = isAdmin
+  session.timezone = user.timezone
   await session.save()
   redirect('/')
 }
@@ -46,4 +49,22 @@ export async function logout() {
   const session = await getSession()
   session.destroy()
   redirect('/login')
+}
+
+const VALID_TIMEZONES = [
+  'Europe/Bucharest', 'Europe/London', 'Europe/Paris', 'Europe/Berlin',
+  'Europe/Madrid', 'Europe/Rome', 'Europe/Amsterdam', 'Europe/Athens',
+  'Europe/Moscow', 'America/New_York', 'America/Chicago', 'America/Denver',
+  'America/Los_Angeles', 'America/Toronto', 'America/Sao_Paulo',
+  'Asia/Dubai', 'Asia/Istanbul', 'Asia/Tokyo', 'Asia/Kolkata',
+  'Australia/Sydney', 'Pacific/Auckland', 'UTC',
+]
+
+export async function updateTimezone(timezone: string) {
+  const session = await requireAuth()
+  if (!VALID_TIMEZONES.includes(timezone)) return
+  await prisma.user.update({ where: { id: session.userId! }, data: { timezone } })
+  session.timezone = timezone
+  await session.save()
+  revalidatePath('/', 'layout')
 }

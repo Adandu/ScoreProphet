@@ -5,6 +5,7 @@ export interface SessionData {
   userId?: number
   username?: string
   isAdmin?: boolean
+  timezone?: string
 }
 
 export const sessionOptions = {

@@ -25,5 +25,10 @@ export async function requireAdmin() {
 export async function getCurrentUser() {
   const session = await getSession()
   if (!session.userId) return null
-  return { userId: session.userId, username: session.username!, isAdmin: session.isAdmin ?? false }
+  return {
+    userId: session.userId,
+    username: session.username!,
+    isAdmin: session.isAdmin ?? false,
+    timezone: session.timezone ?? 'Europe/Bucharest',
+  }
 }
