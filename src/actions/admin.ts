@@ -93,6 +93,22 @@ export async function syncMatchesFromApi(prevState: unknown) {
       })
       synced++
     }
+
+    // Also sync teams
+    try {
+      const { fetchAllTeams } = await import('@/lib/football-api')
+      const teams = await fetchAllTeams()
+      for (const t of teams) {
+        await prisma.team.upsert({
+          where: { externalId: t.externalId },
+          update: { name: t.name, shortName: t.shortName, crest: t.crest },
+          create: { externalId: t.externalId, name: t.name, shortName: t.shortName, crest: t.crest },
+        })
+      }
+    } catch {
+      // Teams API may not be available — non-fatal
+    }
+
     const finished = await prisma.match.findMany({
       where: { status: 'FINISHED', predictions: { some: { pointsAwarded: null } } },
     })
@@ -101,6 +117,7 @@ export async function syncMatchesFromApi(prevState: unknown) {
     revalidatePath('/admin')
     revalidatePath('/results')
     revalidatePath('/leaderboard')
+    revalidatePath('/teams')
     return { success: true, synced }
   } catch (err) {
     return { error: String(err) }

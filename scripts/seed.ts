@@ -1,8 +1,7 @@
 import { PrismaClient } from '@prisma/client'
 import { PrismaBetterSqlite3 } from '@prisma/adapter-better-sqlite3'
-import { fetchAllMatches } from '../src/lib/football-api'
+import { fetchAllMatches, fetchAllTeams } from '../src/lib/football-api'
 
-// Load env vars for DATABASE_URL and FOOTBALL_API_KEY
 import { config } from 'dotenv'
 config()
 
@@ -17,6 +16,7 @@ async function main() {
     matches = await fetchAllMatches()
   } catch (err) {
     console.warn('[seed] API unavailable, skipping match sync:', err)
+    await prisma.$disconnect()
     return
   }
   for (const m of matches) {
@@ -27,6 +27,22 @@ async function main() {
     })
   }
   console.log(`[seed] Synced ${matches.length} matches.`)
+
+  console.log('[seed] Syncing teams...')
+  try {
+    const teams = await fetchAllTeams()
+    for (const t of teams) {
+      await prisma.team.upsert({
+        where: { externalId: t.externalId },
+        update: { name: t.name, shortName: t.shortName, crest: t.crest },
+        create: { externalId: t.externalId, name: t.name, shortName: t.shortName, crest: t.crest },
+      })
+    }
+    console.log(`[seed] Synced ${teams.length} teams.`)
+  } catch (err) {
+    console.warn('[seed] Team sync failed (API may not have teams yet):', err)
+  }
+
   await prisma.$disconnect()
 }
 
