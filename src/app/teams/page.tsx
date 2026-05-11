@@ -1,22 +1,19 @@
 import Image from 'next/image'
 import Link from 'next/link'
-import { fetchAllTeams } from '@/lib/football-api'
+import { prisma } from '@/lib/db'
+import { requireAuth } from '@/lib/auth'
 
-export const revalidate = 3600
+export const revalidate = 300
 
 export default async function TeamsPage() {
-  let teams: Awaited<ReturnType<typeof fetchAllTeams>> = []
-  try {
-    teams = await fetchAllTeams()
-  } catch {
-    // API unavailable
-  }
+  await requireAuth()
+  const teams = await prisma.team.findMany({ orderBy: { name: 'asc' } })
 
   return (
     <div className="space-y-6">
       <h1 className="text-2xl font-bold text-white">Teams</h1>
       {teams.length === 0 && (
-        <p className="text-white/40">Team data is not available yet.</p>
+        <p className="text-white/40">No teams yet — run a sync from the Admin panel.</p>
       )}
       <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
         {teams.map((team) => (

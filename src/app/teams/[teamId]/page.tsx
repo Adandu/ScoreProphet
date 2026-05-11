@@ -1,22 +1,19 @@
 import Image from 'next/image'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
-import { fetchTeamById } from '@/lib/football-api'
+import { prisma } from '@/lib/db'
+import { requireAuth } from '@/lib/auth'
 
-export const revalidate = 3600
+export const revalidate = 300
 
 interface Props {
   params: Promise<{ teamId: string }>
 }
 
 export default async function TeamDetailPage({ params }: Props) {
+  await requireAuth()
   const { teamId } = await params
-  let team: Awaited<ReturnType<typeof fetchTeamById>> | null = null
-  try {
-    team = await fetchTeamById(teamId)
-  } catch {
-    // API unavailable
-  }
+  const team = await prisma.team.findUnique({ where: { externalId: teamId } })
   if (!team) notFound()
 
   return (
