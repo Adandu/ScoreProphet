@@ -102,7 +102,7 @@ export function KnockoutBracket({ matches, timezone }: { matches: BracketMatch[]
           ))}
 
           <div className="flex min-w-[136px] flex-col items-center justify-center gap-2 px-1">
-            <Image src="/world-cup-2026-logo.webp" alt="FIFA World Cup 2026" width={88} height={110} className="h-24 w-auto object-contain drop-shadow-lg" />
+            <Image src="/Word_Cup_Trophy.png" alt="World Cup Trophy" width={88} height={110} className="h-24 w-auto object-contain drop-shadow-lg" />
             <p className="text-xs font-semibold uppercase tracking-widest text-[#C9A84C]">World Cup 2026</p>
             {final ? <MatchSlot match={final} timezone={timezone} compact /> : <EmptySlot label="Final" />}
             {thirdPlace && (
