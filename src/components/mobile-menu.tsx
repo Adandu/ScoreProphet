@@ -25,10 +25,12 @@ export function MobileMenu({
   user,
   championships,
   selectedChampionship,
+  hasLiveMatch = false,
 }: {
   user: User | null
   championships: Championship[]
   selectedChampionship: Championship | null
+  hasLiveMatch?: boolean
 }) {
   const [open, setOpen] = useState(false)
 
@@ -65,6 +67,16 @@ export function MobileMenu({
         <div className="absolute left-0 right-0 top-full border-b border-white/10 bg-[#0A1628] px-4 py-4 shadow-2xl">
           <div className="flex flex-col gap-4">
             <div className="grid gap-2 text-sm text-white/75">
+              {hasLiveMatch && (
+                <Link
+                  href="/live"
+                  onClick={() => setOpen(false)}
+                  className="flex items-center gap-1.5 rounded-md px-2 py-2 font-semibold text-red-400 hover:bg-white/10"
+                >
+                  <span className="h-2 w-2 animate-pulse rounded-full bg-red-500" />
+                  Live
+                </Link>
+              )}
               {links.map((link) => (
                 <Link
                   key={link.href}

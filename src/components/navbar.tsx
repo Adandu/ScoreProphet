@@ -6,11 +6,13 @@ import { Button } from '@/components/ui/button'
 import { TimezoneSelector } from '@/components/timezone-selector'
 import { ChampionshipSelector } from '@/components/championship-selector'
 import { MobileMenu } from '@/components/mobile-menu'
+import { prisma } from '@/lib/db'
 
 export async function Navbar() {
   const user = await getCurrentUser()
   const championships = user ? await getUserChampionships(user.userId) : []
   const selectedChampionship = user ? await getSelectedChampionship(user.userId) : null
+  const hasLiveMatch = await prisma.match.count({ where: { status: 'LIVE' } }).then((n) => n > 0)
 
   return (
     <nav className="border-b border-white/10 bg-[#0A1628]/95 backdrop-blur sticky top-0 z-50 caret-transparent">
@@ -20,6 +22,12 @@ export async function Navbar() {
         </Link>
         <div className="hidden items-center gap-4 text-sm text-white/70 lg:flex">
           <Link href="/" className="hover:text-white transition-colors">Home</Link>
+          {hasLiveMatch && (
+            <Link href="/live" className="flex items-center gap-1.5 font-semibold text-red-400 hover:text-red-300 transition-colors">
+              <span className="h-2 w-2 animate-pulse rounded-full bg-red-500" />
+              Live
+            </Link>
+          )}
           {selectedChampionship && (
             <>
               <Link href={`/championships/${selectedChampionship.id}/predictions`} className="hover:text-white transition-colors">Predictions</Link>
@@ -63,7 +71,7 @@ export async function Navbar() {
             </>
           )}
         </div>
-        <MobileMenu user={user} championships={championships} selectedChampionship={selectedChampionship} />
+        <MobileMenu user={user} championships={championships} selectedChampionship={selectedChampionship} hasLiveMatch={hasLiveMatch} />
       </div>
     </nav>
   )
