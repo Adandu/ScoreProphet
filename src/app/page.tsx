@@ -51,7 +51,7 @@ export default async function HomePage() {
         World Cup 2026 <span className="text-[#C9A84C]">Predictions</span>
       </h1>
       {matches.length > 0 ? (
-        <div className="grid gap-4 xl:grid-cols-2">
+        <div className="mx-auto grid w-full justify-items-center gap-4">
           {matches.map((match) => (
             (() => {
               const headToHead = headToHeadByMatch.get(match.id)

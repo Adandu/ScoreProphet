@@ -45,7 +45,7 @@ export function LiveMatchCard({ match, timezone, countdown, headToHead = [] }: P
   const isLive = match.status === 'LIVE'
 
   return (
-    <div className="rounded-xl border border-white/10 bg-white/5 p-8">
+    <div className="w-full max-w-xl rounded-xl border border-white/10 bg-white/5 p-4 sm:p-8">
       {isLive && (
         <div className="mb-4 flex items-center justify-center gap-2">
           <span className="h-2.5 w-2.5 animate-pulse rounded-full bg-red-500" />
@@ -57,12 +57,14 @@ export function LiveMatchCard({ match, timezone, countdown, headToHead = [] }: P
           {match.status === 'FINISHED' ? 'Final Score' : `Kickoff: ${formatMatchTime(match.kickoff, timezone)}`}
         </p>
       )}
-      <div className="flex items-center justify-center gap-8">
+      <div className="grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-start gap-2 sm:items-center sm:gap-8">
         <TeamBlock name={match.homeTeam} crest={match.homeTeamCrest} href={match.homeTeamUrl} />
 
-        <div className="flex flex-col items-center">
-          <span className="text-5xl font-bold text-[#C9A84C] tabular-nums">
-            {match.homeScore ?? '-'} : {match.awayScore ?? '-'}
+        <div className="flex min-h-16 items-center justify-center pt-2 sm:pt-0">
+          <span className="grid grid-cols-[2ch_auto_2ch] items-center gap-1 text-center text-3xl font-bold tabular-nums text-[#C9A84C] sm:text-5xl">
+            <span className="text-right">{match.homeScore ?? '-'}</span>
+            <span className="text-center text-white/35">:</span>
+            <span className="text-left">{match.awayScore ?? '-'}</span>
           </span>
         </div>
 
@@ -103,17 +105,17 @@ function TeamBlock({ name, crest, href }: { name: string; crest: string; href?: 
       {crest && (
         <Image src={crest} alt={name} width={64} height={64} className="rounded" />
       )}
-      <span className="text-center font-semibold text-white">{name}</span>
+      <span className="max-w-28 truncate text-center text-sm font-semibold text-white sm:max-w-32 sm:text-base">{name}</span>
     </>
   )
 
   if (href) {
     return (
-      <Link href={href} className="flex w-32 flex-col items-center gap-2 rounded-lg p-2 transition-colors hover:bg-white/10">
+      <Link href={href} className="flex min-w-0 flex-col items-center gap-2 rounded-lg p-2 transition-colors hover:bg-white/10">
         {content}
       </Link>
     )
   }
 
-  return <div className="flex w-32 flex-col items-center gap-2 p-2">{content}</div>
+  return <div className="flex min-w-0 flex-col items-center gap-2 p-2">{content}</div>
 }
