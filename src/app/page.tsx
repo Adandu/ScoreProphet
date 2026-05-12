@@ -2,6 +2,7 @@ import { prisma } from '@/lib/db'
 import { getCurrentUser } from '@/lib/auth'
 import { LiveMatchCard } from '@/components/live-match-card'
 import { Countdown } from '@/components/countdown'
+import { fetchHeadToHead } from '@/lib/football-api'
 
 export const revalidate = 60
 
@@ -32,6 +33,17 @@ async function getFeaturedMatches() {
 export default async function HomePage() {
   const [matches, user] = await Promise.all([getFeaturedMatches(), getCurrentUser()])
   const timezone = user?.timezone ?? 'Europe/Bucharest'
+  const headToHeadByMatch = new Map(
+    await Promise.all(
+      matches.map(async (match) => {
+        try {
+          return [match.id, await fetchHeadToHead(match.externalId, 10)] as const
+        } catch {
+          return [match.id, null] as const
+        }
+      })
+    )
+  )
 
   return (
     <div className="space-y-8">
@@ -41,21 +53,30 @@ export default async function HomePage() {
       {matches.length > 0 ? (
         <div className="grid gap-4 xl:grid-cols-2">
           {matches.map((match) => (
-            <LiveMatchCard
-              key={match.id}
-              match={{
-                homeTeam: match.homeTeam,
-                awayTeam: match.awayTeam,
-                homeTeamCrest: match.homeTeamCrest,
-                awayTeamCrest: match.awayTeamCrest,
-                homeScore: match.homeScore,
-                awayScore: match.awayScore,
-                status: match.status,
-                kickoff: match.kickoff.toISOString(),
-              }}
-              timezone={timezone}
-              countdown={match.status === 'SCHEDULED' ? <Countdown kickoff={match.kickoff.toISOString()} /> : undefined}
-            />
+            (() => {
+              const headToHead = headToHeadByMatch.get(match.id)
+
+              return (
+                <LiveMatchCard
+                  key={match.id}
+                  match={{
+                    homeTeam: match.homeTeam,
+                    awayTeam: match.awayTeam,
+                    homeTeamCrest: match.homeTeamCrest,
+                    awayTeamCrest: match.awayTeamCrest,
+                    homeTeamUrl: headToHead?.homeTeamId ? `/teams/${headToHead.homeTeamId}` : undefined,
+                    awayTeamUrl: headToHead?.awayTeamId ? `/teams/${headToHead.awayTeamId}` : undefined,
+                    homeScore: match.homeScore,
+                    awayScore: match.awayScore,
+                    status: match.status,
+                    kickoff: match.kickoff.toISOString(),
+                  }}
+                  timezone={timezone}
+                  countdown={match.status === 'SCHEDULED' ? <Countdown kickoff={match.kickoff.toISOString()} /> : undefined}
+                  headToHead={headToHead?.matches ?? []}
+                />
+              )
+            })()
           ))}
         </div>
       ) : (

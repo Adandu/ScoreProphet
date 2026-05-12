@@ -25,6 +25,22 @@ export interface NormalizedTeam {
   crest: string
 }
 
+export interface HeadToHeadMatch {
+  id: string
+  utcDate: string
+  competition: string
+  homeTeam: string
+  awayTeam: string
+  homeScore: number | null
+  awayScore: number | null
+}
+
+export interface HeadToHeadSummary {
+  homeTeamId: string | null
+  awayTeamId: string | null
+  matches: HeadToHeadMatch[]
+}
+
 const STAGE_MAP: Record<string, Stage> = {
   GROUP_STAGE: 'GROUP',
   LAST_32: 'ROUND_OF_32',
@@ -160,5 +176,34 @@ export async function fetchTeamById(id: string | number): Promise<NormalizedTeam
     name: t.name ?? '',
     shortName: t.shortName ?? t.tla ?? '',
     crest: t.crest ?? '',
+  }
+}
+
+export async function fetchHeadToHead(matchId: string | number, limit = 10): Promise<HeadToHeadSummary> {
+  const res = await fetch(
+    `${BASE_URL}/matches/${matchId}/head2head?limit=${limit}`,
+    {
+      headers: getHeaders(),
+      next: { revalidate: 60 * 60 },
+    }
+  )
+  if (!res.ok) {
+    throw new Error(`football-data.org error ${res.status}: ${res.statusText}`)
+  }
+  const data = await res.json()
+
+  return {
+    homeTeamId: data.aggregates?.homeTeam?.id ? String(data.aggregates.homeTeam.id) : null,
+    awayTeamId: data.aggregates?.awayTeam?.id ? String(data.aggregates.awayTeam.id) : null,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    matches: (data.matches ?? []).map((match: any): HeadToHeadMatch => ({
+      id: String(match.id),
+      utcDate: match.utcDate,
+      competition: match.competition?.name ?? '',
+      homeTeam: match.homeTeam?.name ?? 'TBD',
+      awayTeam: match.awayTeam?.name ?? 'TBD',
+      homeScore: match.score?.fullTime?.home ?? null,
+      awayScore: match.score?.fullTime?.away ?? null,
+    })),
   }
 }
