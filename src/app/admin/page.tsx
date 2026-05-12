@@ -36,6 +36,7 @@ export default async function AdminPage() {
         name: championship.name,
         description: championship.description,
         isActive: championship.isActive,
+        doubleChanceEnabled: championship.doubleChanceEnabled,
         userIds: championship.members.map((member) => member.userId),
       }))}
     />

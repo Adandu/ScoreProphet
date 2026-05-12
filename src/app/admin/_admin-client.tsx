@@ -41,6 +41,7 @@ interface Championship {
   name: string
   description: string
   isActive: boolean
+  doubleChanceEnabled: boolean
   userIds: number[]
 }
 
@@ -163,6 +164,15 @@ function ChampionshipRow({ championship, users }: { championship: Championship; 
         <label className="flex h-9 items-center gap-2 text-sm text-white/70">
           <input type="checkbox" name="isActive" defaultChecked={championship.isActive} className="h-4 w-4 accent-[#C9A84C]" />
           Active
+        </label>
+        <label className="flex h-9 items-center gap-2 text-sm text-white/70">
+          <input
+            type="checkbox"
+            name="doubleChanceEnabled"
+            defaultChecked={championship.doubleChanceEnabled}
+            className="h-4 w-4 accent-[#C9A84C]"
+          />
+          Double chance
         </label>
         <Button type="submit" size="sm" disabled={updatePending} className="bg-[#C9A84C] text-[#0A1628] hover:bg-[#C9A84C]/90">
           {updatePending ? 'Saving…' : 'Save'}
