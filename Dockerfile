@@ -1,4 +1,4 @@
-FROM node:20-alpine AS base
+FROM node:22-alpine AS base
 RUN apk add --no-cache libc6-compat
 
 FROM base AS deps
@@ -15,6 +15,15 @@ ENV DATABASE_URL="file:/tmp/build.db"
 RUN npx prisma generate
 RUN npm run build
 
+FROM base AS prod-deps
+WORKDIR /app
+COPY package*.json ./
+COPY prisma ./prisma
+COPY prisma.config.ts ./prisma.config.ts
+ENV NEXT_TELEMETRY_DISABLED=1
+RUN npm ci --omit=dev --legacy-peer-deps
+RUN npx prisma generate
+
 FROM base AS runner
 WORKDIR /app
 ENV NODE_ENV=production
@@ -26,10 +35,9 @@ COPY --from=builder /app/public ./public
 
 COPY --from=builder /app/prisma ./prisma
 COPY --from=builder /app/prisma.config.ts ./prisma.config.ts
-COPY --from=builder /app/node_modules ./node_modules
+COPY --from=prod-deps /app/node_modules ./node_modules
 
-COPY --from=builder /app/scripts ./scripts
-COPY --from=builder /app/src/lib/football-api.ts ./src/lib/football-api.ts
+COPY --from=builder /app/scripts/seed.mjs ./scripts/seed.mjs
 
 COPY entrypoint.sh ./
 RUN chmod +x entrypoint.sh
