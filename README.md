@@ -2,7 +2,7 @@
 
 ScoreProphet is a private World Cup 2026 prediction app. Players predict match outcomes, exact scores, and knockout advancing teams; admins sync fixtures from football-data.org, enter or override results, and recalculate points.
 
-Players compete inside admin-managed championships. A user can belong to multiple championships, and one prediction set counts in every championship where that user is a member.
+Players compete inside managed championships. A user can belong to multiple championships, and one prediction set counts in every championship where that user is a member. Admins can also assign Championship Managers who manage specific championships without receiving full admin access.
 
 ## Stack
 
@@ -23,9 +23,12 @@ FOOTBALL_API_KEY="..."
 ADMIN_USERNAME="admin"
 ADMIN_PASSWORD="at_least_6_chars"
 SESSION_SECRET="at_least_32_characters_random_string"
+APP_URL="http://localhost:3000"
 ```
 
 `ADMIN_USERNAME` and `ADMIN_PASSWORD` are used only when registering the initial admin account. A matching username/password pair creates an admin user; later logins do not promote users based on the shared password.
+
+`APP_URL` is used when generating absolute invitation and password-reset links. If omitted, ScoreProphet falls back to the current request host.
 
 ## Local Development
 
@@ -64,6 +67,8 @@ Admins can:
 
 - Create and manage championships
 - Assign users to championships
+- Assign Championship Managers to specific championships
+- Generate and revoke championship invitation links
 - Sync fixtures and teams from football-data.org
 - Override final scores
 - Select the advancing team for knockout matches
@@ -71,6 +76,26 @@ Admins can:
 - Remove non-admin users
 
 Sync updates mutable fixture fields such as team names, crests, stage, group, kickoff, status, and scores.
+
+## Championship Managers
+
+Championship Managers are assigned by admins per championship. One user can manage multiple championships, and manager access does not grant global admin permissions.
+
+Managers can open `Manage` in the navigation and, for each assigned championship:
+
+- Add or remove championship members
+- Generate invitation links for registered users
+- Revoke active invitation links
+- Enable or disable the championship
+- Enable or disable Double Chance scoring
+
+Managers only manage championships they are assigned to. They can participate in a championship only if they are also added as a member.
+
+## Invitation Links
+
+Invitation links use `/invite/[token]`. A visitor must be signed in before accepting the invitation; the login and registration pages preserve the invite destination through the `next` query parameter. When accepted, the link adds the registered user to the linked championship and selects that championship for the session.
+
+Invite tokens are stored hashed in the database. Active invitation links can be revoked from the championship management page.
 
 ## Deployment
 
