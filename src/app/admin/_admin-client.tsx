@@ -6,6 +6,7 @@ import { createChampionship, deleteChampionship, setChampionshipManagers, setCha
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
+import { ChampionshipInviteGenerator } from '@/components/championship-invite-generator'
 
 const STAGE_LABELS: Record<string, string> = {
   GROUP: 'Group Stage',
@@ -182,6 +183,11 @@ function ChampionshipRow({ championship, users }: { championship: Championship; 
         {updateState?.error && <span className="text-xs text-red-400">{updateState.error}</span>}
         {updateState?.success && <span className="text-xs text-green-400">Saved</span>}
       </form>
+
+      <section className="mb-4 space-y-3 border-t border-white/10 pt-4">
+        <p className="text-sm font-medium text-white/70">Invitation Link</p>
+        <ChampionshipInviteGenerator championshipId={championship.id} compact />
+      </section>
 
       <form action={managersAction} className="mb-4 space-y-3 border-t border-white/10 pt-4">
         <input type="hidden" name="championshipId" value={championship.id} />

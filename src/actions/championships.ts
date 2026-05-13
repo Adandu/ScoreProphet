@@ -180,6 +180,8 @@ export async function generateChampionshipInvite(prevState: unknown, formData: F
     },
   })
 
+  revalidatePath('/admin')
+  revalidatePath('/manage')
   revalidatePath(`/championships/${championshipId}/manage`)
   return { success: true, inviteUrl: `${await getAppUrl()}/invite/${encodeURIComponent(token)}` }
 }

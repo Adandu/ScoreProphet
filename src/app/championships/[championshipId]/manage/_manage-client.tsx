@@ -1,8 +1,9 @@
 'use client'
 
 import { useActionState } from 'react'
-import { generateChampionshipInvite, revokeChampionshipInvite, setChampionshipMembers, updateManagedChampionshipSettings } from '@/actions/championships'
+import { revokeChampionshipInvite, setChampionshipMembers, updateManagedChampionshipSettings } from '@/actions/championships'
 import { Button } from '@/components/ui/button'
+import { ChampionshipInviteGenerator } from '@/components/championship-invite-generator'
 
 interface User {
   id: number
@@ -27,7 +28,6 @@ interface Championship {
 export function ManageChampionshipClient({ championship, users }: { championship: Championship; users: User[] }) {
   const [settingsState, settingsAction, settingsPending] = useActionState(updateManagedChampionshipSettings, null)
   const [membersState, membersAction, membersPending] = useActionState(setChampionshipMembers, null)
-  const [inviteState, inviteAction, invitePending] = useActionState(generateChampionshipInvite, null)
 
   return (
     <div className="space-y-6">
@@ -83,18 +83,7 @@ export function ManageChampionshipClient({ championship, users }: { championship
 
       <section className="rounded-lg border border-white/10 bg-white/5 p-4">
         <h2 className="mb-3 text-lg font-semibold text-[#C9A84C]">Invitation Links</h2>
-        <form action={inviteAction} className="flex flex-wrap items-center gap-3">
-          <input type="hidden" name="championshipId" value={championship.id} />
-          <Button type="submit" size="sm" disabled={invitePending} className="bg-[#C9A84C] text-[#0A1628] hover:bg-[#C9A84C]/90">
-            {invitePending ? 'Generating…' : 'Generate invite link'}
-          </Button>
-          {inviteState?.error && <span className="text-xs text-red-400">{inviteState.error}</span>}
-        </form>
-        {inviteState?.success && 'inviteUrl' in inviteState && (
-          <div className="mt-3 rounded-md border border-green-500/20 bg-green-500/10 p-3 text-sm text-green-200 break-all">
-            {inviteState.inviteUrl}
-          </div>
-        )}
+        <ChampionshipInviteGenerator championshipId={championship.id} />
         <div className="mt-4 space-y-2">
           {championship.invites.map((invite) => (
             <InviteRow key={invite.id} invite={invite} />
