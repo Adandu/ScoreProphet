@@ -69,7 +69,6 @@ export default async function TeamDetailPage({ params }: Props) {
   const squad = parseJson<ApiPerson[]>(team.squadJson, [])
   const staff = parseJson<ApiPerson[]>(team.staffJson, [])
   const competitions = parseJson<ApiCompetition[]>(team.runningCompetitionsJson, [])
-  const raw = parseJson<Record<string, unknown>>(team.rawJson, {})
 
   return (
     <div className="space-y-6">
@@ -89,7 +88,6 @@ export default async function TeamDetailPage({ params }: Props) {
       <section className="rounded-xl border border-white/10 bg-white/5 p-5">
         <h2 className="mb-4 text-lg font-semibold text-[#C9A84C]">Team Profile</h2>
         <dl className="grid gap-3 text-sm sm:grid-cols-2 lg:grid-cols-3">
-          <InfoItem label="External ID" value={team.externalId} />
           <InfoItem label="TLA" value={team.tla} />
           <InfoItem label="Area" value={[team.areaName, team.areaCode].filter(Boolean).join(' / ')} />
           <InfoItem label="Founded" value={team.founded ? String(team.founded) : ''} />
@@ -124,13 +122,6 @@ export default async function TeamDetailPage({ params }: Props) {
 
       <PeopleSection title="Squad" people={squad} emptyText="No squad data returned by the API for this team." />
       <PeopleSection title="Staff" people={staff} emptyText="No staff data returned by the API for this team." />
-
-      <details className="rounded-xl border border-white/10 bg-white/5 p-5">
-        <summary className="cursor-pointer text-lg font-semibold text-[#C9A84C]">Raw API Data</summary>
-        <pre className="mt-4 max-h-[32rem] overflow-auto rounded-lg border border-white/10 bg-black/30 p-4 text-xs text-white/60">
-          {JSON.stringify(raw, null, 2)}
-        </pre>
-      </details>
     </div>
   )
 }
