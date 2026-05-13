@@ -2,15 +2,16 @@
 import crypto from 'crypto'
 import { redirect } from 'next/navigation'
 import { revalidatePath } from 'next/cache'
-import { headers } from 'next/headers'
 import { prisma } from '@/lib/db'
 import { hashPassword, verifyPassword, requireAuth } from '@/lib/auth'
 import { getSession } from '@/lib/session'
 import { sendPasswordResetEmail } from '@/lib/email'
+import { getAppUrl, getSafeRedirectPath } from '@/lib/app-url'
 
 export async function register(prevState: unknown, formData: FormData) {
   const username = (formData.get('username') as string)?.trim()
   const password = formData.get('password') as string
+  const redirectTo = getSafeRedirectPath(formData.get('redirectTo'))
   if (!username || username.length < 2 || username.length > 30) return { error: 'Username must be 2–30 characters' }
   if (!password || password.length < 6) return { error: 'Password must be at least 6 characters' }
   const existing = await prisma.user.findUnique({ where: { username } })
@@ -28,12 +29,13 @@ export async function register(prevState: unknown, formData: FormData) {
   session.timezone = user.timezone
   session.theme = user.theme
   await session.save()
-  redirect('/')
+  redirect(redirectTo)
 }
 
 export async function login(prevState: unknown, formData: FormData) {
   const username = (formData.get('username') as string)?.trim()
   const password = formData.get('password') as string
+  const redirectTo = getSafeRedirectPath(formData.get('redirectTo'))
   const user = await prisma.user.findUnique({ where: { username } })
   if (!user) return { error: 'Invalid username or password' }
   const valid = await verifyPassword(password, user.passwordHash)
@@ -45,7 +47,7 @@ export async function login(prevState: unknown, formData: FormData) {
   session.timezone = user.timezone
   session.theme = user.theme
   await session.save()
-  redirect('/')
+  redirect(redirectTo)
 }
 
 export async function logout() {
@@ -71,15 +73,6 @@ function normalizeEmail(email: string): string | null {
 
 function hashToken(token: string): string {
   return crypto.createHash('sha256').update(token).digest('hex')
-}
-
-async function getAppUrl(): Promise<string> {
-  if (process.env.APP_URL) return process.env.APP_URL.replace(/\/$/, '')
-  const h = await headers()
-  const host = h.get('x-forwarded-host') ?? h.get('host')
-  const proto = h.get('x-forwarded-proto') ?? 'http'
-  if (!host) throw new Error('APP_URL is not configured')
-  return `${proto}://${host}`
 }
 
 export async function updateTimezone(timezone: string) {

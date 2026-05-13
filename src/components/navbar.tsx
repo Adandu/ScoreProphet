@@ -1,7 +1,7 @@
 import Link from 'next/link'
 import { logout } from '@/actions/auth'
 import { getCurrentUser } from '@/lib/auth'
-import { getSelectedChampionship, getUserChampionships } from '@/lib/championships'
+import { getManagedChampionships, getSelectedChampionship, getUserChampionships } from '@/lib/championships'
 import { Button } from '@/components/ui/button'
 import { TimezoneSelector } from '@/components/timezone-selector'
 import { ChampionshipSelector } from '@/components/championship-selector'
@@ -10,8 +10,14 @@ import { prisma } from '@/lib/db'
 
 export async function Navbar() {
   const user = await getCurrentUser()
-  const championships = user ? await getUserChampionships(user.userId) : []
-  const selectedChampionship = user ? await getSelectedChampionship(user.userId) : null
+  const [championships, selectedChampionship, managedChampionships] = user
+    ? await Promise.all([
+        getUserChampionships(user.userId),
+        getSelectedChampionship(user.userId),
+        getManagedChampionships(user.userId),
+      ])
+    : [[], null, []]
+  const canManageChampionships = user?.isAdmin || managedChampionships.length > 0
   const hasLiveMatch = await prisma.match.count({ where: { status: 'LIVE' } }).then((n) => n > 0)
 
   return (
@@ -38,6 +44,9 @@ export async function Navbar() {
           <Link href="/tournament" className="hover:text-white transition-colors">Tournament</Link>
           <Link href="/teams" className="hover:text-white transition-colors">Teams</Link>
           {user && <Link href="/profile" className="hover:text-white transition-colors">Profile</Link>}
+          {canManageChampionships && (
+            <Link href="/manage" className="text-[#C9A84C] hover:text-[#C9A84C]/80 transition-colors">Manage</Link>
+          )}
           {user?.isAdmin && (
             <Link href="/admin" className="text-[#C9A84C] hover:text-[#C9A84C]/80 transition-colors">Admin</Link>
           )}
@@ -71,7 +80,7 @@ export async function Navbar() {
             </>
           )}
         </div>
-        <MobileMenu user={user} championships={championships} selectedChampionship={selectedChampionship} hasLiveMatch={hasLiveMatch} />
+        <MobileMenu user={user} championships={championships} selectedChampionship={selectedChampionship} hasLiveMatch={hasLiveMatch} canManageChampionships={canManageChampionships} />
       </div>
     </nav>
   )

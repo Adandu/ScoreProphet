@@ -11,7 +11,7 @@ export default async function AdminPage() {
     prisma.user.findMany({ orderBy: { username: 'asc' } }),
     prisma.championship.findMany({
       orderBy: { name: 'asc' },
-      include: { members: true },
+      include: { members: true, managers: true },
     }),
   ])
 
@@ -38,6 +38,7 @@ export default async function AdminPage() {
         isActive: championship.isActive,
         doubleChanceEnabled: championship.doubleChanceEnabled,
         userIds: championship.members.map((member) => member.userId),
+        managerUserIds: championship.managers.map((manager) => manager.userId),
       }))}
     />
   )

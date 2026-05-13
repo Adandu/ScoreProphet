@@ -26,11 +26,13 @@ export function MobileMenu({
   championships,
   selectedChampionship,
   hasLiveMatch = false,
+  canManageChampionships = false,
 }: {
   user: User | null
   championships: Championship[]
   selectedChampionship: Championship | null
   hasLiveMatch?: boolean
+  canManageChampionships?: boolean
 }) {
   const [open, setOpen] = useState(false)
 
@@ -48,6 +50,7 @@ export function MobileMenu({
     { href: '/tournament', label: 'Tournament' },
     { href: '/teams', label: 'Teams' },
     ...(user ? [{ href: '/profile', label: 'Profile' }] : []),
+    ...(canManageChampionships ? [{ href: '/manage', label: 'Manage' }] : []),
     ...(user?.isAdmin ? [{ href: '/admin', label: 'Admin' }] : []),
   ]
 

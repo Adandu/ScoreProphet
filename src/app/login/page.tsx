@@ -2,6 +2,7 @@
 
 import { useActionState } from 'react'
 import Link from 'next/link'
+import { useSearchParams } from 'next/navigation'
 import { login } from '@/actions/auth'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -10,6 +11,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 
 export default function LoginPage() {
   const [state, action, isPending] = useActionState(login, null)
+  const searchParams = useSearchParams()
+  const redirectTo = searchParams.get('next') ?? '/'
 
   return (
     <main className="min-h-screen bg-[#0A1628] flex items-center justify-center p-4">
@@ -22,6 +25,7 @@ export default function LoginPage() {
         </CardHeader>
         <CardContent>
           <form action={action} className="space-y-4">
+            <input type="hidden" name="redirectTo" value={redirectTo} />
             <div className="space-y-2">
               <Label htmlFor="username" className="text-white/80">
                 Username
@@ -75,7 +79,7 @@ export default function LoginPage() {
 
           <p className="mt-2 text-center text-sm text-white/50">
             Don&apos;t have an account?{' '}
-            <Link href="/register" className="text-[#C9A84C] hover:underline">
+            <Link href={`/register?next=${encodeURIComponent(redirectTo)}`} className="text-[#C9A84C] hover:underline">
               Register
             </Link>
           </p>

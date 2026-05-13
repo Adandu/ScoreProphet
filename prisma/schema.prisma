@@ -18,6 +18,8 @@ model User {
   predictions  Prediction[]
   advances     KnockoutAdvance[]
   championships ChampionshipMember[]
+  managedChampionships ChampionshipManager[]
+  generatedInvites ChampionshipInvite[]
   passwordResetTokens PasswordResetToken[]
 }
 
@@ -30,6 +32,8 @@ model Championship {
   createdAt           DateTime             @default(now())
   updatedAt           DateTime             @updatedAt
   members             ChampionshipMember[]
+  managers            ChampionshipManager[]
+  invites             ChampionshipInvite[]
 }
 
 model ChampionshipMember {
@@ -40,6 +44,30 @@ model ChampionshipMember {
   user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@id([championshipId, userId])
+}
+
+model ChampionshipManager {
+  championshipId Int
+  userId         Int
+  createdAt      DateTime     @default(now())
+  championship   Championship @relation(fields: [championshipId], references: [id], onDelete: Cascade)
+  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([championshipId, userId])
+}
+
+model ChampionshipInvite {
+  id             Int          @id @default(autoincrement())
+  championshipId Int
+  tokenHash      String       @unique
+  createdById    Int
+  createdAt      DateTime     @default(now())
+  expiresAt      DateTime?
+  revokedAt      DateTime?
+  championship   Championship @relation(fields: [championshipId], references: [id], onDelete: Cascade)
+  createdBy      User         @relation(fields: [createdById], references: [id], onDelete: Cascade)
+
+  @@index([championshipId, revokedAt])
 }
 
 model Match {

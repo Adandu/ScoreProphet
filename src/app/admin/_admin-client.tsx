@@ -2,7 +2,7 @@
 
 import { useActionState } from 'react'
 import { overrideMatchScore, recalculateAllPoints, removeUser, syncMatchesFromApi } from '@/actions/admin'
-import { createChampionship, deleteChampionship, setChampionshipMembers, updateChampionship } from '@/actions/championships'
+import { createChampionship, deleteChampionship, setChampionshipManagers, setChampionshipMembers, updateChampionship } from '@/actions/championships'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
@@ -43,6 +43,7 @@ interface Championship {
   isActive: boolean
   doubleChanceEnabled: boolean
   userIds: number[]
+  managerUserIds: number[]
 }
 
 export function AdminClient({
@@ -147,6 +148,7 @@ export function AdminClient({
 function ChampionshipRow({ championship, users }: { championship: Championship; users: User[] }) {
   const [updateState, updateAction, updatePending] = useActionState(updateChampionship, null)
   const [membersState, membersAction, membersPending] = useActionState(setChampionshipMembers, null)
+  const [managersState, managersAction, managersPending] = useActionState(setChampionshipManagers, null)
   const [deleteState, deleteAction, deletePending] = useActionState(deleteChampionship, null)
 
   return (
@@ -179,6 +181,34 @@ function ChampionshipRow({ championship, users }: { championship: Championship; 
         </Button>
         {updateState?.error && <span className="text-xs text-red-400">{updateState.error}</span>}
         {updateState?.success && <span className="text-xs text-green-400">Saved</span>}
+      </form>
+
+      <form action={managersAction} className="mb-4 space-y-3 border-t border-white/10 pt-4">
+        <input type="hidden" name="championshipId" value={championship.id} />
+        <p className="text-sm font-medium text-white/70">Championship Managers</p>
+        <div className="grid gap-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
+          {users.map((user) => (
+            <label key={user.id} className="flex items-center gap-2 rounded-md border border-white/10 bg-[#0A1628]/40 px-3 py-2 text-sm text-white/75">
+              <input
+                type="checkbox"
+                name="managerUserIds"
+                value={user.id}
+                defaultChecked={championship.managerUserIds.includes(user.id)}
+                disabled={user.isAdmin}
+                className="h-4 w-4 accent-[#C9A84C] disabled:opacity-40"
+              />
+              {user.username}
+              {user.isAdmin && <span className="text-xs text-[#C9A84C]">Admin</span>}
+            </label>
+          ))}
+        </div>
+        <div className="flex flex-wrap items-center gap-3">
+          <Button type="submit" size="sm" variant="outline" disabled={managersPending} className="border-white/20 text-white hover:bg-white/10 bg-transparent">
+            {managersPending ? 'Saving managers…' : 'Save managers'}
+          </Button>
+          {managersState?.error && <span className="text-xs text-red-400">{managersState.error}</span>}
+          {managersState?.success && <span className="text-xs text-green-400">Managers saved</span>}
+        </div>
       </form>
 
       <form action={membersAction} className="space-y-3">

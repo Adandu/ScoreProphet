@@ -9,24 +9,34 @@ export interface ChampionshipSummary {
   description: string
   isActive: boolean
   doubleChanceEnabled: boolean
+  isManager?: boolean
 }
 
 export async function getUserChampionships(userId: number): Promise<ChampionshipSummary[]> {
-  const memberships = await prisma.championshipMember.findMany({
-    where: {
-      userId,
-      championship: { isActive: true },
-    },
-    include: { championship: true },
-    orderBy: { championship: { name: 'asc' } },
-  })
+  const [memberships, managerAssignments] = await Promise.all([
+    prisma.championshipMember.findMany({
+      where: {
+        userId,
+        championship: { isActive: true },
+      },
+      include: { championship: true },
+      orderBy: { championship: { name: 'asc' } },
+    }),
+    prisma.championshipManager.findMany({
+      where: { userId, championship: { isActive: true } },
+      include: { championship: true },
+    }),
+  ])
+
+  const managerIds = new Set(managerAssignments.map((assignment) => assignment.championshipId))
 
   return memberships.map(({ championship }) => ({
-    id: championship.id,
-    name: championship.name,
-    description: championship.description,
-    isActive: championship.isActive,
-    doubleChanceEnabled: championship.doubleChanceEnabled,
+      id: championship.id,
+      name: championship.name,
+      description: championship.description,
+      isActive: championship.isActive,
+      doubleChanceEnabled: championship.doubleChanceEnabled,
+      isManager: managerIds.has(championship.id),
   }))
 }
 
@@ -49,7 +59,56 @@ export async function requireChampionshipAccess(championshipId: number) {
 
   if (!championship || !championship.isActive) redirect('/')
   const isMember = championship.members.some((member) => member.userId === session.userId)
-  if (!isMember) redirect('/')
+  if (!isMember && !session.isAdmin) redirect('/')
+
+  return { session, championship }
+}
+
+export async function getManagedChampionships(userId: number): Promise<ChampionshipSummary[]> {
+  const assignments = await prisma.championshipManager.findMany({
+    where: { userId },
+    include: { championship: true },
+    orderBy: { championship: { name: 'asc' } },
+  })
+
+  return assignments.map(({ championship }) => ({
+    id: championship.id,
+    name: championship.name,
+    description: championship.description,
+    isActive: championship.isActive,
+    doubleChanceEnabled: championship.doubleChanceEnabled,
+    isManager: true,
+  }))
+}
+
+export async function userCanManageChampionship(userId: number, championshipId: number): Promise<boolean> {
+  const assignment = await prisma.championshipManager.findUnique({
+    where: { championshipId_userId: { championshipId, userId } },
+    select: { championshipId: true },
+  })
+  return Boolean(assignment)
+}
+
+export async function requireChampionshipManager(championshipId: number) {
+  const session = await requireAuth()
+  if (!Number.isInteger(championshipId) || championshipId <= 0) redirect('/')
+
+  const championship = await prisma.championship.findUnique({
+    where: { id: championshipId },
+    include: {
+      members: { include: { user: true }, orderBy: { user: { username: 'asc' } } },
+      managers: true,
+      invites: {
+        where: { revokedAt: null },
+        orderBy: { createdAt: 'desc' },
+        take: 10,
+      },
+    },
+  })
+
+  if (!championship) redirect('/')
+  const canManage = session.isAdmin || championship.managers.some((manager) => manager.userId === session.userId)
+  if (!canManage) redirect('/')
 
   return { session, championship }
 }

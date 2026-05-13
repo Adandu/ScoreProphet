@@ -1,13 +1,26 @@
 'use server'
 
+import crypto from 'crypto'
 import { revalidatePath } from 'next/cache'
 import { prisma } from '@/lib/db'
 import { requireAdmin, requireAuth } from '@/lib/auth'
 import { getSession } from '@/lib/session'
+import { getAppUrl } from '@/lib/app-url'
+import { userCanManageChampionship } from '@/lib/championships'
 
 function parseId(value: FormDataEntryValue | null): number | null {
   const id = parseInt(String(value ?? ''), 10)
   return Number.isInteger(id) && id > 0 ? id : null
+}
+
+function hashInviteToken(token: string): string {
+  return crypto.createHash('sha256').update(token).digest('hex')
+}
+
+async function requireChampionshipEditor(championshipId: number) {
+  const session = await requireAuth()
+  if (session.isAdmin || await userCanManageChampionship(session.userId!, championshipId)) return session
+  throw new Error('Not authorized to manage this championship')
 }
 
 export async function createChampionship(prevState: unknown, formData: FormData) {
@@ -55,6 +68,27 @@ export async function updateChampionship(prevState: unknown, formData: FormData)
   return { success: true }
 }
 
+export async function updateManagedChampionshipSettings(prevState: unknown, formData: FormData) {
+  const championshipId = parseId(formData.get('championshipId'))
+  if (!championshipId) return { error: 'Missing championship ID' }
+  await requireChampionshipEditor(championshipId)
+
+  const isActive = formData.get('isActive') === 'on'
+  const doubleChanceEnabled = formData.get('doubleChanceEnabled') === 'on'
+
+  await prisma.championship.update({
+    where: { id: championshipId },
+    data: { isActive, doubleChanceEnabled },
+  })
+
+  revalidatePath('/manage')
+  revalidatePath(`/championships/${championshipId}/manage`)
+  revalidatePath(`/championships/${championshipId}/leaderboard`)
+  revalidatePath(`/championships/${championshipId}/predictions`)
+  revalidatePath('/', 'layout')
+  return { success: true }
+}
+
 export async function deleteChampionship(prevState: unknown, formData: FormData) {
   await requireAdmin()
   const championshipId = parseId(formData.get('championshipId'))
@@ -67,9 +101,9 @@ export async function deleteChampionship(prevState: unknown, formData: FormData)
 }
 
 export async function setChampionshipMembers(prevState: unknown, formData: FormData) {
-  await requireAdmin()
   const championshipId = parseId(formData.get('championshipId'))
   if (!championshipId) return { error: 'Missing championship ID' }
+  await requireChampionshipEditor(championshipId)
 
   const userIds = Array.from(new Set(
     formData
@@ -91,9 +125,109 @@ export async function setChampionshipMembers(prevState: unknown, formData: FormD
   ])
 
   revalidatePath('/admin')
+  revalidatePath('/manage')
   revalidatePath('/', 'layout')
   revalidatePath(`/championships/${championshipId}/leaderboard`)
+  revalidatePath(`/championships/${championshipId}/manage`)
   return { success: true }
+}
+
+export async function setChampionshipManagers(prevState: unknown, formData: FormData) {
+  await requireAdmin()
+  const championshipId = parseId(formData.get('championshipId'))
+  if (!championshipId) return { error: 'Missing championship ID' }
+
+  const userIds = Array.from(new Set(
+    formData
+      .getAll('managerUserIds')
+      .map((value) => parseId(value))
+      .filter((id): id is number => id !== null)
+  ))
+
+  const championship = await prisma.championship.findUnique({ where: { id: championshipId } })
+  if (!championship) return { error: 'Championship not found' }
+
+  await prisma.$transaction([
+    prisma.championshipManager.deleteMany({ where: { championshipId } }),
+    ...userIds.map((userId) =>
+      prisma.championshipManager.create({
+        data: { championshipId, userId },
+      })
+    ),
+  ])
+
+  revalidatePath('/admin')
+  revalidatePath('/manage')
+  revalidatePath('/', 'layout')
+  revalidatePath(`/championships/${championshipId}/manage`)
+  return { success: true }
+}
+
+export async function generateChampionshipInvite(prevState: unknown, formData: FormData) {
+  const championshipId = parseId(formData.get('championshipId'))
+  if (!championshipId) return { error: 'Missing championship ID' }
+  const session = await requireChampionshipEditor(championshipId)
+
+  const championship = await prisma.championship.findUnique({ where: { id: championshipId } })
+  if (!championship) return { error: 'Championship not found' }
+
+  const token = crypto.randomBytes(32).toString('base64url')
+  await prisma.championshipInvite.create({
+    data: {
+      championshipId,
+      tokenHash: hashInviteToken(token),
+      createdById: session.userId!,
+    },
+  })
+
+  revalidatePath(`/championships/${championshipId}/manage`)
+  return { success: true, inviteUrl: `${await getAppUrl()}/invite/${encodeURIComponent(token)}` }
+}
+
+export async function revokeChampionshipInvite(prevState: unknown, formData: FormData) {
+  const inviteId = parseId(formData.get('inviteId'))
+  if (!inviteId) return { error: 'Missing invite ID' }
+
+  const invite = await prisma.championshipInvite.findUnique({ where: { id: inviteId } })
+  if (!invite) return { error: 'Invite not found' }
+  await requireChampionshipEditor(invite.championshipId)
+
+  await prisma.championshipInvite.update({
+    where: { id: inviteId },
+    data: { revokedAt: new Date() },
+  })
+
+  revalidatePath(`/championships/${invite.championshipId}/manage`)
+  return { success: true }
+}
+
+export async function acceptChampionshipInvite(token: string) {
+  const session = await requireAuth()
+  const invite = await prisma.championshipInvite.findUnique({
+    where: { tokenHash: hashInviteToken(token) },
+    include: { championship: true },
+  })
+
+  if (!invite || invite.revokedAt || (invite.expiresAt && invite.expiresAt <= new Date())) {
+    return { error: 'This invitation link is no longer valid' }
+  }
+  if (!invite.championship.isActive && !session.isAdmin) {
+    return { error: 'This championship is not active' }
+  }
+
+  await prisma.championshipMember.upsert({
+    where: { championshipId_userId: { championshipId: invite.championshipId, userId: session.userId! } },
+    update: {},
+    create: { championshipId: invite.championshipId, userId: session.userId! },
+  })
+
+  const currentSession = await getSession()
+  currentSession.selectedChampionshipId = invite.championshipId
+  await currentSession.save()
+
+  revalidatePath('/', 'layout')
+  revalidatePath(`/championships/${invite.championshipId}/leaderboard`)
+  return { success: true, championshipId: invite.championshipId, championshipName: invite.championship.name }
 }
 
 export async function selectChampionship(championshipId: number) {
