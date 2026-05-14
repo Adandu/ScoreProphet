@@ -48,7 +48,6 @@ export function MobileMenu({
     { href: '/', label: 'Home' },
     ...championshipLinks,
     { href: '/tournament', label: 'Tournament' },
-    { href: '/tournament/statistics', label: 'Tournament Stats' },
     { href: '/teams', label: 'Teams' },
     ...(user ? [{ href: '/profile', label: 'Profile' }] : []),
     ...(canManageChampionships ? [{ href: '/manage', label: 'Manage' }] : []),
