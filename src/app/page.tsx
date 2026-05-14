@@ -10,22 +10,32 @@ async function getFeaturedMatches() {
   const now = new Date()
   const next24Hours = new Date(now.getTime() + 24 * 60 * 60 * 1000)
 
-  const upcoming = await prisma.match.findMany({
-    where: {
-      OR: [
-        { status: 'LIVE' },
-        { status: 'SCHEDULED', kickoff: { gt: now, lte: next24Hours } },
-      ],
-    },
-    orderBy: { kickoff: 'asc' },
-  })
+  let upcoming
+  try {
+    upcoming = await prisma.match.findMany({
+      where: {
+        OR: [
+          { status: 'LIVE' },
+          { status: 'SCHEDULED', kickoff: { gt: now, lte: next24Hours } },
+        ],
+      },
+      orderBy: { kickoff: 'asc' },
+    })
+  } catch {
+    return []
+  }
 
   if (upcoming.length > 0) return upcoming
 
-  const fallback = await prisma.match.findFirst({
-    where: { status: 'SCHEDULED', kickoff: { gt: now } },
-    orderBy: { kickoff: 'asc' },
-  })
+  let fallback
+  try {
+    fallback = await prisma.match.findFirst({
+      where: { status: 'SCHEDULED', kickoff: { gt: now } },
+      orderBy: { kickoff: 'asc' },
+    })
+  } catch {
+    return []
+  }
 
   return fallback ? [fallback] : []
 }

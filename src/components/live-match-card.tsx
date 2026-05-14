@@ -1,7 +1,5 @@
 'use client'
 
-import { useEffect } from 'react'
-import { useRouter } from 'next/navigation'
 import Image from 'next/image'
 import Link from 'next/link'
 import type { ReactNode } from 'react'
@@ -34,14 +32,6 @@ interface Props {
 }
 
 export function LiveMatchCard({ match, timezone, countdown, headToHead = [] }: Props) {
-  const router = useRouter()
-
-  useEffect(() => {
-    if (match.status !== 'LIVE') return
-    const interval = setInterval(() => router.refresh(), 60_000)
-    return () => clearInterval(interval)
-  }, [match.status, router])
-
   const isLive = match.status === 'LIVE'
 
   return (
@@ -87,7 +77,11 @@ export function LiveMatchCard({ match, timezone, countdown, headToHead = [] }: P
                   </p>
                   <p className="truncate text-white/35">{result.competition || 'Match result'}</p>
                 </div>
-                <span className="text-right tabular-nums text-white/35">{formatMatchTime(result.utcDate, timezone)}</span>
+                <span className="text-right tabular-nums text-white/35">
+                  {result.utcDate && !isNaN(new Date(result.utcDate).getTime())
+                    ? formatMatchTime(result.utcDate, timezone)
+                    : 'TBD'}
+                </span>
               </div>
             ))}
           </div>

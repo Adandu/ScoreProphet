@@ -26,7 +26,7 @@ export async function savePrediction(prevState: unknown, formData: FormData) {
     if (Number.isInteger(homeScore) && Number.isInteger(awayScore)) value = `${homeScore}-${awayScore}`
   }
 
-  if (!matchId || !type || !value || !championshipId) return { error: 'Missing fields' }
+  if (!Number.isInteger(matchId) || matchId <= 0 || !type || !value || !Number.isInteger(championshipId) || championshipId <= 0) return { error: 'Missing fields' }
 
   const [match, membership] = await Promise.all([
     prisma.match.findUnique({ where: { id: matchId } }),

@@ -17,7 +17,7 @@ function parseId(value: FormDataEntryValue | null): number | null {
 async function requireChampionshipEditor(championshipId: number) {
   const session = await requireAuth()
   if (session.isAdmin || await userCanManageChampionship(session.userId!, championshipId)) return session
-  throw new Error('Not authorized to manage this championship')
+  return null
 }
 
 export async function createChampionship(prevState: unknown, formData: FormData) {
@@ -68,7 +68,7 @@ export async function updateChampionship(prevState: unknown, formData: FormData)
 export async function updateManagedChampionshipSettings(prevState: unknown, formData: FormData) {
   const championshipId = parseId(formData.get('championshipId'))
   if (!championshipId) return { error: 'Missing championship ID' }
-  await requireChampionshipEditor(championshipId)
+  if (!await requireChampionshipEditor(championshipId)) return { error: 'Not authorized' }
 
   const isActive = formData.get('isActive') === 'on'
   const doubleChanceEnabled = formData.get('doubleChanceEnabled') === 'on'
@@ -100,7 +100,7 @@ export async function deleteChampionship(prevState: unknown, formData: FormData)
 export async function setChampionshipMembers(prevState: unknown, formData: FormData) {
   const championshipId = parseId(formData.get('championshipId'))
   if (!championshipId) return { error: 'Missing championship ID' }
-  await requireChampionshipEditor(championshipId)
+  if (!await requireChampionshipEditor(championshipId)) return { error: 'Not authorized' }
 
   const userIds = Array.from(new Set(
     formData
@@ -164,6 +164,7 @@ export async function generateChampionshipInvite(prevState: unknown, formData: F
   const championshipId = parseId(formData.get('championshipId'))
   if (!championshipId) return { error: 'Missing championship ID' }
   const session = await requireChampionshipEditor(championshipId)
+  if (!session) return { error: 'Not authorized' }
 
   const championship = await prisma.championship.findUnique({ where: { id: championshipId } })
   if (!championship) return { error: 'Championship not found' }
@@ -190,7 +191,7 @@ export async function revokeChampionshipInvite(prevState: unknown, formData: For
 
   const invite = await prisma.championshipInvite.findUnique({ where: { id: inviteId } })
   if (!invite) return { error: 'Invite not found' }
-  await requireChampionshipEditor(invite.championshipId)
+  if (!await requireChampionshipEditor(invite.championshipId)) return { error: 'Not authorized' }
 
   await prisma.championshipInvite.update({
     where: { id: inviteId },

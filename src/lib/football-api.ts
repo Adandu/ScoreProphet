@@ -1,5 +1,5 @@
 const BASE_URL = 'https://api.football-data.org/v4'
-const COMPETITION = 'WC'
+const COMPETITION = process.env.FOOTBALL_API_COMPETITION ?? 'WC'
 
 type Stage = 'GROUP' | 'ROUND_OF_32' | 'ROUND_OF_16' | 'QUARTER_FINAL' | 'SEMI_FINAL' | 'THIRD_PLACE' | 'FINAL'
 type MatchStatus = 'SCHEDULED' | 'LIVE' | 'FINISHED'
@@ -141,10 +141,22 @@ function normalizeMatch(m: any): NormalizedMatch {
     awayTeam: m.awayTeam?.name ?? 'TBD',
     homeTeamCrest: m.homeTeam?.crest ?? '',
     awayTeamCrest: m.awayTeam?.crest ?? '',
-    stage: STAGE_MAP[m.stage] ?? 'GROUP',
+    stage: (() => {
+      const knownStages = Object.keys(STAGE_MAP)
+      if (m.stage && !knownStages.includes(m.stage)) {
+        console.warn(`[football-api] Unknown stage value: ${m.stage}`)
+      }
+      return STAGE_MAP[m.stage] ?? 'GROUP'
+    })(),
     group: m.group ?? null,
     kickoff: new Date(m.utcDate),
-    status: STATUS_MAP[m.status] ?? 'SCHEDULED',
+    status: (() => {
+      const knownStatuses = Object.keys(STATUS_MAP)
+      if (m.status && !knownStatuses.includes(m.status)) {
+        console.warn(`[football-api] Unknown status value: ${m.status}`)
+      }
+      return STATUS_MAP[m.status] ?? 'SCHEDULED'
+    })(),
     homeScore: m.score?.fullTime?.home ?? null,
     awayScore: m.score?.fullTime?.away ?? null,
   }

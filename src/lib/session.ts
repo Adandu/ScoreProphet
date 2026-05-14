@@ -10,8 +10,12 @@ export interface SessionData {
   selectedChampionshipId?: number
 }
 
+if (!process.env.SESSION_SECRET) {
+  throw new Error('SESSION_SECRET environment variable is required')
+}
+
 export const sessionOptions = {
-  password: process.env.SESSION_SECRET!,
+  password: process.env.SESSION_SECRET,
   cookieName: 'scoreprophet-session',
   cookieOptions: {
     secure: process.env.NODE_ENV === 'production',

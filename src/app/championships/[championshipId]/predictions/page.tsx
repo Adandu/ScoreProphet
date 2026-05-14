@@ -7,18 +7,9 @@ import { formatMatchTime } from '@/lib/format-date'
 import { ChampionshipPageNav } from '@/components/championship-page-nav'
 import Image from 'next/image'
 import { CalendarClock } from 'lucide-react'
+import { STAGE_LABELS } from '@/lib/prediction-reminder-rules'
 
 type Stage = 'GROUP' | 'ROUND_OF_32' | 'ROUND_OF_16' | 'QUARTER_FINAL' | 'SEMI_FINAL' | 'THIRD_PLACE' | 'FINAL'
-
-const STAGE_LABELS: Record<Stage, string> = {
-  GROUP: 'Group Stage',
-  ROUND_OF_32: 'Round of 32',
-  ROUND_OF_16: 'Round of 16',
-  QUARTER_FINAL: 'Quarter-Finals',
-  SEMI_FINAL: 'Semi-Finals',
-  THIRD_PLACE: 'Third Place',
-  FINAL: 'Final',
-}
 
 const STAGE_ORDER: Stage[] = ['GROUP', 'ROUND_OF_32', 'ROUND_OF_16', 'QUARTER_FINAL', 'SEMI_FINAL', 'THIRD_PLACE', 'FINAL']
 

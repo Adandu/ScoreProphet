@@ -46,7 +46,7 @@ export default async function ChampionshipResultsPage({ params }: { params: Prom
                 <tr className="border-b border-white/5">
                   <th className="px-4 py-2 text-left text-white/40 font-normal">Player</th>
                   <th className="px-4 py-2 text-left text-white/40 font-normal">Result</th>
-                  <th className="px-4 py-2 text-left text-white/40 font-normal">Double</th>
+                  {championship.doubleChanceEnabled && <th className="px-4 py-2 text-left text-white/40 font-normal">Double</th>}
                   <th className="px-4 py-2 text-left text-white/40 font-normal">Score</th>
                   {match.stage !== 'GROUP' && <th className="px-4 py-2 text-left text-white/40 font-normal">Advance</th>}
                   <th className="px-4 py-2 text-left text-white/40 font-normal">Total</th>
@@ -59,9 +59,10 @@ export default async function ChampionshipResultsPage({ params }: { params: Prom
                   const single = preds.find((p) => p.type === 'SINGLE_OUTCOME')
                   const double_ = preds.find((p) => p.type === 'DOUBLE_CHANCE')
                   const exact = preds.find((p) => p.type === 'EXACT_SCORE')
+                  const doublePoints = championship.doubleChanceEnabled ? (double_?.pointsAwarded ?? 0) : 0
                   const total =
                     (single?.pointsAwarded ?? 0) +
-                    (double_?.pointsAwarded ?? 0) +
+                    doublePoints +
                     (exact?.pointsAwarded ?? 0) +
                     (advance?.pointsAwarded ?? 0)
                   if (!single && !double_ && !exact && !advance) return null
@@ -69,7 +70,7 @@ export default async function ChampionshipResultsPage({ params }: { params: Prom
                     <tr key={user.id} className="border-b border-white/5 last:border-0">
                       <td className="px-4 py-2 text-white font-medium">{user.username}</td>
                       <td className="px-4 py-2">{single ? <>{single.value} {pointsBadge(single.pointsAwarded)}</> : <span className="text-white/20">-</span>}</td>
-                      <td className="px-4 py-2">{double_ ? <>{double_.value} {pointsBadge(double_.pointsAwarded)}</> : <span className="text-white/20">-</span>}</td>
+                      {championship.doubleChanceEnabled && <td className="px-4 py-2">{double_ ? <>{double_.value} {pointsBadge(double_.pointsAwarded)}</> : <span className="text-white/20">-</span>}</td>}
                       <td className="px-4 py-2">{exact ? <>{exact.value} {pointsBadge(exact.pointsAwarded)}</> : <span className="text-white/20">-</span>}</td>
                       {match.stage !== 'GROUP' && <td className="px-4 py-2">{advance ? <>{advance.predictedTeam} {pointsBadge(advance.pointsAwarded)}</> : <span className="text-white/20">-</span>}</td>}
                       <td className="px-4 py-2 font-bold text-[#C9A84C]">{total}</td>

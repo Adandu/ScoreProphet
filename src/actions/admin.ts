@@ -127,15 +127,28 @@ export async function sendTestPredictionReminder(prevState: unknown, formData: F
   return { success: true, match: `${match.homeTeam} vs ${match.awayTeam}` }
 }
 
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms))
+}
+
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 export async function syncMatchesFromApi(prevState: unknown) {
   await requireAdmin()
   const { fetchAllMatches, fetchHeadToHead } = await import('@/lib/football-api')
+  const h2hDelayMs = parseInt(process.env.FOOTBALL_API_H2H_DELAY_MS ?? '6000', 10)
   try {
     const matches = await fetchAllMatches()
     let synced = 0
+    const changedMatchIds = new Set<number>()
+
     for (const m of matches) {
-      await prisma.match.upsert({
+      // Read current stored scores to detect changes
+      const existing = await prisma.match.findUnique({
+        where: { externalId: m.externalId },
+        select: { id: true, homeScore: true, awayScore: true },
+      })
+
+      const upserted = await prisma.match.upsert({
         where: { externalId: m.externalId },
         update: {
           homeTeam: m.homeTeam,
@@ -164,6 +177,15 @@ export async function syncMatchesFromApi(prevState: unknown) {
         },
       })
 
+      // Track this match if its score changed (or it's newly created with a score)
+      const scoreChanged =
+        existing === null
+          ? m.homeScore !== null || m.awayScore !== null
+          : existing.homeScore !== m.homeScore || existing.awayScore !== m.awayScore
+      if (scoreChanged) {
+        changedMatchIds.add(upserted.id)
+      }
+
       try {
         const headToHead = await fetchHeadToHead(m.externalId, 10)
         await prisma.match.update({
@@ -175,10 +197,15 @@ export async function syncMatchesFromApi(prevState: unknown) {
             headToHeadSyncedAt: new Date(),
           },
         })
-      } catch {
-        // Head-to-head data is supplementary; keep match sync usable if it is unavailable.
+      } catch (h2hErr) {
+        console.warn(`[syncMatchesFromApi] H2H fetch failed for match ${m.externalId}:`, h2hErr)
       }
       synced++
+
+      // Rate-limit H2H calls: wait before the next iteration
+      if (synced < matches.length) {
+        await sleep(h2hDelayMs)
+      }
     }
 
     // Also sync teams
@@ -213,10 +240,14 @@ export async function syncMatchesFromApi(prevState: unknown) {
       // Teams API may not be available — non-fatal
     }
 
-    const finished = await prisma.match.findMany({
-      where: { status: 'FINISHED', predictions: { some: { pointsAwarded: null } } },
+    // Only recalculate predictions for matches whose scores actually changed
+    const finishedChanged = await prisma.match.findMany({
+      where: {
+        id: { in: [...changedMatchIds] },
+        status: 'FINISHED',
+      },
     })
-    for (const match of finished) await recalculateMatchPoints(match.id)
+    for (const match of finishedChanged) await recalculateMatchPoints(match.id)
 
     revalidatePath('/admin')
     revalidatePath('/results')

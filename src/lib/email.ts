@@ -50,7 +50,7 @@ export async function sendPasswordResetEmail(to: string, resetUrl: string) {
     text: `Use this link to reset your ScoreProphet password:\n\n${resetUrl}\n\nThis link expires in 1 hour. If you did not request it, you can ignore this email.`,
     html: `
       <p>Use this link to reset your ScoreProphet password:</p>
-      <p><a href="${resetUrl}">${resetUrl}</a></p>
+      <p><a href="${escapeHtml(resetUrl)}">${escapeHtml(resetUrl)}</a></p>
       <p>This link expires in 1 hour. If you did not request it, you can ignore this email.</p>
     `,
   })

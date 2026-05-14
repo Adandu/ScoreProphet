@@ -47,16 +47,20 @@ function compareRows(a: StandingRow, b: StandingRow): number {
 
 export function computeGroupStandings(matches: GroupMatch[]): GroupStandings {
   const groups: GroupStandings = {}
+  const rowsByTeamByGroup: Record<string, Map<string, StandingRow>> = {}
   const finishedByGroup: Record<string, number> = {}
   const totalByGroup: Record<string, number> = {}
 
   for (const match of matches) {
     if (!match.group) continue
 
-    groups[match.group] = groups[match.group] ?? []
+    if (!groups[match.group]) {
+      groups[match.group] = []
+      rowsByTeamByGroup[match.group] = new Map()
+    }
     totalByGroup[match.group] = (totalByGroup[match.group] ?? 0) + 1
 
-    const rowsByTeam = new Map(groups[match.group].map((row) => [row.team, row]))
+    const rowsByTeam = rowsByTeamByGroup[match.group]
     if (!rowsByTeam.has(match.homeTeam)) {
       const row = emptyRow(match.homeTeam, match.homeTeamCrest)
       groups[match.group].push(row)

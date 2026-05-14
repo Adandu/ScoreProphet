@@ -1,11 +1,17 @@
+import { redirect } from 'next/navigation'
 import { prisma } from '@/lib/db'
 import { requireAuth } from '@/lib/auth'
+import { getSession } from '@/lib/session'
 import { ProfileClient } from './_profile-client'
 
 export default async function ProfilePage() {
   const session = await requireAuth()
   const user = await prisma.user.findUnique({ where: { id: session.userId! } })
-  if (!user) return null
+  if (!user) {
+    const s = await getSession()
+    s.destroy()
+    redirect('/login')
+  }
 
   return (
     <div className="space-y-6">

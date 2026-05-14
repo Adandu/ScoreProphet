@@ -7,16 +7,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
 import { ChampionshipInviteGenerator } from '@/components/championship-invite-generator'
-
-const STAGE_LABELS: Record<string, string> = {
-  GROUP: 'Group Stage',
-  ROUND_OF_32: 'Round of 32',
-  ROUND_OF_16: 'Round of 16',
-  QUARTER_FINAL: 'Quarter-Finals',
-  SEMI_FINAL: 'Semi-Finals',
-  THIRD_PLACE: 'Third Place',
-  FINAL: 'Final',
-}
+import { STAGE_LABELS } from '@/lib/prediction-reminder-rules'
 
 interface Match {
   id: number
@@ -80,8 +71,8 @@ export function AdminClient({
           </Button>
         </form>
         {syncState?.error && <p className="text-sm text-red-400 self-center">{syncState.error}</p>}
-        {syncState?.success && <p className="text-sm text-green-400 self-center">Synced {(syncState as { synced: number }).synced} matches</p>}
-        {recalcState?.success && <p className="text-sm text-green-400 self-center">Recalculated {(recalcState as { count: number }).count} matches</p>}
+        {syncState?.success && <p className="text-sm text-green-400 self-center">Synced {typeof syncState.synced === 'number' ? syncState.synced : 0} matches</p>}
+        {recalcState?.success && <p className="text-sm text-green-400 self-center">Recalculated {typeof recalcState.count === 'number' ? recalcState.count : 0} matches</p>}
       </section>
 
       <section className="rounded-xl border border-white/10 bg-white/5 p-4">
@@ -103,7 +94,7 @@ export function AdminClient({
           {testReminderState?.error && <p className="text-sm text-red-400">{testReminderState.error}</p>}
           {testReminderState?.success && (
             <p className="text-sm text-green-400">
-              Sent test notification for {(testReminderState as { match: string }).match}.
+              Sent test notification for {typeof testReminderState.match === 'string' ? testReminderState.match : ''}.
             </p>
           )}
         </form>

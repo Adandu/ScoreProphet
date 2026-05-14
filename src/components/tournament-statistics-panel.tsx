@@ -2,8 +2,6 @@ import Image from 'next/image'
 import Link from 'next/link'
 import { prisma } from '@/lib/db'
 
-export const revalidate = 60
-
 type TeamRef = {
   externalId: string
   name: string
@@ -40,9 +38,18 @@ const MAX_PLAYER_AGE = 60
 
 export async function TournamentStatisticsPanel() {
   const [matches, events, teamStats, teams] = await Promise.all([
-    prisma.match.findMany({ where: { status: 'FINISHED' }, orderBy: { kickoff: 'asc' } }),
+    prisma.match.findMany({
+      where: { status: 'FINISHED' },
+      orderBy: { kickoff: 'asc' },
+      select: { homeTeam: true, awayTeam: true, homeScore: true, awayScore: true },
+    }),
     prisma.matchEvent.findMany({
-      include: {
+      select: {
+        type: true,
+        minute: true,
+        teamName: true,
+        playerName: true,
+        relatedPlayerName: true,
         match: {
           select: {
             homeTeam: true,
@@ -54,8 +61,13 @@ export async function TournamentStatisticsPanel() {
       },
       orderBy: [{ minute: 'asc' }, { id: 'asc' }],
     }),
-    prisma.matchTeamStat.findMany(),
-    prisma.team.findMany({ orderBy: { name: 'asc' } }),
+    prisma.matchTeamStat.findMany({
+      select: { type: true, value: true },
+    }),
+    prisma.team.findMany({
+      orderBy: { name: 'asc' },
+      select: { externalId: true, name: true, crest: true, squadJson: true },
+    }),
   ])
 
   const teamsByName = new Map(teams.map((team) => [team.name, team]))
@@ -300,8 +312,8 @@ function getAgeExtreme(teams: TeamWithSquad[], mode: 'youngest' | 'oldest') {
     teamName: team.name,
   }))).filter((person) => isPlausiblePlayerBirthdate(person.dateOfBirth))
   return players.sort((a, b) => mode === 'youngest'
-    ? b.dateOfBirth.localeCompare(a.dateOfBirth)
-    : a.dateOfBirth.localeCompare(b.dateOfBirth)
+    ? new Date(b.dateOfBirth).getTime() - new Date(a.dateOfBirth).getTime()
+    : new Date(a.dateOfBirth).getTime() - new Date(b.dateOfBirth).getTime()
   )[0] ?? null
 }
 

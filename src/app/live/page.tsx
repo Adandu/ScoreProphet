@@ -6,7 +6,12 @@ import { LivePageRefresh } from '@/components/live-page-refresh'
 export const revalidate = 5
 
 export default async function LivePage() {
-  const liveMatch = await fetchLiveMatch()
+  let liveMatch
+  try {
+    liveMatch = await fetchLiveMatch()
+  } catch {
+    liveMatch = null
+  }
 
   if (!liveMatch) {
     return (
@@ -45,7 +50,7 @@ export default async function LivePage() {
 
   return (
     <div className="space-y-4">
-      <LivePageRefresh />
+      <LivePageRefresh isLive={details.status === 'IN_PLAY'} />
 
       {/* Score header */}
       <div className="flex items-center justify-between rounded-xl border border-white/10 bg-[#0a1628] px-8 py-5">

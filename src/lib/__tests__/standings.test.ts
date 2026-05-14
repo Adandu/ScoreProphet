@@ -36,6 +36,19 @@ describe('computeGroupStandings', () => {
     expect(result.GROUP_A[3]).toMatchObject({ team: 'Japan', w: 0, d: 1, l: 2, gf: 0, ga: 3, gd: -3, pts: 1, advancing: false })
   })
 
+  it('ignores null-group matches and still computes valid group matches correctly', () => {
+    const result = computeGroupStandings([
+      finishedMatch('GROUP_A', 'Brazil', 'France', 2, 1),
+      { group: null, status: 'FINISHED', homeTeam: 'Brazil', awayTeam: 'France', homeScore: 5, awayScore: 5 },
+      { group: null, status: 'SCHEDULED', homeTeam: 'Germany', awayTeam: 'Japan', homeScore: null, awayScore: null },
+    ])
+
+    expect(Object.keys(result)).toEqual(['GROUP_A'])
+    expect(result.GROUP_A).toHaveLength(2)
+    expect(result.GROUP_A.find((r) => r.team === 'Brazil')).toMatchObject({ w: 1, l: 0, pts: 3 })
+    expect(result.GROUP_A.find((r) => r.team === 'France')).toMatchObject({ w: 0, l: 1, pts: 0 })
+  })
+
   it('does not mark advancing rows before a group is complete', () => {
     const result = computeGroupStandings([
       finishedMatch('GROUP_A', 'Brazil', 'France', 2, 1),

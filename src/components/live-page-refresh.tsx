@@ -3,13 +3,18 @@
 import { useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 
-export function LivePageRefresh() {
+interface Props {
+  isLive: boolean
+}
+
+export function LivePageRefresh({ isLive }: Props) {
   const router = useRouter()
 
   useEffect(() => {
+    if (!isLive) return
     const interval = setInterval(() => router.refresh(), 5_000)
     return () => clearInterval(interval)
-  }, [router])
+  }, [isLive, router])
 
   return null
 }

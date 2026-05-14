@@ -1,5 +1,5 @@
 'use server'
-import crypto from 'crypto'
+import crypto, { timingSafeEqual } from 'crypto'
 import { redirect } from 'next/navigation'
 import { revalidatePath } from 'next/cache'
 import { prisma } from '@/lib/db'
@@ -16,10 +16,15 @@ export async function register(prevState: unknown, formData: FormData) {
   if (!password || password.length < 6) return { error: 'Password must be at least 6 characters' }
   const existing = await prisma.user.findUnique({ where: { username } })
   if (existing) return { error: 'Username already taken' }
+  const adminPassword = process.env.ADMIN_PASSWORD
   const isConfiguredAdmin =
     username === process.env.ADMIN_USERNAME &&
-    !!process.env.ADMIN_PASSWORD &&
-    password === process.env.ADMIN_PASSWORD
+    !!adminPassword &&
+    (() => {
+      const a = Buffer.from(password)
+      const b = Buffer.from(adminPassword)
+      return a.length === b.length && timingSafeEqual(a, b)
+    })()
   const passwordHash = await hashPassword(password)
   const user = await prisma.user.create({ data: { username, passwordHash, isAdmin: isConfiguredAdmin } })
   const session = await getSession()
@@ -68,7 +73,7 @@ function isValidTimezone(tz: string): boolean {
 function normalizeEmail(email: string): string | null {
   const trimmed = email.trim().toLowerCase()
   if (!trimmed) return null
-  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmed) ? trimmed : ''
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmed) ? trimmed : null
 }
 
 function hashToken(token: string): string {
@@ -93,7 +98,7 @@ export async function updateProfile(prevState: unknown, formData: FormData) {
   const predictionReminderEnabled = formData.get('predictionReminderEnabled') === 'true'
 
   if (!username || username.length < 2 || username.length > 30) return { error: 'Username must be 2-30 characters' }
-  if (emailValue === '') return { error: 'Enter a valid email address' }
+  if (emailValue === null) return { error: 'Enter a valid email address' }
   if (predictionReminderEnabled && !emailValue) return { error: 'Add an email address before enabling prediction reminders' }
   if (!timezone || !isValidTimezone(timezone)) return { error: 'Choose a valid timezone' }
   if (theme !== 'DARK' && theme !== 'LIGHT') return { error: 'Choose a valid theme' }
@@ -162,7 +167,7 @@ export async function deleteAccount(prevState: unknown, formData: FormData) {
 
 export async function requestPasswordReset(prevState: unknown, formData: FormData) {
   const email = normalizeEmail((formData.get('email') as string) ?? '')
-  if (email === '') return { error: 'Enter a valid email address' }
+  if (email === null) return { error: 'Enter a valid email address' }
 
   if (email) {
     const user = await prisma.user.findUnique({ where: { email } })
@@ -177,7 +182,11 @@ export async function requestPasswordReset(prevState: unknown, formData: FormDat
       })
 
       const resetUrl = `${await getAppUrl()}/reset-password?token=${encodeURIComponent(token)}`
-      await sendPasswordResetEmail(user.email!, resetUrl)
+      try {
+        await sendPasswordResetEmail(user.email!, resetUrl)
+      } catch {
+        return { error: 'Failed to send email. Please try again.' }
+      }
     }
   }
 

@@ -98,7 +98,7 @@ export function PredictionForm({
 
   return (
     <div className="mt-3 space-y-3 text-center">
-      {state?.error && <p className="text-xs text-red-400">{state.error}</p>}
+      {state?.error && <p className="text-xs text-red-400">Match result / double chance: {state.error}</p>}
 
       {/* Single Outcome */}
       {!hasDouble && (
@@ -212,7 +212,16 @@ function ExactScoreForm({
   }, [defaultAwayScore, defaultHomeScore, exactScoreValue])
 
   useEffect(() => {
-    if (state?.error) setIsEditing(true)
+    if (!state) return
+    if (state.error) {
+      setIsEditing(true)
+    } else if (state.success) {
+      setSavedScore({ home: activeHomeScore, away: activeAwayScore })
+      setIsEditing(false)
+    }
+  // activeHomeScore / activeAwayScore are derived synchronously from select state;
+  // capturing them here is safe because the effect only runs after the action resolves.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [state])
 
   const homeOptions = useMemo(
@@ -258,10 +267,6 @@ function ExactScoreForm({
     <form
       action={formAction}
       className="flex justify-center gap-2"
-      onSubmit={() => {
-        setSavedScore({ home: activeHomeScore, away: activeAwayScore })
-        setIsEditing(false)
-      }}
     >
       <input type="hidden" name="matchId" value={matchId} />
       <input type="hidden" name="championshipId" value={championshipId} />
