@@ -3,16 +3,43 @@ export interface FormationPosition {
   top: number   // percentage 0–100
 }
 
-const FALLBACK_PALETTE = [
-  '#8b5cf6', '#ec4899', '#f59e0b', '#14b8a6',
-  '#f97316', '#06b6d4', '#84cc16', '#a855f7',
-]
-
 export function getTeamColor(teamId: string, crestUrl = ''): string {
   const source = `${teamId}:${crestUrl}`
-  const hash = Array.from(source).reduce((acc, char) => ((acc << 5) - acc + char.charCodeAt(0)) | 0, 0)
-  const idx = Math.abs(hash) % FALLBACK_PALETTE.length
-  return FALLBACK_PALETTE[idx]
+  const hash = fnv1a(source)
+  const hue = hash % 360
+  const saturation = 62 + ((hash >>> 9) % 18)
+  const lightness = 42 + ((hash >>> 17) % 12)
+  return hslToHex(hue, saturation, lightness)
+}
+
+function fnv1a(value: string): number {
+  let hash = 0x811c9dc5
+  for (let i = 0; i < value.length; i++) {
+    hash ^= value.charCodeAt(i)
+    hash = Math.imul(hash, 0x01000193)
+  }
+  return hash >>> 0
+}
+
+function hslToHex(hue: number, saturation: number, lightness: number): string {
+  const s = saturation / 100
+  const l = lightness / 100
+  const c = (1 - Math.abs(2 * l - 1)) * s
+  const x = c * (1 - Math.abs(((hue / 60) % 2) - 1))
+  const m = l - c / 2
+  const [r, g, b] =
+    hue < 60 ? [c, x, 0] :
+    hue < 120 ? [x, c, 0] :
+    hue < 180 ? [0, c, x] :
+    hue < 240 ? [0, x, c] :
+    hue < 300 ? [x, 0, c] :
+    [c, 0, x]
+
+  return `#${toHex(r + m)}${toHex(g + m)}${toHex(b + m)}`
+}
+
+function toHex(value: number): string {
+  return Math.round(value * 255).toString(16).padStart(2, '0')
 }
 
 // Default formation used when formation string is missing or unparseable

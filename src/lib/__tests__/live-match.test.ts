@@ -49,4 +49,15 @@ describe('getTeamColor', () => {
   it('does not depend on hardcoded team names', () => {
     expect(getTeamColor('759', 'https://crests.football-data.org/759.svg')).toMatch(/^#[0-9a-f]{6}$/i)
   })
+
+  it('keeps nearby football-data team identifiers visually distinct', () => {
+    const colors = [
+      getTeamColor('799', 'https://crests.football-data.org/799.svg'),
+      getTeamColor('773', 'https://crests.football-data.org/773.svg'),
+      getTeamColor('764', 'https://crests.football-data.org/764.svg'),
+      getTeamColor('765', 'https://crests.football-data.org/765.svg'),
+    ]
+
+    expect(new Set(colors).size).toBe(colors.length)
+  })
 })
