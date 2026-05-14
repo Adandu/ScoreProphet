@@ -95,6 +95,8 @@ model Match {
   predictions                Prediction[]
   advances                   KnockoutAdvance[]
   predictionReminders        PredictionReminder[]
+  events                     MatchEvent[]
+  teamStats                  MatchTeamStat[]
 }
 
 model Team {
@@ -170,6 +172,34 @@ model PredictionReminder {
   @@index([matchId])
 }
 
+model MatchEvent {
+  id                Int            @id @default(autoincrement())
+  matchId           Int
+  type              MatchEventType
+  minute            Int
+  teamName          String
+  playerName        String         @default("")
+  relatedPlayerName String         @default("")
+  createdAt         DateTime       @default(now())
+  match             Match          @relation(fields: [matchId], references: [id], onDelete: Cascade)
+
+  @@unique([matchId, type, minute, teamName, playerName, relatedPlayerName])
+  @@index([type])
+  @@index([teamName])
+}
+
+model MatchTeamStat {
+  id       Int               @id @default(autoincrement())
+  matchId  Int
+  teamName String
+  type     MatchTeamStatType
+  value    Int
+  match    Match             @relation(fields: [matchId], references: [id], onDelete: Cascade)
+
+  @@unique([matchId, teamName, type])
+  @@index([type])
+}
+
 enum Stage {
   GROUP
   ROUND_OF_32
@@ -195,4 +225,18 @@ enum PredictionType {
 enum Theme {
   DARK
   LIGHT
+}
+
+enum MatchEventType {
+  GOAL
+  YELLOW_CARD
+  RED_CARD
+  YELLOW_RED_CARD
+  FOUL
+  CORNER
+}
+
+enum MatchTeamStatType {
+  FOULS
+  CORNERS
 }

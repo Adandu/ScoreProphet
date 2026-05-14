@@ -74,7 +74,9 @@ export interface LiveTeam {
 export interface LiveMatchEvent {
   minute: number
   teamId: string
+  teamName: string
   playerName: string
+  assistName?: string
 }
 
 export interface LiveMatchSubstitution {
@@ -101,6 +103,7 @@ export interface LiveMatchDetails {
   goals: LiveMatchEvent[]
   bookings: LiveMatchBooking[]
   substitutions: LiveMatchSubstitution[]
+  teamStats: Array<{ teamId: string; teamName: string; type: 'FOULS' | 'CORNERS'; value: number }>
   homePossession: number | null  // 0–100, null if not available
 }
 
@@ -318,6 +321,7 @@ export async function fetchLiveMatchDetails(matchId: string | number): Promise<L
 
   // Extract possession from statistics if present
   let homePossession: number | null = null
+  const teamStats: LiveMatchDetails['teamStats'] = []
   if (Array.isArray(m.statistics)) {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const homeStats = m.statistics.find((s: any) => String(s.team?.id) === homeId)
@@ -325,6 +329,16 @@ export async function fetchLiveMatchDetails(matchId: string | number): Promise<L
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const poss = homeStats.statistics?.find((s: any) => s.type === 'BALL_POSSESSION')
       if (poss?.value != null) homePossession = Number(poss.value)
+    }
+
+    for (const statGroup of m.statistics) {
+      const teamId = String(statGroup.team?.id ?? '')
+      const teamName = statGroup.team?.name ?? ''
+      for (const stat of statGroup.statistics ?? []) {
+        const type = normalizeTeamStatType(stat.type)
+        const value = Number(stat.value)
+        if (type && Number.isFinite(value)) teamStats.push({ teamId, teamName, type, value })
+      }
     }
   }
 
@@ -344,12 +358,15 @@ export async function fetchLiveMatchDetails(matchId: string | number): Promise<L
     goals: (m.goals ?? []).map((g: any): LiveMatchEvent => ({
       minute: g.minute ?? 0,
       teamId: String(g.team?.id ?? ''),
+      teamName: g.team?.name ?? '',
       playerName: g.scorer?.name ?? '',
+      assistName: g.assist?.name ?? undefined,
     })),
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     bookings: (m.bookings ?? []).map((b: any): LiveMatchBooking => ({
       minute: b.minute ?? 0,
       teamId: String(b.team?.id ?? ''),
+      teamName: b.team?.name ?? '',
       playerName: b.player?.name ?? '',
       card: b.card ?? 'YELLOW_CARD',
     })),
@@ -360,6 +377,14 @@ export async function fetchLiveMatchDetails(matchId: string | number): Promise<L
       playerOutName: s.playerOut?.name ?? '',
       playerInName: s.playerIn?.name ?? '',
     })),
+    teamStats,
     homePossession,
   }
+}
+
+function normalizeTeamStatType(value: string | undefined): 'FOULS' | 'CORNERS' | null {
+  const normalized = String(value ?? '').toUpperCase()
+  if (normalized.includes('FOUL')) return 'FOULS'
+  if (normalized.includes('CORNER')) return 'CORNERS'
+  return null
 }

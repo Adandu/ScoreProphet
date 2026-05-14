@@ -3,6 +3,7 @@ import { prisma } from '@/lib/db'
 import { GroupStageTab } from '@/components/group-stage-tab'
 import { KnockoutBracket } from '@/components/knockout-bracket'
 import { TournamentTabs } from '@/components/tournament-tabs'
+import Link from 'next/link'
 
 export const revalidate = 60
 
@@ -16,7 +17,12 @@ export default async function TournamentPage() {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-bold text-white">Tournament</h1>
+      <div className="flex flex-wrap items-end justify-between gap-3">
+        <h1 className="text-2xl font-bold text-white">Tournament</h1>
+        <Link href="/tournament/statistics" className="rounded-md border border-white/15 px-3 py-2 text-sm text-white/70 hover:bg-white/10 hover:text-white">
+          Statistics
+        </Link>
+      </div>
       <TournamentTabs
         groups={
           <GroupStageTab
