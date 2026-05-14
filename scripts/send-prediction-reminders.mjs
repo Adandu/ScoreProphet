@@ -40,20 +40,6 @@ function escapeHtml(value) {
     .replace(/"/g, '&quot;')
 }
 
-function teamInitials(name) {
-  return name.split(/\s+/).map(w => w[0] ?? '').join('').slice(0, 3).toUpperCase()
-}
-
-function crestCell(url, teamName) {
-  const initials = escapeHtml(teamInitials(teamName))
-  const fallback = `<table cellpadding="0" cellspacing="0" border="0" style="margin:0 auto 10px;"><tr>
-    <td width="56" height="56" align="center" valign="middle" style="background:rgba(255,255,255,0.08);border-radius:8px;font-size:16px;font-weight:700;color:rgba(255,255,255,0.55);letter-spacing:0.04em;">${initials}</td>
-  </tr></table>`
-  // SVG is not supported in <img> tags by most email clients — use initials instead
-  if (!url || !url.startsWith('http') || url.toLowerCase().endsWith('.svg')) return fallback
-  return `<img src="${escapeHtml(url)}" width="56" height="56" alt="${escapeHtml(teamName)}" style="display:block;margin:0 auto 10px;max-width:56px;height:56px;object-fit:contain;">`
-}
-
 function buildReminderHtml(match, predictionsUrl) {
   return `<!DOCTYPE html>
 <html lang="en">
@@ -88,16 +74,14 @@ function buildReminderHtml(match, predictionsUrl) {
 
             <table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-bottom:8px;">
               <tr>
-                <td width="44%" align="center" style="vertical-align:middle;padding:8px 0;">
-                  ${crestCell(match.homeTeamCrest, match.homeTeam)}
-                  <p style="margin:0;font-size:15px;font-weight:700;color:#ffffff;text-align:center;">${escapeHtml(match.homeTeam)}</p>
+                <td width="44%" align="center" style="vertical-align:middle;padding:12px 0;">
+                  <p style="margin:0;font-size:16px;font-weight:700;color:#ffffff;text-align:center;">${escapeHtml(match.homeTeam)}</p>
                 </td>
                 <td width="12%" align="center" style="vertical-align:middle;">
                   <span style="font-size:10px;font-weight:700;color:rgba(255,255,255,0.25);letter-spacing:0.15em;text-transform:uppercase;">vs</span>
                 </td>
-                <td width="44%" align="center" style="vertical-align:middle;padding:8px 0;">
-                  ${crestCell(match.awayTeamCrest, match.awayTeam)}
-                  <p style="margin:0;font-size:15px;font-weight:700;color:#ffffff;text-align:center;">${escapeHtml(match.awayTeam)}</p>
+                <td width="44%" align="center" style="vertical-align:middle;padding:12px 0;">
+                  <p style="margin:0;font-size:16px;font-weight:700;color:#ffffff;text-align:center;">${escapeHtml(match.awayTeam)}</p>
                 </td>
               </tr>
             </table>
@@ -248,8 +232,6 @@ async function main() {
           {
             homeTeam: match.homeTeam,
             awayTeam: match.awayTeam,
-            homeTeamCrest: match.homeTeamCrest || undefined,
-            awayTeamCrest: match.awayTeamCrest || undefined,
             kickoffLabel: formatMatchTime(match.kickoff, member.user.timezone),
             stageLabel: STAGE_LABELS[match.stage] ?? match.stage,
             championshipName: championship.name,
