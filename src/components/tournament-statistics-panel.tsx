@@ -37,9 +37,6 @@ type SquadPerson = {
 
 const MIN_PLAYER_AGE = 15
 const MAX_PLAYER_AGE = 60
-const PLAYER_BIRTHDATE_OVERRIDES: Record<string, string> = {
-  'Lewis Hall': '2004-09-08',
-}
 
 export async function TournamentStatisticsPanel() {
   const [matches, events, teamStats, teams] = await Promise.all([
@@ -299,18 +296,13 @@ function countCleanSheets(matches: Array<{ homeScore: number | null; awayScore: 
 function getAgeExtreme(teams: TeamWithSquad[], mode: 'youngest' | 'oldest') {
   const players = teams.flatMap((team) => parseJson<SquadPerson[]>(team.squadJson, []).map((person) => ({
     name: person.name ?? ([person.firstName, person.lastName].filter(Boolean).join(' ') || 'Unknown'),
-    dateOfBirth: getPlayerBirthdate(person),
+    dateOfBirth: person.dateOfBirth ?? '',
     teamName: team.name,
   }))).filter((person) => isPlausiblePlayerBirthdate(person.dateOfBirth))
   return players.sort((a, b) => mode === 'youngest'
     ? b.dateOfBirth.localeCompare(a.dateOfBirth)
     : a.dateOfBirth.localeCompare(b.dateOfBirth)
   )[0] ?? null
-}
-
-function getPlayerBirthdate(person: SquadPerson): string {
-  const name = person.name ?? [person.firstName, person.lastName].filter(Boolean).join(' ')
-  return PLAYER_BIRTHDATE_OVERRIDES[name] ?? person.dateOfBirth ?? ''
 }
 
 function isPlausiblePlayerBirthdate(value: string): boolean {
