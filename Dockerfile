@@ -12,6 +12,7 @@ COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 ENV NEXT_TELEMETRY_DISABLED=1
 ENV DATABASE_URL="file:/tmp/build.db"
+ENV SESSION_SECRET="build-time-placeholder-not-used-in-production"
 RUN npx prisma generate
 RUN npm run build
 
