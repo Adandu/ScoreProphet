@@ -1,6 +1,7 @@
 import nodemailer from 'nodemailer'
 import { PrismaClient } from '@prisma/client'
 import { PrismaBetterSqlite3 } from '@prisma/adapter-better-sqlite3'
+import { Resvg } from '@resvg/resvg-js'
 
 const REMINDER_LEAD_MS = 12 * 60 * 60 * 1000
 const FALLBACK_TZ = 'Europe/Bucharest'
@@ -32,6 +33,36 @@ function createTransporter() {
   return nodemailer.createTransport({ host, port, secure: port === 465, auth: { user, pass } })
 }
 
+const crestCache = new Map()
+
+async function crestToDataUri(url) {
+  if (!url || !url.startsWith('http')) return null
+  if (crestCache.has(url)) return crestCache.get(url)
+  try {
+    const res = await fetch(url, { signal: AbortSignal.timeout(5000) })
+    if (!res.ok) return null
+    const contentType = res.headers.get('content-type') ?? ''
+    if (contentType.includes('svg') || url.toLowerCase().endsWith('.svg')) {
+      const svg = await res.text()
+      const resvg = new Resvg(svg, { fitTo: { mode: 'width', value: 56 } })
+      const png = resvg.render().asPng()
+      const uri = `data:image/png;base64,${Buffer.from(png).toString('base64')}`
+      crestCache.set(url, uri)
+      return uri
+    }
+    if (contentType.includes('png') || contentType.includes('jpeg')) {
+      const buf = Buffer.from(await res.arrayBuffer())
+      const mime = contentType.includes('jpeg') ? 'image/jpeg' : 'image/png'
+      const uri = `data:${mime};base64,${buf.toString('base64')}`
+      crestCache.set(url, uri)
+      return uri
+    }
+  } catch {
+    // network or conversion failure — fall through to no image
+  }
+  return null
+}
+
 function escapeHtml(value) {
   return value
     .replace(/&/g, '&amp;')
@@ -40,7 +71,12 @@ function escapeHtml(value) {
     .replace(/"/g, '&quot;')
 }
 
-function buildReminderHtml(match, predictionsUrl) {
+function crestImg(dataUri, teamName) {
+  if (!dataUri) return ''
+  return `<img src="${dataUri}" width="48" height="48" alt="${escapeHtml(teamName)}" style="display:block;margin:0 auto 10px;max-width:48px;height:48px;object-fit:contain;">`
+}
+
+function buildReminderHtml(match, predictionsUrl, homeCrest, awayCrest) {
   return `<!DOCTYPE html>
 <html lang="en">
 <head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><title>ScoreProphet Reminder</title></head>
@@ -75,12 +111,14 @@ function buildReminderHtml(match, predictionsUrl) {
             <table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-bottom:8px;">
               <tr>
                 <td width="44%" align="center" style="vertical-align:middle;padding:12px 0;">
+                  ${crestImg(homeCrest, match.homeTeam)}
                   <p style="margin:0;font-size:16px;font-weight:700;color:#ffffff;text-align:center;">${escapeHtml(match.homeTeam)}</p>
                 </td>
                 <td width="12%" align="center" style="vertical-align:middle;">
                   <span style="font-size:10px;font-weight:700;color:rgba(255,255,255,0.25);letter-spacing:0.15em;text-transform:uppercase;">vs</span>
                 </td>
                 <td width="44%" align="center" style="vertical-align:middle;padding:12px 0;">
+                  ${crestImg(awayCrest, match.awayTeam)}
                   <p style="margin:0;font-size:16px;font-weight:700;color:#ffffff;text-align:center;">${escapeHtml(match.awayTeam)}</p>
                 </td>
               </tr>
@@ -163,11 +201,15 @@ async function sendReminderEmail(transporter, to, match, predictionsUrl) {
     '',
     `Set your predictions here: ${predictionsUrl}`,
   ].join('\n')
+  const [homeCrest, awayCrest] = await Promise.all([
+    crestToDataUri(match.homeTeamCrest),
+    crestToDataUri(match.awayTeamCrest),
+  ])
   await transporter.sendMail({
     from, to,
     subject: `ScoreProphet reminder: set your prediction for ${teams}`,
     text,
-    html: buildReminderHtml(match, predictionsUrl),
+    html: buildReminderHtml(match, predictionsUrl, homeCrest, awayCrest),
   })
 }
 
@@ -232,6 +274,8 @@ async function main() {
           {
             homeTeam: match.homeTeam,
             awayTeam: match.awayTeam,
+            homeTeamCrest: match.homeTeamCrest || undefined,
+            awayTeamCrest: match.awayTeamCrest || undefined,
             kickoffLabel: formatMatchTime(match.kickoff, member.user.timezone),
             stageLabel: STAGE_LABELS[match.stage] ?? match.stage,
             championshipName: championship.name,

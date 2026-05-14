@@ -85,6 +85,8 @@ export async function sendDuePredictionReminders(appUrl: string, now = new Date(
           {
             homeTeam: match.homeTeam,
             awayTeam: match.awayTeam,
+            homeTeamCrest: match.homeTeamCrest || undefined,
+            awayTeamCrest: match.awayTeamCrest || undefined,
             kickoffLabel: formatMatchTime(match.kickoff, member.user.timezone),
             stageLabel: stageLabel(match.stage),
             championshipName: member.championship.name,

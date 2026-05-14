@@ -1,11 +1,44 @@
 import nodemailer from 'nodemailer'
+import { Resvg } from '@resvg/resvg-js'
 
 export interface PredictionReminderEmailMatch {
   homeTeam: string
   awayTeam: string
+  homeTeamCrest?: string
+  awayTeamCrest?: string
   kickoffLabel: string
   stageLabel: string
   championshipName: string
+}
+
+const crestCache = new Map<string, string>()
+
+async function crestToDataUri(url: string | undefined): Promise<string | null> {
+  if (!url || !url.startsWith('http')) return null
+  if (crestCache.has(url)) return crestCache.get(url)!
+  try {
+    const res = await fetch(url, { signal: AbortSignal.timeout(5000) })
+    if (!res.ok) return null
+    const contentType = res.headers.get('content-type') ?? ''
+    if (contentType.includes('svg') || url.toLowerCase().endsWith('.svg')) {
+      const svg = await res.text()
+      const resvg = new Resvg(svg, { fitTo: { mode: 'width', value: 56 } })
+      const png = resvg.render().asPng()
+      const uri = `data:image/png;base64,${Buffer.from(png).toString('base64')}`
+      crestCache.set(url, uri)
+      return uri
+    }
+    if (contentType.includes('png') || contentType.includes('jpeg')) {
+      const buf = Buffer.from(await res.arrayBuffer())
+      const mime = contentType.includes('jpeg') ? 'image/jpeg' : 'image/png'
+      const uri = `data:${mime};base64,${buf.toString('base64')}`
+      crestCache.set(url, uri)
+      return uri
+    }
+  } catch {
+    // network or conversion failure — fall through to no image
+  }
+  return null
 }
 
 function getRequiredEnv(name: string): string {
@@ -56,7 +89,12 @@ export async function sendPasswordResetEmail(to: string, resetUrl: string) {
   })
 }
 
-function buildReminderHtml(match: PredictionReminderEmailMatch, predictionsUrl: string): string {
+function crestImg(dataUri: string | null, teamName: string): string {
+  if (!dataUri) return ''
+  return `<img src="${dataUri}" width="48" height="48" alt="${escapeHtml(teamName)}" style="display:block;margin:0 auto 10px;max-width:48px;height:48px;object-fit:contain;">`
+}
+
+function buildReminderHtml(match: PredictionReminderEmailMatch, predictionsUrl: string, homeCrest: string | null, awayCrest: string | null): string {
   return `<!DOCTYPE html>
 <html lang="en">
 <head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1.0"><title>ScoreProphet Reminder</title></head>
@@ -91,12 +129,14 @@ function buildReminderHtml(match: PredictionReminderEmailMatch, predictionsUrl: 
             <table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-bottom:8px;">
               <tr>
                 <td width="44%" align="center" style="vertical-align:middle;padding:12px 0;">
+                  ${crestImg(homeCrest, match.homeTeam)}
                   <p style="margin:0;font-size:16px;font-weight:700;color:#ffffff;text-align:center;">${escapeHtml(match.homeTeam)}</p>
                 </td>
                 <td width="12%" align="center" style="vertical-align:middle;">
                   <span style="font-size:10px;font-weight:700;color:rgba(255,255,255,0.25);letter-spacing:0.15em;text-transform:uppercase;">vs</span>
                 </td>
                 <td width="44%" align="center" style="vertical-align:middle;padding:12px 0;">
+                  ${crestImg(awayCrest, match.awayTeam)}
                   <p style="margin:0;font-size:16px;font-weight:700;color:#ffffff;text-align:center;">${escapeHtml(match.awayTeam)}</p>
                 </td>
               </tr>
@@ -164,11 +204,16 @@ export async function sendPredictionReminderEmail(to: string, match: PredictionR
     `Set your predictions here: ${predictionsUrl}`,
   ].join('\n')
 
+  const [homeCrest, awayCrest] = await Promise.all([
+    crestToDataUri(match.homeTeamCrest),
+    crestToDataUri(match.awayTeamCrest),
+  ])
+
   await transporter.sendMail({
     from: getFromAddress(),
     to,
     subject,
     text,
-    html: buildReminderHtml(match, predictionsUrl),
+    html: buildReminderHtml(match, predictionsUrl, homeCrest, awayCrest),
   })
 }

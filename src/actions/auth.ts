@@ -249,6 +249,8 @@ export async function sendTestReminderEmail(): Promise<{ error?: string; success
       {
         homeTeam: match?.homeTeam ?? 'Home Team',
         awayTeam: match?.awayTeam ?? 'Away Team',
+        homeTeamCrest: match?.homeTeamCrest || undefined,
+        awayTeamCrest: match?.awayTeamCrest || undefined,
         kickoffLabel: match ? formatMatchTime(match.kickoff, user.timezone) : 'Thu, 12 Jun · 20:00',
         stageLabel: match ? stageLabel(match.stage) : 'Group Stage',
         championshipName: membership?.championship.name ?? 'My Championship',
