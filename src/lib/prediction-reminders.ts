@@ -1,7 +1,7 @@
 import { prisma } from '@/lib/db'
 import { formatMatchTime } from '@/lib/format-date'
 import { sendPredictionReminderEmail } from '@/lib/email'
-import { arePredictionsConfigured, predictionReminderWindow, STAGE_LABELS } from '@/lib/prediction-reminder-rules'
+import { arePredictionsConfigured, predictionReminderWindow, stageLabel } from '@/lib/prediction-reminder-rules'
 
 export async function sendDuePredictionReminders(appUrl: string, now = new Date()) {
   const normalizedAppUrl = appUrl.replace(/\/$/, '')
@@ -85,8 +85,10 @@ export async function sendDuePredictionReminders(appUrl: string, now = new Date(
           {
             homeTeam: match.homeTeam,
             awayTeam: match.awayTeam,
+            homeTeamCrest: match.homeTeamCrest || undefined,
+            awayTeamCrest: match.awayTeamCrest || undefined,
             kickoffLabel: formatMatchTime(match.kickoff, member.user.timezone),
-            stageLabel: STAGE_LABELS[match.stage],
+            stageLabel: stageLabel(match.stage),
             championshipName: member.championship.name,
           },
           predictionsUrl
