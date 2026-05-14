@@ -90,9 +90,11 @@ export async function updateProfile(prevState: unknown, formData: FormData) {
   const emailValue = normalizeEmail((formData.get('email') as string) ?? '')
   const timezone = (formData.get('timezone') as string)?.trim()
   const theme = (formData.get('theme') as string)?.trim()
+  const predictionReminderEnabled = formData.get('predictionReminderEnabled') === 'true'
 
   if (!username || username.length < 2 || username.length > 30) return { error: 'Username must be 2-30 characters' }
   if (emailValue === '') return { error: 'Enter a valid email address' }
+  if (predictionReminderEnabled && !emailValue) return { error: 'Add an email address before enabling prediction reminders' }
   if (!timezone || !isValidTimezone(timezone)) return { error: 'Choose a valid timezone' }
   if (theme !== 'DARK' && theme !== 'LIGHT') return { error: 'Choose a valid theme' }
 
@@ -105,7 +107,7 @@ export async function updateProfile(prevState: unknown, formData: FormData) {
 
   const user = await prisma.user.update({
     where: { id: session.userId! },
-    data: { username, email: emailValue, timezone, theme },
+    data: { username, email: emailValue, timezone, theme, predictionReminderEnabled },
   })
 
   session.username = user.username

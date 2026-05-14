@@ -14,13 +14,15 @@ model User {
   isAdmin      Boolean           @default(false)
   timezone     String            @default("Europe/Bucharest")
   theme        Theme             @default(DARK)
+  predictionReminderEnabled Boolean               @default(false)
   createdAt    DateTime          @default(now())
   predictions  Prediction[]
   advances     KnockoutAdvance[]
-  championships ChampionshipMember[]
-  managedChampionships ChampionshipManager[]
-  generatedInvites ChampionshipInvite[]
-  passwordResetTokens PasswordResetToken[]
+  championships             ChampionshipMember[]
+  managedChampionships      ChampionshipManager[]
+  generatedInvites          ChampionshipInvite[]
+  passwordResetTokens       PasswordResetToken[]
+  predictionReminders       PredictionReminder[]
 }
 
 model Championship {
@@ -34,6 +36,7 @@ model Championship {
   members             ChampionshipMember[]
   managers            ChampionshipManager[]
   invites             ChampionshipInvite[]
+  predictionReminders PredictionReminder[]
 }
 
 model ChampionshipMember {
@@ -91,6 +94,7 @@ model Match {
   headToHeadSyncedAt         DateTime?
   predictions                Prediction[]
   advances                   KnockoutAdvance[]
+  predictionReminders        PredictionReminder[]
 }
 
 model Team {
@@ -150,6 +154,20 @@ model PasswordResetToken {
   usedAt    DateTime?
   createdAt DateTime  @default(now())
   user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model PredictionReminder {
+  id             Int          @id @default(autoincrement())
+  userId         Int
+  matchId        Int
+  championshipId Int
+  sentAt         DateTime     @default(now())
+  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  match          Match        @relation(fields: [matchId], references: [id], onDelete: Cascade)
+  championship   Championship @relation(fields: [championshipId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, matchId, championshipId])
+  @@index([matchId])
 }
 
 enum Stage {

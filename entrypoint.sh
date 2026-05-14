@@ -15,5 +15,13 @@ echo "[startup] Starting head-to-head sync loop..."
   done
 ) &
 
+echo "[startup] Starting prediction reminder loop..."
+(
+  while true; do
+    node scripts/send-prediction-reminders.mjs || echo "[prediction-reminders] Reminder check skipped"
+    sleep 900
+  done
+) &
+
 echo "[startup] Starting Next.js server..."
 exec node server.js

@@ -1,6 +1,6 @@
 'use client'
 
-import { useActionState } from 'react'
+import { useActionState, useState } from 'react'
 import { updateProfile, changePassword, deleteAccount } from '@/actions/auth'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -12,12 +12,16 @@ interface ProfileUser {
   timezone: string
   theme: 'DARK' | 'LIGHT'
   isAdmin: boolean
+  predictionReminderEnabled: boolean
 }
 
 export function ProfileClient({ user }: { user: ProfileUser }) {
   const [profileState, profileAction, profilePending] = useActionState(updateProfile, null)
   const [passwordState, passwordAction, passwordPending] = useActionState(changePassword, null)
   const [deleteState, deleteAction, deletePending] = useActionState(deleteAccount, null)
+  const [email, setEmail] = useState(user.email)
+  const [predictionReminderEnabled, setPredictionReminderEnabled] = useState(user.predictionReminderEnabled)
+  const [notificationWarning, setNotificationWarning] = useState('')
 
   return (
     <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_minmax(320px,420px)]">
@@ -31,7 +35,18 @@ export function ProfileClient({ user }: { user: ProfileUser }) {
 
           <label className="grid gap-1 text-sm text-white/70">
             Email
-            <Input name="email" type="email" defaultValue={user.email} autoComplete="email" placeholder="you@example.com" className="bg-white/10 text-white border-white/20" />
+            <Input
+              name="email"
+              type="email"
+              value={email}
+              onChange={(event) => {
+                setEmail(event.target.value)
+                if (event.target.value.trim()) setNotificationWarning('')
+              }}
+              autoComplete="email"
+              placeholder="you@example.com"
+              className="bg-white/10 text-white border-white/20"
+            />
           </label>
 
           <label className="grid gap-1 text-sm text-white/70">
@@ -55,6 +70,32 @@ export function ProfileClient({ user }: { user: ProfileUser }) {
                 Light
               </label>
             </div>
+          </fieldset>
+
+          <fieldset className="grid gap-2">
+            <legend className="text-sm text-white/70">Notifications</legend>
+            <label className="flex items-start gap-3 rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-white/75">
+              <input
+                type="checkbox"
+                name="predictionReminderEnabled"
+                value="true"
+                checked={predictionReminderEnabled}
+                onChange={(event) => {
+                  if (event.target.checked && !email.trim()) {
+                    setPredictionReminderEnabled(false)
+                    setNotificationWarning('Add an email address before enabling prediction reminders.')
+                    return
+                  }
+                  setPredictionReminderEnabled(event.target.checked)
+                  setNotificationWarning('')
+                }}
+                className="mt-0.5"
+              />
+              <span>
+                Email me 12 hours before kickoff when my predictions are not set.
+              </span>
+            </label>
+            {notificationWarning && <p className="text-sm text-orange-300">{notificationWarning}</p>}
           </fieldset>
 
           <div>

@@ -1,7 +1,7 @@
 'use client'
 
 import { useActionState, type FormEvent } from 'react'
-import { overrideMatchScore, recalculateAllPoints, removeUser, syncMatchesFromApi } from '@/actions/admin'
+import { overrideMatchScore, recalculateAllPoints, removeUser, sendTestPredictionReminder, syncMatchesFromApi } from '@/actions/admin'
 import { createChampionship, deleteChampionship, setChampionshipManagers, setChampionshipMembers, updateChampionship } from '@/actions/championships'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -60,6 +60,7 @@ export function AdminClient({
 }) {
   const [syncState, syncAction, syncPending] = useActionState(syncMatchesFromApi, null)
   const [recalcState, recalcAction, recalcPending] = useActionState(recalculateAllPoints, null)
+  const [testReminderState, testReminderAction, testReminderPending] = useActionState(sendTestPredictionReminder, null)
   const [createState, createAction, createPending] = useActionState(createChampionship, null)
 
   return (
@@ -81,6 +82,31 @@ export function AdminClient({
         {syncState?.error && <p className="text-sm text-red-400 self-center">{syncState.error}</p>}
         {syncState?.success && <p className="text-sm text-green-400 self-center">Synced {(syncState as { synced: number }).synced} matches</p>}
         {recalcState?.success && <p className="text-sm text-green-400 self-center">Recalculated {(recalcState as { count: number }).count} matches</p>}
+      </section>
+
+      <section className="rounded-xl border border-white/10 bg-white/5 p-4">
+        <h2 className="text-lg font-semibold text-[#C9A84C]">Test Prediction Notification</h2>
+        <form action={testReminderAction} className="mt-3 flex flex-wrap items-end gap-3">
+          <div className="min-w-64 flex-1">
+            <label className="mb-1 block text-xs text-white/40" htmlFor="test-notification-email">Email</label>
+            <Input
+              id="test-notification-email"
+              name="email"
+              type="email"
+              placeholder="you@example.com"
+              className="bg-white/10 text-white border-white/20"
+            />
+          </div>
+          <Button type="submit" disabled={testReminderPending} className="bg-[#C9A84C] text-[#0A1628] hover:bg-[#C9A84C]/90 font-semibold">
+            {testReminderPending ? 'Sending…' : 'Send test notification'}
+          </Button>
+          {testReminderState?.error && <p className="text-sm text-red-400">{testReminderState.error}</p>}
+          {testReminderState?.success && (
+            <p className="text-sm text-green-400">
+              Sent test notification for {(testReminderState as { match: string }).match}.
+            </p>
+          )}
+        </form>
       </section>
 
       <section>

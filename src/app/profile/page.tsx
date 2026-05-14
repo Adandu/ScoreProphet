@@ -20,6 +20,7 @@ export default async function ProfilePage() {
           timezone: user.timezone,
           theme: user.theme,
           isAdmin: user.isAdmin,
+          predictionReminderEnabled: user.predictionReminderEnabled,
         }}
       />
     </div>

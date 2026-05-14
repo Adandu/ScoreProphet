@@ -1,0 +1,96 @@
+import { prisma } from '@/lib/db'
+import { formatMatchTime } from '@/lib/format-date'
+import { sendPredictionReminderEmail } from '@/lib/email'
+import { arePredictionsConfigured, predictionReminderWindow, STAGE_LABELS } from '@/lib/prediction-reminder-rules'
+
+export async function sendDuePredictionReminders(appUrl: string, now = new Date()) {
+  const normalizedAppUrl = appUrl.replace(/\/$/, '')
+  const matches = await prisma.match.findMany({
+    where: {
+      status: 'SCHEDULED',
+      kickoff: predictionReminderWindow(now),
+    },
+    orderBy: { kickoff: 'asc' },
+  })
+
+  let sent = 0
+
+  for (const match of matches) {
+    const members = await prisma.championshipMember.findMany({
+      where: {
+        championship: { isActive: true },
+        user: {
+          predictionReminderEnabled: true,
+          email: { not: null },
+        },
+      },
+      include: {
+        championship: true,
+        user: true,
+      },
+    })
+
+    for (const member of members) {
+      if (!member.user.email) continue
+
+      const existingReminder = await prisma.predictionReminder.findUnique({
+        where: {
+          userId_matchId_championshipId: {
+            userId: member.userId,
+            matchId: match.id,
+            championshipId: member.championshipId,
+          },
+        },
+      })
+      if (existingReminder) continue
+
+      const [predictions, advance] = await Promise.all([
+        prisma.prediction.findMany({
+          where: {
+            userId: member.userId,
+            matchId: match.id,
+            championshipId: member.championshipId,
+          },
+          select: { type: true },
+        }),
+        prisma.knockoutAdvance.findUnique({
+          where: {
+            userId_matchId_championshipId: {
+              userId: member.userId,
+              matchId: match.id,
+              championshipId: member.championshipId,
+            },
+          },
+        }),
+      ])
+
+      if (arePredictionsConfigured(match, predictions, Boolean(advance), member.championship.doubleChanceEnabled)) {
+        continue
+      }
+
+      const predictionsUrl = `${normalizedAppUrl}/championships/${member.championshipId}/predictions`
+      await sendPredictionReminderEmail(
+        member.user.email,
+        {
+          homeTeam: match.homeTeam,
+          awayTeam: match.awayTeam,
+          kickoffLabel: formatMatchTime(match.kickoff, member.user.timezone),
+          stageLabel: STAGE_LABELS[match.stage],
+          championshipName: member.championship.name,
+        },
+        predictionsUrl
+      )
+
+      await prisma.predictionReminder.create({
+        data: {
+          userId: member.userId,
+          matchId: match.id,
+          championshipId: member.championshipId,
+        },
+      })
+      sent++
+    }
+  }
+
+  return { matchesChecked: matches.length, sent }
+}

@@ -5,6 +5,16 @@ import { prisma } from '@/lib/db'
 import { requireAdmin } from '@/lib/auth'
 import { calculatePredictionPoints, calculateAdvancePoints } from '@/lib/scoring'
 import type { PredictionType } from '@/lib/scoring'
+import { sendPredictionReminderEmail } from '@/lib/email'
+import { formatMatchTime } from '@/lib/format-date'
+import { getAppUrl } from '@/lib/app-url'
+import { STAGE_LABELS } from '@/lib/prediction-reminder-rules'
+
+function normalizeEmail(email: string): string | null {
+  const trimmed = email.trim().toLowerCase()
+  if (!trimmed) return null
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmed) ? trimmed : ''
+}
 
 export async function overrideMatchScore(prevState: unknown, formData: FormData) {
   await requireAdmin()
@@ -78,6 +88,43 @@ export async function removeUser(prevState: unknown, formData: FormData) {
   await prisma.user.delete({ where: { id: userId } })
   revalidatePath('/admin')
   return { success: true }
+}
+
+export async function sendTestPredictionReminder(prevState: unknown, formData: FormData) {
+  const session = await requireAdmin()
+  const email = normalizeEmail((formData.get('email') as string) ?? '')
+
+  if (!email) return { error: 'Enter a valid email address' }
+
+  const match = await prisma.match.findFirst({
+    where: {
+      status: 'SCHEDULED',
+      kickoff: { gt: new Date() },
+    },
+    orderBy: { kickoff: 'asc' },
+  })
+  if (!match) return { error: 'No upcoming scheduled match found' }
+
+  const championship = await prisma.championship.findFirst({
+    where: { isActive: true },
+    orderBy: { name: 'asc' },
+  })
+  if (!championship) return { error: 'No active championship found' }
+
+  const appUrl = await getAppUrl()
+  await sendPredictionReminderEmail(
+    email,
+    {
+      homeTeam: match.homeTeam,
+      awayTeam: match.awayTeam,
+      kickoffLabel: formatMatchTime(match.kickoff, session.timezone ?? 'Europe/Bucharest'),
+      stageLabel: STAGE_LABELS[match.stage],
+      championshipName: championship.name,
+    },
+    `${appUrl}/championships/${championship.id}/predictions`
+  )
+
+  return { success: true, match: `${match.homeTeam} vs ${match.awayTeam}` }
 }
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
