@@ -48,9 +48,17 @@ export function LiveMatchCard({ match, timezone, countdown, headToHead = [], rev
   return (
     <div className="w-full max-w-xl rounded-xl border border-white/10 bg-white/5 p-4 sm:p-8">
       {isLive && (
-        <div className="mb-4 flex items-center justify-center gap-2">
-          <span className="h-2.5 w-2.5 animate-pulse rounded-full bg-red-500" />
-          <span className="text-sm font-semibold uppercase tracking-widest text-red-400">Live</span>
+        <div className="mb-4 flex items-center justify-center gap-3">
+          <div className="flex items-center gap-2">
+            <span className="h-2.5 w-2.5 animate-pulse rounded-full bg-red-500" />
+            <span className="text-sm font-semibold uppercase tracking-widest text-red-400">Live</span>
+          </div>
+          <Link
+            href="/live"
+            className="rounded-md bg-red-500 px-3 py-1 text-xs font-bold uppercase tracking-widest text-white transition-colors hover:bg-red-400"
+          >
+            Match center
+          </Link>
         </div>
       )}
       {!isLive && (

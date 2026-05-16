@@ -26,32 +26,36 @@ export async function Navbar() {
         <Link href="/" className="text-xl font-bold text-[#C9A84C] tracking-tight">
           ScoreProphet
         </Link>
-        <div className="hidden items-center gap-4 text-sm text-white/70 lg:flex">
-          <Link href="/" className="hover:text-white transition-colors">Home</Link>
-          {user && hasLiveMatch && (
-            <Link href="/live" className="flex items-center gap-1.5 font-semibold text-red-400 hover:text-red-300 transition-colors">
-              <span className="h-2 w-2 animate-pulse rounded-full bg-red-500" />
-              Live
-            </Link>
-          )}
-          {selectedChampionship && (
-            <>
-              <Link href={`/championships/${selectedChampionship.id}/predictions`} className="hover:text-white transition-colors">Predictions</Link>
-              <Link href={`/championships/${selectedChampionship.id}/results`} className="hover:text-white transition-colors">Results</Link>
-              <Link href={`/championships/${selectedChampionship.id}/leaderboard`} className="hover:text-white transition-colors">Leaderboard</Link>
-            </>
-          )}
-          <Link href="/tournament" className="hover:text-white transition-colors">Tournament</Link>
-          <Link href="/teams" className="hover:text-white transition-colors">Teams</Link>
-          {user && <Link href="/profile" className="hover:text-white transition-colors">Profile</Link>}
-          {canManageChampionships && (
-            <Link href="/manage" className="text-[#C9A84C] hover:text-[#C9A84C]/80 transition-colors">Manage</Link>
-          )}
-          {user?.isAdmin && (
-            <Link href="/admin" className="text-[#C9A84C] hover:text-[#C9A84C]/80 transition-colors">Admin</Link>
-          )}
-        </div>
-        <div className="hidden items-center gap-3 lg:flex">
+        {user ? (
+          <div className="hidden items-center gap-4 text-sm text-white/70 lg:flex">
+            <Link href="/" className="hover:text-white transition-colors">Home</Link>
+            {hasLiveMatch && (
+              <Link href="/live" className="flex items-center gap-1.5 font-semibold text-red-400 hover:text-red-300 transition-colors">
+                <span className="h-2 w-2 animate-pulse rounded-full bg-red-500" />
+                Live
+              </Link>
+            )}
+            {selectedChampionship && (
+              <>
+                <Link href={`/championships/${selectedChampionship.id}/predictions`} className="hover:text-white transition-colors">Predictions</Link>
+                <Link href={`/championships/${selectedChampionship.id}/results`} className="hover:text-white transition-colors">Results</Link>
+                <Link href={`/championships/${selectedChampionship.id}/leaderboard`} className="hover:text-white transition-colors">Leaderboard</Link>
+              </>
+            )}
+            <Link href="/tournament" className="hover:text-white transition-colors">Tournament</Link>
+            <Link href="/teams" className="hover:text-white transition-colors">Teams</Link>
+            <Link href="/profile" className="hover:text-white transition-colors">Profile</Link>
+            {canManageChampionships && (
+              <Link href="/manage" className="text-[#C9A84C] hover:text-[#C9A84C]/80 transition-colors">Manage</Link>
+            )}
+            {user.isAdmin && (
+              <Link href="/admin" className="text-[#C9A84C] hover:text-[#C9A84C]/80 transition-colors">Admin</Link>
+            )}
+          </div>
+        ) : (
+          <div className="hidden lg:block" />
+        )}
+        <div className={user ? 'hidden items-center gap-3 lg:flex' : 'flex items-center gap-2 sm:gap-3'}>
           {user ? (
             <>
               <Link href="/profile" className="text-sm text-white/50 hover:text-white">{user.username}</Link>

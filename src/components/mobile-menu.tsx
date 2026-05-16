@@ -36,6 +36,8 @@ export function MobileMenu({
 }) {
   const [open, setOpen] = useState(false)
 
+  if (!user) return null
+
   const championshipLinks = selectedChampionship
     ? [
         { href: `/championships/${selectedChampionship.id}/predictions`, label: 'Predictions' },
