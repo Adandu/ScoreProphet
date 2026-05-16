@@ -16,11 +16,14 @@ export async function sendDuePredictionReminders(appUrl: string, now = new Date(
     }),
     prisma.championship.findMany({
       where: { isActive: true },
-      select: { id: true },
+      select: { id: true, name: true, doubleChanceEnabled: true },
     }),
   ])
 
+  if (matches.length === 0) return { matchesChecked: 0, sent: 0 }
+
   let sent = 0
+  const matchIds = matches.map((match) => match.id)
 
   for (const championship of championships) {
     // Fetch members once per championship, scoped to that championship
@@ -32,50 +35,46 @@ export async function sendDuePredictionReminders(appUrl: string, now = new Date(
           email: { not: null },
         },
       },
-      include: {
-        championship: true,
-        user: true,
-      },
+      include: { user: true },
     })
 
     if (members.length === 0) continue
+    const userIds = members.map((member) => member.userId)
+
+    const [existingReminders, allPredictions, allAdvances] = await Promise.all([
+      prisma.predictionReminder.findMany({
+        where: { championshipId: championship.id, matchId: { in: matchIds }, userId: { in: userIds } },
+        select: { userId: true, matchId: true },
+      }),
+      prisma.prediction.findMany({
+        where: { championshipId: championship.id, matchId: { in: matchIds }, userId: { in: userIds } },
+        select: { userId: true, matchId: true, type: true },
+      }),
+      prisma.knockoutAdvance.findMany({
+        where: { championshipId: championship.id, matchId: { in: matchIds }, userId: { in: userIds } },
+        select: { userId: true, matchId: true },
+      }),
+    ])
+
+    const reminderSet = new Set(existingReminders.map((reminder) => `${reminder.userId}:${reminder.matchId}`))
+    const predictionsByKey = new Map<string, typeof allPredictions>()
+    for (const prediction of allPredictions) {
+      const key = `${prediction.userId}:${prediction.matchId}`
+      const predictions = predictionsByKey.get(key) ?? []
+      predictions.push(prediction)
+      predictionsByKey.set(key, predictions)
+    }
+    const advanceSet = new Set(allAdvances.map((advance) => `${advance.userId}:${advance.matchId}`))
 
     for (const match of matches) {
       for (const member of members) {
         if (!member.user.email) continue
 
-        const existingReminder = await prisma.predictionReminder.findUnique({
-          where: {
-            userId_matchId_championshipId: {
-              userId: member.userId,
-              matchId: match.id,
-              championshipId: member.championshipId,
-            },
-          },
-        })
-        if (existingReminder) continue
+        const key = `${member.userId}:${match.id}`
+        if (reminderSet.has(key)) continue
 
-        const [predictions, advance] = await Promise.all([
-          prisma.prediction.findMany({
-            where: {
-              userId: member.userId,
-              matchId: match.id,
-              championshipId: member.championshipId,
-            },
-            select: { type: true },
-          }),
-          prisma.knockoutAdvance.findUnique({
-            where: {
-              userId_matchId_championshipId: {
-                userId: member.userId,
-                matchId: match.id,
-                championshipId: member.championshipId,
-              },
-            },
-          }),
-        ])
-
-        if (arePredictionsConfigured(match, predictions, Boolean(advance), member.championship.doubleChanceEnabled)) {
+        const predictions = predictionsByKey.get(key) ?? []
+        if (arePredictionsConfigured(match, predictions, advanceSet.has(key), championship.doubleChanceEnabled)) {
           continue
         }
 
@@ -89,7 +88,7 @@ export async function sendDuePredictionReminders(appUrl: string, now = new Date(
             awayTeamCrest: match.awayTeamCrest || undefined,
             kickoffLabel: formatMatchTime(match.kickoff, member.user.timezone),
             stageLabel: stageLabel(match.stage),
-            championshipName: member.championship.name,
+            championshipName: championship.name,
           },
           predictionsUrl
         )
@@ -101,6 +100,7 @@ export async function sendDuePredictionReminders(appUrl: string, now = new Date(
             championshipId: member.championshipId,
           },
         })
+        reminderSet.add(key)
         sent++
       }
     }

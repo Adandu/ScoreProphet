@@ -7,11 +7,11 @@ vi.mock('@/lib/db', () => ({
     championship: { findMany: vi.fn() },
     championshipMember: { findMany: vi.fn() },
     predictionReminder: {
-      findUnique: vi.fn(),
+      findMany: vi.fn(),
       create: vi.fn(),
     },
     prediction: { findMany: vi.fn() },
-    knockoutAdvance: { findUnique: vi.fn() },
+    knockoutAdvance: { findMany: vi.fn() },
   },
 }))
 
@@ -101,7 +101,6 @@ const makeChampionship = (id: number, overrides = {}) => ({
 const makeMember = (userId: number, championshipId: number, overrides = {}) => ({
   userId,
   championshipId,
-  championship: makeChampionship(championshipId),
   user: {
     id: userId,
     email: `user${userId}@example.com`,
@@ -126,9 +125,9 @@ describe('sendDuePredictionReminders', () => {
     vi.mocked(prisma.match.findMany).mockResolvedValue([match] as never)
     vi.mocked(prisma.championship.findMany).mockResolvedValue([champ] as never)
     vi.mocked(prisma.championshipMember.findMany).mockResolvedValue([member] as never)
-    vi.mocked(prisma.predictionReminder.findUnique).mockResolvedValue(null)
+    vi.mocked(prisma.predictionReminder.findMany).mockResolvedValue([])
     vi.mocked(prisma.prediction.findMany).mockResolvedValue([])
-    vi.mocked(prisma.knockoutAdvance.findUnique).mockResolvedValue(null)
+    vi.mocked(prisma.knockoutAdvance.findMany).mockResolvedValue([])
 
     const result = await sendDuePredictionReminders('https://example.com')
 
@@ -150,7 +149,9 @@ describe('sendDuePredictionReminders', () => {
     vi.mocked(prisma.match.findMany).mockResolvedValue([match] as never)
     vi.mocked(prisma.championship.findMany).mockResolvedValue([champ] as never)
     vi.mocked(prisma.championshipMember.findMany).mockResolvedValue([member] as never)
-    vi.mocked(prisma.predictionReminder.findUnique).mockResolvedValue({ id: 99 } as never)
+    vi.mocked(prisma.predictionReminder.findMany).mockResolvedValue([{ userId: 100, matchId: 1 }] as never)
+    vi.mocked(prisma.prediction.findMany).mockResolvedValue([])
+    vi.mocked(prisma.knockoutAdvance.findMany).mockResolvedValue([])
 
     const result = await sendDuePredictionReminders('https://example.com')
 
@@ -182,6 +183,6 @@ describe('sendDuePredictionReminders', () => {
 
     expect(result).toEqual({ matchesChecked: 1, sent: 0 })
     expect(sendPredictionReminderEmail).not.toHaveBeenCalled()
-    expect(prisma.predictionReminder.findUnique).not.toHaveBeenCalled()
+    expect(prisma.predictionReminder.findMany).not.toHaveBeenCalled()
   })
 })
