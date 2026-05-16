@@ -10,9 +10,10 @@ import { sendPredictionReminderEmail } from '@/lib/email'
 import { formatMatchTime } from '@/lib/format-date'
 import { getAppUrl } from '@/lib/app-url'
 import { STAGE_LABELS } from '@/lib/prediction-reminder-rules'
+import { logAdminAction } from '@/lib/audit'
 
 export async function overrideMatchScore(prevState: unknown, formData: FormData) {
-  await requireAdmin()
+  const session = await requireAdmin()
   const matchId = parseInt(formData.get('matchId') as string, 10)
   const homeScore = parseInt(formData.get('homeScore') as string, 10)
   const awayScore = parseInt(formData.get('awayScore') as string, 10)
@@ -34,6 +35,14 @@ export async function overrideMatchScore(prevState: unknown, formData: FormData)
   })
 
   await recalculateMatchPoints(matchId)
+  await logAdminAction({
+    adminId: session.userId!,
+    adminUsername: session.username ?? String(session.userId),
+    action: 'UPDATE_MATCH',
+    entityType: 'match',
+    entityId: String(matchId),
+    details: `${match.homeTeam} ${homeScore}-${awayScore} ${match.awayTeam}`,
+  })
   revalidatePath('/admin')
   revalidatePath('/results')
   revalidatePath('/leaderboard')
@@ -42,11 +51,17 @@ export async function overrideMatchScore(prevState: unknown, formData: FormData)
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 export async function recalculateAllPoints(prevState: unknown) {
-  await requireAdmin()
+  const session = await requireAdmin()
   const matches = await prisma.match.findMany({ where: { status: 'FINISHED' } })
   for (const match of matches) {
     await recalculateMatchPoints(match.id)
   }
+  await logAdminAction({
+    adminId: session.userId!,
+    adminUsername: session.username ?? String(session.userId),
+    action: 'RECALCULATE_POINTS',
+    details: `Recalculated ${matches.length} finished matches`,
+  })
   revalidatePath('/results')
   revalidatePath('/leaderboard')
   return { success: true, count: matches.length }
@@ -85,6 +100,14 @@ export async function removeUser(prevState: unknown, formData: FormData) {
   if (!user) return { error: 'User not found' }
   if (user.isAdmin) return { error: 'Admin users cannot be removed here' }
   await prisma.user.delete({ where: { id: userId } })
+  await logAdminAction({
+    adminId: session.userId!,
+    adminUsername: session.username ?? String(session.userId),
+    action: 'DELETE_USER',
+    entityType: 'user',
+    entityId: String(userId),
+    details: `Removed ${user.username}`,
+  })
   revalidatePath('/admin')
   return { success: true }
 }
@@ -132,7 +155,7 @@ function sleep(ms: number): Promise<void> {
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 export async function syncMatchesFromApi(prevState: unknown) {
-  await requireAdmin()
+  const session = await requireAdmin()
   const { fetchAllMatches, fetchHeadToHead } = await import('@/lib/football-api')
   const h2hDelayMs = parseInt(process.env.FOOTBALL_API_H2H_DELAY_MS ?? '6000', 10)
   try {
@@ -261,6 +284,12 @@ export async function syncMatchesFromApi(prevState: unknown) {
     revalidatePath('/results')
     revalidatePath('/leaderboard')
     revalidatePath('/teams')
+    await logAdminAction({
+      adminId: session.userId!,
+      adminUsername: session.username ?? String(session.userId),
+      action: 'SYNC_MATCHES',
+      details: `Synced ${synced} matches`,
+    })
     return { success: true, synced }
   } catch (err) {
     return { error: String(err) }

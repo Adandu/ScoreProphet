@@ -6,12 +6,16 @@ export default async function AdminPage() {
   const session = await requireAdmin()
   const timezone = session.timezone ?? 'Europe/Bucharest'
 
-  const [matches, users, championships] = await Promise.all([
+  const [matches, users, championships, auditLogs] = await Promise.all([
     prisma.match.findMany({ orderBy: { kickoff: 'asc' } }),
     prisma.user.findMany({ orderBy: { username: 'asc' } }),
     prisma.championship.findMany({
       orderBy: { name: 'asc' },
       include: { members: true, managers: true },
+    }),
+    prisma.adminAuditLog.findMany({
+      orderBy: { createdAt: 'desc' },
+      take: 50,
     }),
   ])
 
@@ -39,6 +43,15 @@ export default async function AdminPage() {
         doubleChanceEnabled: championship.doubleChanceEnabled,
         userIds: championship.members.map((member) => member.userId),
         managerUserIds: championship.managers.map((manager) => manager.userId),
+      }))}
+      auditLogs={auditLogs.map((log) => ({
+        id: log.id,
+        adminUsername: log.adminUsername,
+        action: log.action,
+        entityType: log.entityType,
+        entityId: log.entityId,
+        details: log.details,
+        createdAt: log.createdAt.toISOString(),
       }))}
     />
   )

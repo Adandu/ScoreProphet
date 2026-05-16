@@ -38,15 +38,27 @@ interface Championship {
   managerUserIds: number[]
 }
 
+interface AuditLog {
+  id: number
+  adminUsername: string
+  action: string
+  entityType: string | null
+  entityId: string | null
+  details: string | null
+  createdAt: string
+}
+
 export function AdminClient({
   matches,
   users,
   championships,
+  auditLogs,
   timezone,
 }: {
   matches: Match[]
   users: User[]
   championships: Championship[]
+  auditLogs: AuditLog[]
   timezone: string
 }) {
   const [syncState, syncAction, syncPending] = useActionState(syncMatchesFromApi, null)
@@ -157,6 +169,49 @@ export function AdminClient({
           {matches.map((match) => (
             <MatchOverrideRow key={match.id} match={match} timezone={timezone} />
           ))}
+        </div>
+      </section>
+
+      <section>
+        <h2 className="mb-3 text-lg font-semibold text-[#C9A84C]">Admin Audit Log</h2>
+        <div className="overflow-x-auto rounded-xl border border-white/10 bg-white/5">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="border-b border-white/10">
+                <th className="px-4 py-2 text-left font-normal text-white/40">Time</th>
+                <th className="px-4 py-2 text-left font-normal text-white/40">Admin</th>
+                <th className="px-4 py-2 text-left font-normal text-white/40">Action</th>
+                <th className="px-4 py-2 text-left font-normal text-white/40">Entity</th>
+                <th className="px-4 py-2 text-left font-normal text-white/40">Details</th>
+              </tr>
+            </thead>
+            <tbody>
+              {auditLogs.map((log) => (
+                <tr key={log.id} className="border-b border-white/5 last:border-0">
+                  <td className="whitespace-nowrap px-4 py-2 text-white/60">
+                    {new Intl.DateTimeFormat('en-GB', {
+                      timeZone: timezone,
+                      day: 'numeric',
+                      month: 'short',
+                      hour: '2-digit',
+                      minute: '2-digit',
+                    }).format(new Date(log.createdAt))}
+                  </td>
+                  <td className="px-4 py-2 text-white">{log.adminUsername}</td>
+                  <td className="px-4 py-2 text-[#C9A84C]">{log.action}</td>
+                  <td className="px-4 py-2 text-white/60">
+                    {log.entityType ? `${log.entityType}:${log.entityId ?? ''}` : '-'}
+                  </td>
+                  <td className="px-4 py-2 text-white/60">{log.details ?? '-'}</td>
+                </tr>
+              ))}
+              {auditLogs.length === 0 && (
+                <tr>
+                  <td colSpan={5} className="px-4 py-6 text-center text-white/40">No audit entries yet.</td>
+                </tr>
+              )}
+            </tbody>
+          </table>
         </div>
       </section>
     </div>
