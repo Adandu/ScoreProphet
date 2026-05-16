@@ -91,7 +91,6 @@ async function main() {
     return
   }
 
-  // Group matches by championship via a single members query per championship (fixes N+1)
   const championships = await prisma.championship.findMany({
     where: { isActive: true },
     select: { id: true, name: true, doubleChanceEnabled: true },
@@ -100,35 +99,52 @@ async function main() {
   let sent = 0
 
   for (const championship of championships) {
-    const members = await prisma.championshipMember.findMany({
-      where: {
-        championshipId: championship.id,
-        user: { predictionReminderEnabled: true, email: { not: null } },
-      },
-      include: { user: { select: { id: true, email: true, timezone: true } } },
-    })
+    const matchIds = matches.map(m => m.id)
+
+    const [members, sentReminders, allPredictions, allAdvances] = await Promise.all([
+      prisma.championshipMember.findMany({
+        where: {
+          championshipId: championship.id,
+          user: { predictionReminderEnabled: true, email: { not: null } },
+        },
+        include: { user: { select: { id: true, email: true, timezone: true } } },
+      }),
+      prisma.predictionReminder.findMany({
+        where: { championshipId: championship.id, matchId: { in: matchIds } },
+        select: { userId: true, matchId: true },
+      }),
+      prisma.prediction.findMany({
+        where: { championshipId: championship.id, matchId: { in: matchIds } },
+        select: { userId: true, matchId: true, type: true },
+      }),
+      prisma.knockoutAdvance.findMany({
+        where: { championshipId: championship.id, matchId: { in: matchIds } },
+        select: { userId: true, matchId: true },
+      }),
+    ])
+
     if (members.length === 0) continue
+
+    const reminderSet = new Set(sentReminders.map(r => `${r.userId}:${r.matchId}`))
+    const predictionsByKey = new Map()
+    for (const p of allPredictions) {
+      const key = `${p.userId}:${p.matchId}`
+      const list = predictionsByKey.get(key) ?? []
+      list.push(p)
+      predictionsByKey.set(key, list)
+    }
+    const advanceSet = new Set(allAdvances.map(a => `${a.userId}:${a.matchId}`))
 
     for (const match of matches) {
       for (const member of members) {
         if (!member.user.email) continue
 
-        const existingReminder = await prisma.predictionReminder.findUnique({
-          where: { userId_matchId_championshipId: { userId: member.user.id, matchId: match.id, championshipId: championship.id } },
-        })
-        if (existingReminder) continue
+        const key = `${member.user.id}:${match.id}`
+        if (reminderSet.has(key)) continue
 
-        const [predictions, advance] = await Promise.all([
-          prisma.prediction.findMany({
-            where: { userId: member.user.id, matchId: match.id, championshipId: championship.id },
-            select: { type: true },
-          }),
-          prisma.knockoutAdvance.findUnique({
-            where: { userId_matchId_championshipId: { userId: member.user.id, matchId: match.id, championshipId: championship.id } },
-          }),
-        ])
-
-        if (arePredictionsConfigured(match, predictions, Boolean(advance), championship.doubleChanceEnabled)) continue
+        const predictions = predictionsByKey.get(key) ?? []
+        const hasAdvance = advanceSet.has(key)
+        if (arePredictionsConfigured(match, predictions, hasAdvance, championship.doubleChanceEnabled)) continue
 
         await sendReminderEmail(
           transporter,
@@ -148,6 +164,7 @@ async function main() {
         await prisma.predictionReminder.create({
           data: { userId: member.user.id, matchId: match.id, championshipId: championship.id },
         })
+        reminderSet.add(key)
         sent++
       }
     }
