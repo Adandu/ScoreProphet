@@ -28,7 +28,7 @@ export async function Navbar() {
         </Link>
         <div className="hidden items-center gap-4 text-sm text-white/70 lg:flex">
           <Link href="/" className="hover:text-white transition-colors">Home</Link>
-          {hasLiveMatch && (
+          {user && hasLiveMatch && (
             <Link href="/live" className="flex items-center gap-1.5 font-semibold text-red-400 hover:text-red-300 transition-colors">
               <span className="h-2 w-2 animate-pulse rounded-full bg-red-500" />
               Live
@@ -80,7 +80,7 @@ export async function Navbar() {
             </>
           )}
         </div>
-        <MobileMenu user={user} championships={championships} selectedChampionship={selectedChampionship} hasLiveMatch={hasLiveMatch} canManageChampionships={canManageChampionships} />
+        <MobileMenu user={user} championships={championships} selectedChampionship={selectedChampionship} hasLiveMatch={Boolean(user && hasLiveMatch)} canManageChampionships={canManageChampionships} />
       </div>
     </nav>
   )

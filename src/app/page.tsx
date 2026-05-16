@@ -3,6 +3,7 @@ import { getCurrentUser } from '@/lib/auth'
 import { LiveMatchCard } from '@/components/live-match-card'
 import { Countdown } from '@/components/countdown'
 import { parseStoredHeadToHead } from '@/lib/head-to-head'
+import { getSelectedChampionship } from '@/lib/championships'
 
 export const revalidate = 60
 
@@ -40,9 +41,83 @@ async function getFeaturedMatches() {
   return fallback ? [fallback] : []
 }
 
+type RevealedPredictionsByMatch = Record<number, {
+  championshipName: string
+  players: Array<{
+    userId: number
+    username: string
+    single: string | null
+    double: string | null
+    exact: string | null
+    advance: string | null
+  }>
+}>
+
+async function getRevealedPredictionsByMatch(
+  matchIds: number[],
+  championshipId: number,
+  championshipName: string
+): Promise<RevealedPredictionsByMatch> {
+  if (matchIds.length === 0) return {}
+
+  const [members, predictions, advances] = await Promise.all([
+    prisma.championshipMember.findMany({
+      where: { championshipId },
+      include: { user: true },
+      orderBy: { user: { username: 'asc' } },
+    }),
+    prisma.prediction.findMany({
+      where: { championshipId, matchId: { in: matchIds } },
+      select: { userId: true, matchId: true, type: true, value: true },
+    }),
+    prisma.knockoutAdvance.findMany({
+      where: { championshipId, matchId: { in: matchIds } },
+      select: { userId: true, matchId: true, predictedTeam: true },
+    }),
+  ])
+
+  const predictionsByKey = new Map<string, typeof predictions>()
+  for (const prediction of predictions) {
+    const key = `${prediction.matchId}:${prediction.userId}`
+    const rows = predictionsByKey.get(key) ?? []
+    rows.push(prediction)
+    predictionsByKey.set(key, rows)
+  }
+
+  const advanceByKey = new Map(advances.map((advance) => [`${advance.matchId}:${advance.userId}`, advance.predictedTeam]))
+
+  return Object.fromEntries(
+    matchIds.map((matchId) => [
+      matchId,
+      {
+        championshipName,
+        players: members.map((member) => {
+          const rows = predictionsByKey.get(`${matchId}:${member.userId}`) ?? []
+          return {
+            userId: member.userId,
+            username: member.user.username,
+            single: rows.find((row) => row.type === 'SINGLE_OUTCOME')?.value ?? null,
+            double: rows.find((row) => row.type === 'DOUBLE_CHANCE')?.value ?? null,
+            exact: rows.find((row) => row.type === 'EXACT_SCORE')?.value ?? null,
+            advance: advanceByKey.get(`${matchId}:${member.userId}`) ?? null,
+          }
+        }),
+      },
+    ])
+  )
+}
+
 export default async function HomePage() {
   const [matches, user] = await Promise.all([getFeaturedMatches(), getCurrentUser()])
   const timezone = user?.timezone ?? 'Europe/Bucharest'
+  const selectedChampionship = user ? await getSelectedChampionship(user.userId) : null
+  const now = new Date()
+  const startedMatchIds = matches
+    .filter((match) => match.status !== 'SCHEDULED' || match.kickoff <= now)
+    .map((match) => match.id)
+  const revealedPredictionsByMatch = selectedChampionship
+    ? await getRevealedPredictionsByMatch(startedMatchIds, selectedChampionship.id, selectedChampionship.name)
+    : {}
 
   return (
     <div className="space-y-8">
@@ -73,6 +148,7 @@ export default async function HomePage() {
                   timezone={timezone}
                   countdown={match.status === 'SCHEDULED' ? <Countdown kickoff={match.kickoff.toISOString()} /> : undefined}
                   headToHead={headToHead}
+                  revealedPredictions={revealedPredictionsByMatch[match.id]}
                 />
               )
             })()

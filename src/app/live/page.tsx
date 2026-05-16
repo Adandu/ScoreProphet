@@ -2,10 +2,13 @@ import Image from 'next/image'
 import { fetchLiveMatches, fetchLiveMatchDetails, type NormalizedMatch } from '@/lib/football-api'
 import { PitchFormation } from '@/components/pitch-formation'
 import { LivePageRefresh } from '@/components/live-page-refresh'
+import { requireAuth } from '@/lib/auth'
 
 export const revalidate = 5
 
 export default async function LivePage() {
+  await requireAuth()
+
   let liveMatches: NormalizedMatch[]
   try {
     liveMatches = await fetchLiveMatches()
