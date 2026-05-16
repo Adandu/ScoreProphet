@@ -8,8 +8,7 @@ import { ChampionshipPageNav } from '@/components/championship-page-nav'
 import Image from 'next/image'
 import { CalendarClock } from 'lucide-react'
 import { stageLabel } from '@/lib/prediction-reminder-rules'
-
-type Stage = 'GROUP' | 'ROUND_OF_32' | 'ROUND_OF_16' | 'QUARTER_FINAL' | 'SEMI_FINAL' | 'THIRD_PLACE' | 'FINAL'
+import type { Stage } from '@/lib/types'
 
 const STAGE_ORDER: Stage[] = ['GROUP', 'ROUND_OF_32', 'ROUND_OF_16', 'QUARTER_FINAL', 'SEMI_FINAL', 'THIRD_PLACE', 'FINAL']
 

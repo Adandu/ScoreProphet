@@ -51,5 +51,5 @@ export function calculateAdvancePoints(
   predictedTeam: string,
   actualWinner: string
 ): number {
-  return predictedTeam === actualWinner ? 1 : 0;
+  return predictedTeam === actualWinner ? SCORING.ADVANCE : 0;
 }
