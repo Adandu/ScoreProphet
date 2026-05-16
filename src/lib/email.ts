@@ -1,5 +1,16 @@
 import nodemailer from 'nodemailer'
 import { Resvg } from '@resvg/resvg-js'
+import { readFileSync } from 'fs'
+import { join } from 'path'
+
+const trophyDataUri = (() => {
+  try {
+    const buf = readFileSync(join(process.cwd(), 'public/World_Cup_Trophy_email.png'))
+    return `data:image/png;base64,${buf.toString('base64')}`
+  } catch {
+    return null
+  }
+})()
 
 export interface PredictionReminderEmailMatch {
   homeTeam: string
@@ -120,6 +131,11 @@ function buildReminderHtml(match: PredictionReminderEmailMatch, predictionsUrl: 
     <td align="center" style="padding:32px 16px;">
       <table width="560" cellpadding="0" cellspacing="0" border="0" style="max-width:560px;width:100%;">
 
+        ${trophyDataUri ? `<tr>
+          <td align="center" style="padding-bottom:8px;">
+            <img src="${trophyDataUri}" width="80" height="80" alt="ScoreProphet" style="display:block;margin:0 auto;width:80px;height:80px;object-fit:contain;">
+          </td>
+        </tr>` : ''}
         <tr>
           <td align="center" style="padding-bottom:8px;">
             <span style="font-size:22px;font-weight:700;color:#C9A84C;letter-spacing:0.06em;">ScoreProphet</span>

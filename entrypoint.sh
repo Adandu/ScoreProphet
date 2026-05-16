@@ -18,7 +18,7 @@ echo "[startup] Starting head-to-head sync loop..."
 echo "[startup] Starting prediction reminder loop..."
 (
   while true; do
-    node scripts/send-prediction-reminders.mjs || echo "[prediction-reminders] Reminder check skipped"
+    node_modules/.bin/tsx scripts/send-prediction-reminders.ts || echo "[prediction-reminders] Reminder check skipped"
     sleep 900
   done
 ) &
