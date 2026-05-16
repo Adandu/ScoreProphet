@@ -19,7 +19,7 @@ export default async function ChampionshipResultsPage({ params }: { params: Prom
   const members = championship.members.map((member) => member.user)
 
   const matches = await prisma.match.findMany({
-    where: { status: 'FINISHED' },
+    where: { status: { in: ['FINISHED', 'LIVE'] } },
     orderBy: { kickoff: 'desc' },
     include: {
       predictions: { where: { userId: { in: memberIds } }, include: { user: true } },
@@ -31,14 +31,19 @@ export default async function ChampionshipResultsPage({ params }: { params: Prom
     <div className="space-y-8">
       <ChampionshipPageNav championshipId={championship.id} name={championship.name} />
       <h2 className="text-xl font-bold text-white">Results</h2>
-      {matches.length === 0 && <p className="text-white/40">No completed matches yet.</p>}
+      {matches.length === 0 && <p className="text-white/40">No completed or live matches yet.</p>}
       {matches.map((match) => (
         <div key={match.id} className="rounded-xl border border-white/10 bg-white/5 overflow-hidden">
           <div className="flex items-center justify-between px-4 py-3 border-b border-white/10">
             <span className="font-semibold text-white">
               {match.homeTeam} {match.homeScore}-{match.awayScore} {match.awayTeam}
             </span>
-            <span className="text-xs text-white/40">{formatMatchTime(match.kickoff, timezone)}</span>
+            <div className="flex items-center gap-3">
+              {match.status === 'LIVE' && (
+                <span className="text-xs font-semibold uppercase tracking-wider text-red-400">● Live</span>
+              )}
+              <span className="text-xs text-white/40">{formatMatchTime(match.kickoff, timezone)}</span>
+            </div>
           </div>
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
