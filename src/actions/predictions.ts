@@ -10,14 +10,17 @@ import {
   validatePredictionCombination,
   validateSelectionsAgainstExactScore,
 } from '@/lib/validation'
-import type { PredictionType } from '@/lib/types'
+import { VALID_PREDICTION_TYPES, type PredictionType } from '@/lib/types'
 
 export async function savePrediction(prevState: unknown, formData: FormData) {
   const session = await requireAuth()
   const matchId = parseInt(formData.get('matchId') as string, 10)
-  const type = formData.get('type') as PredictionType
+  const typeValue = formData.get('type') as string
   let value = (formData.get('value') as string)?.trim()
   const championshipId = parseInt(formData.get('championshipId') as string, 10)
+
+  if (!VALID_PREDICTION_TYPES.includes(typeValue as PredictionType)) return { error: 'Invalid prediction type' }
+  const type = typeValue as PredictionType
 
   if (type === 'EXACT_SCORE' && !value) {
     const homeScore = parseInt(String(formData.get('homeScore') ?? ''), 10)

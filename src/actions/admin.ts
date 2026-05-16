@@ -156,6 +156,7 @@ export async function syncMatchesFromApi(prevState: unknown) {
           status: m.status,
           homeScore: m.homeScore,
           awayScore: m.awayScore,
+          winnerTeam: m.winnerTeam,
         },
         create: {
           externalId: m.externalId,
@@ -169,6 +170,7 @@ export async function syncMatchesFromApi(prevState: unknown) {
           status: m.status,
           homeScore: m.homeScore,
           awayScore: m.awayScore,
+          winnerTeam: m.winnerTeam,
         },
       })
 

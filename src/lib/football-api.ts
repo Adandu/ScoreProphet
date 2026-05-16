@@ -22,6 +22,7 @@ export interface NormalizedMatch {
   status: MatchStatus
   homeScore: number | null
   awayScore: number | null
+  winnerTeam: string | null
 }
 
 export interface NormalizedTeam {
@@ -141,10 +142,20 @@ function getHeaders(): HeadersInit {
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function normalizeMatch(m: any): NormalizedMatch {
+  const homeTeam = m.homeTeam?.name ?? 'TBD'
+  const awayTeam = m.awayTeam?.name ?? 'TBD'
+  const status = (() => {
+    const knownStatuses = Object.keys(STATUS_MAP)
+    if (m.status && !knownStatuses.includes(m.status)) {
+      console.warn(`[football-api] Unknown status value: ${m.status}`)
+    }
+    return STATUS_MAP[m.status] ?? 'SCHEDULED'
+  })()
+  const winner = m.score?.winner ?? null
   return {
     externalId: String(m.id),
-    homeTeam: m.homeTeam?.name ?? 'TBD',
-    awayTeam: m.awayTeam?.name ?? 'TBD',
+    homeTeam,
+    awayTeam,
     homeTeamCrest: m.homeTeam?.crest ?? '',
     awayTeamCrest: m.awayTeam?.crest ?? '',
     stage: (() => {
@@ -156,15 +167,16 @@ function normalizeMatch(m: any): NormalizedMatch {
     })(),
     group: m.group ?? null,
     kickoff: new Date(m.utcDate),
-    status: (() => {
-      const knownStatuses = Object.keys(STATUS_MAP)
-      if (m.status && !knownStatuses.includes(m.status)) {
-        console.warn(`[football-api] Unknown status value: ${m.status}`)
-      }
-      return STATUS_MAP[m.status] ?? 'SCHEDULED'
-    })(),
+    status,
     homeScore: m.score?.fullTime?.home ?? null,
     awayScore: m.score?.fullTime?.away ?? null,
+    winnerTeam: status === 'FINISHED'
+      ? winner === 'HOME_TEAM'
+        ? homeTeam
+        : winner === 'AWAY_TEAM'
+          ? awayTeam
+          : null
+      : null,
   }
 }
 

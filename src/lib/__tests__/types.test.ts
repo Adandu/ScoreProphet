@@ -10,4 +10,9 @@ describe('VALID_PREDICTION_TYPES', () => {
   it('has exactly three entries', () => {
     expect(VALID_PREDICTION_TYPES).toHaveLength(3)
   })
+
+  it('does not include invalid strings', () => {
+    expect(VALID_PREDICTION_TYPES).not.toContain('INVALID')
+    expect(VALID_PREDICTION_TYPES).not.toContain('')
+  })
 })
