@@ -1,4 +1,17 @@
 import { Resvg } from '@resvg/resvg-js'
+import { readFileSync } from 'fs'
+import { fileURLToPath } from 'url'
+import { join, dirname } from 'path'
+import sharp from 'sharp'
+
+const __dirname = dirname(fileURLToPath(import.meta.url))
+const trophyPath = join(__dirname, '../../public/World_Cup_Trophy.png')
+const trophyDataUri = await sharp(readFileSync(trophyPath))
+  .resize(80, 80, { fit: 'inside' })
+  .png({ compressionLevel: 9 })
+  .toBuffer()
+  .then(buf => `data:image/png;base64,${buf.toString('base64')}`)
+  .catch(() => null)
 
 const ALLOWED_CREST_HOSTS = new Set([
   'crests.football-data.org',
@@ -67,6 +80,11 @@ export function buildReminderHtml(match, predictionsUrl, homeCrest, awayCrest) {
     <td align="center" style="padding:32px 16px;">
       <table width="560" cellpadding="0" cellspacing="0" border="0" style="max-width:560px;width:100%;">
 
+        ${trophyDataUri ? `<tr>
+          <td align="center" style="padding-bottom:8px;">
+            <img src="${trophyDataUri}" width="80" height="80" alt="ScoreProphet" style="display:block;margin:0 auto;width:80px;height:80px;object-fit:contain;">
+          </td>
+        </tr>` : ''}
         <tr>
           <td align="center" style="padding-bottom:8px;">
             <span style="font-size:22px;font-weight:700;color:#C9A84C;letter-spacing:0.06em;">ScoreProphet</span>
