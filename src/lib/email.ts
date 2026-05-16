@@ -30,6 +30,8 @@ async function crestToDataUri(url: string | undefined): Promise<string | null> {
   try {
     const res = await fetch(url, { signal: AbortSignal.timeout(5000) })
     if (!res.ok) return null
+    const contentLength = Number(res.headers.get('content-length') ?? '0')
+    if (contentLength > MAX_CREST_BYTES) return null
     const contentType = res.headers.get('content-type') ?? ''
     if (contentType.includes('svg') || url.toLowerCase().endsWith('.svg')) {
       const svg = await res.text()
