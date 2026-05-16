@@ -141,7 +141,6 @@ export async function changePassword(prevState: unknown, formData: FormData) {
     data: { passwordHash: await hashPassword(newPassword) },
   })
 
-  const session = await getSession()
   session.destroy()
   return { success: true }
 }
