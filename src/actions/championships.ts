@@ -175,6 +175,7 @@ export async function generateChampionshipInvite(prevState: unknown, formData: F
       championshipId,
       tokenHash: hashInviteToken(token),
       createdById: session.userId!,
+      expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
     },
   })
 

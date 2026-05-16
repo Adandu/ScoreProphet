@@ -2,6 +2,11 @@ import type { Stage } from '@/lib/types'
 
 const BASE_URL = 'https://api.football-data.org/v4'
 const COMPETITION = process.env.FOOTBALL_API_COMPETITION ?? 'WC'
+const FOOTBALL_API_KEY = process.env.FOOTBALL_API_KEY
+
+if (!FOOTBALL_API_KEY && process.env.NODE_ENV === 'production') {
+  console.error('[football-api] FOOTBALL_API_KEY is not set - API calls will fail')
+}
 
 type MatchStatus = 'SCHEDULED' | 'LIVE' | 'FINISHED'
 
@@ -130,7 +135,7 @@ const STATUS_MAP: Record<string, MatchStatus> = {
 
 function getHeaders(): HeadersInit {
   return {
-    'X-Auth-Token': process.env.FOOTBALL_API_KEY ?? '',
+    'X-Auth-Token': FOOTBALL_API_KEY ?? '',
   }
 }
 

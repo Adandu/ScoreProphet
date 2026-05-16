@@ -20,7 +20,7 @@ export async function getSession(): Promise<IronSession<SessionData>> {
       secure: process.env.NODE_ENV === 'production',
       httpOnly: true,
       sameSite: 'lax' as const,
-      maxAge: 60 * 60 * 24 * 30,
+      maxAge: 60 * 60 * 24 * 7,
     },
   })
 }
