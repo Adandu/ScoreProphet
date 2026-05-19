@@ -18,6 +18,7 @@ model User {
   createdAt    DateTime          @default(now())
   predictions  Prediction[]
   advances     KnockoutAdvance[]
+  winnerPredictions TournamentWinnerPrediction[]
   championships             ChampionshipMember[]
   managedChampionships      ChampionshipManager[]
   generatedInvites          ChampionshipInvite[]
@@ -37,6 +38,7 @@ model Championship {
   managers            ChampionshipManager[]
   invites             ChampionshipInvite[]
   predictionReminders PredictionReminder[]
+  winnerPredictions   TournamentWinnerPrediction[]
 }
 
 model ChampionshipMember {
@@ -156,6 +158,20 @@ model KnockoutAdvance {
   match          Match    @relation(fields: [matchId], references: [id])
 
   @@unique([userId, matchId, championshipId])
+}
+
+model TournamentWinnerPrediction {
+  id             Int          @id @default(autoincrement())
+  userId         Int
+  championshipId Int
+  predictedTeam  String
+  pointsAwarded  Int?
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  championship   Championship @relation(fields: [championshipId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, championshipId])
 }
 
 model PasswordResetToken {
