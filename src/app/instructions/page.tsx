@@ -36,6 +36,11 @@ export default async function InstructionsPage() {
             if the match reaches extra time or penalties. Earns 1 point only when the match actually goes
             beyond 90 minutes — ignored and worth 0 if the match is settled in regular time.
           </ScoreCard>
+          <ScoreCard title="Tournament winner" points="50 pts" icon="🏅">
+            Pick the team you think will win the entire tournament. This prediction is made once per
+            championship on the predictions page and locks the moment the first group-stage match kicks off.
+            If your pick lifts the trophy, you earn a one-time bonus of 50 points.
+          </ScoreCard>
         </div>
 
         <div className="rounded-lg border border-[#C9A84C]/20 bg-[#C9A84C]/5 px-5 py-4 text-sm text-white/70">
