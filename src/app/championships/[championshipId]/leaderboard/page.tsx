@@ -33,6 +33,7 @@ export default async function ChampionshipLeaderboardPage({ params }: { params: 
                 <th className="px-4 py-3 text-right text-white/40 font-normal">Double</th>
               )}
               <th className="px-4 py-3 text-right text-white/40 font-normal">Advance</th>
+              <th className="px-4 py-3 text-right text-white/40 font-normal">Winner</th>
               <th className="px-4 py-3 text-right text-white/40 font-normal font-semibold">Total</th>
             </tr>
           </thead>
@@ -51,13 +52,14 @@ export default async function ChampionshipLeaderboardPage({ params }: { params: 
                     <td className="px-4 py-3 text-right text-blue-400">{u.double ?? 0}</td>
                   )}
                   <td className="px-4 py-3 text-right text-purple-400">{u.advance}</td>
+                  <td className="px-4 py-3 text-right text-amber-400">{u.winner}</td>
                   <td className="px-4 py-3 text-right font-bold text-[#C9A84C] text-base">{u.total}</td>
                 </tr>
               )
             })}
             {ranked.length === 0 && (
               <tr>
-                <td colSpan={championship.doubleChanceEnabled ? 7 : 6} className="px-4 py-8 text-center text-white/30">
+                <td colSpan={championship.doubleChanceEnabled ? 8 : 7} className="px-4 py-8 text-center text-white/30">
                   No championship members yet.
                 </td>
               </tr>
