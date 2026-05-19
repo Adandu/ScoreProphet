@@ -118,6 +118,58 @@ async function recalculateMatchPoints(matchId: number) {
   if (operations.length > 0) await prisma.$transaction(operations)
 }
 
+export async function resetMatchOverride(prevState: unknown, formData: FormData) {
+  const session = await requireAdmin()
+  const matchId = parseInt(formData.get('matchId') as string, 10)
+  if (!matchId) return { error: 'Missing match ID' }
+
+  const match = await prisma.match.findUnique({ where: { id: matchId } })
+  if (!match) return { error: 'Match not found' }
+  if (!match.adminOverride) return { error: 'No override to reset' }
+
+  await prisma.match.update({
+    where: { id: matchId },
+    data: {
+      adminOverride: false,
+      status: 'SCHEDULED',
+      scoreDuration: 'REGULAR',
+      homeScore: null,
+      awayScore: null,
+      winnerTeam: null,
+      regularTimeHomeScore: null,
+      regularTimeAwayScore: null,
+      fullTimeHomeScore: null,
+      fullTimeAwayScore: null,
+      extraTimeHomeScore: null,
+      extraTimeAwayScore: null,
+      penaltiesHomeScore: null,
+      penaltiesAwayScore: null,
+    },
+  })
+
+  await prisma.prediction.updateMany({ where: { matchId }, data: { pointsAwarded: null } })
+  await prisma.knockoutAdvance.updateMany({ where: { matchId }, data: { pointsAwarded: null } })
+
+  if (match.stage === 'FINAL') {
+    await prisma.tournamentWinnerPrediction.updateMany({ data: { pointsAwarded: null } })
+  }
+
+  await logAdminAction({
+    adminId: session.userId!,
+    adminUsername: session.username ?? String(session.userId),
+    action: 'RESET_MATCH_OVERRIDE',
+    entityType: 'match',
+    entityId: String(matchId),
+    details: `${match.homeTeam} vs ${match.awayTeam}`,
+  })
+
+  revalidatePath('/admin')
+  revalidatePath('/results')
+  revalidatePath('/tournament')
+  revalidatePath('/leaderboard')
+  return { success: true }
+}
+
 export async function removeUser(prevState: unknown, formData: FormData) {
   const session = await requireAdmin()
   const userId = parseInt(formData.get('userId') as string, 10)
@@ -204,8 +256,25 @@ export async function syncMatchesFromApi(prevState: unknown) {
           scoreDuration: true,
           winnerTeam: true,
           headToHeadSyncedAt: true,
+          adminOverride: true,
         },
       })
+
+      const scoreFields = existing?.adminOverride ? {} : {
+        status: m.status,
+        scoreDuration: m.scoreDuration,
+        regularTimeHomeScore: m.regularTimeHomeScore,
+        regularTimeAwayScore: m.regularTimeAwayScore,
+        fullTimeHomeScore: m.fullTimeHomeScore,
+        fullTimeAwayScore: m.fullTimeAwayScore,
+        extraTimeHomeScore: m.extraTimeHomeScore,
+        extraTimeAwayScore: m.extraTimeAwayScore,
+        penaltiesHomeScore: m.penaltiesHomeScore,
+        penaltiesAwayScore: m.penaltiesAwayScore,
+        homeScore: m.homeScore,
+        awayScore: m.awayScore,
+        winnerTeam: m.winnerTeam,
+      }
 
       const upserted = await prisma.match.upsert({
         where: { externalId: m.externalId },
@@ -217,19 +286,7 @@ export async function syncMatchesFromApi(prevState: unknown) {
           stage: m.stage,
           group: m.group,
           kickoff: m.kickoff,
-          status: m.status,
-          scoreDuration: m.scoreDuration,
-          regularTimeHomeScore: m.regularTimeHomeScore,
-          regularTimeAwayScore: m.regularTimeAwayScore,
-          fullTimeHomeScore: m.fullTimeHomeScore,
-          fullTimeAwayScore: m.fullTimeAwayScore,
-          extraTimeHomeScore: m.extraTimeHomeScore,
-          extraTimeAwayScore: m.extraTimeAwayScore,
-          penaltiesHomeScore: m.penaltiesHomeScore,
-          penaltiesAwayScore: m.penaltiesAwayScore,
-          homeScore: m.homeScore,
-          awayScore: m.awayScore,
-          winnerTeam: m.winnerTeam,
+          ...scoreFields,
         },
         create: {
           externalId: m.externalId,
@@ -256,8 +313,8 @@ export async function syncMatchesFromApi(prevState: unknown) {
         },
       })
 
-      // Track this match if its score changed (or it's newly created with a score)
-      const scoreChanged =
+      // Track this match if its score changed (skip admin-overridden matches)
+      const scoreChanged = !existing?.adminOverride && (
         existing === null
           ? m.homeScore !== null || m.awayScore !== null || m.winnerTeam !== null
           : existing.homeScore !== m.homeScore
@@ -265,6 +322,7 @@ export async function syncMatchesFromApi(prevState: unknown) {
             || existing.scoreDuration !== m.scoreDuration
             || existing.winnerTeam !== m.winnerTeam
             || existing.status !== m.status
+      )
       if (scoreChanged) {
         changedMatchIds.add(upserted.id)
       }

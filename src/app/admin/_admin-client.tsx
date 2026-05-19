@@ -1,7 +1,7 @@
 'use client'
 
 import { useActionState, type FormEvent } from 'react'
-import { overrideMatchScore, recalculateAllPoints, removeUser, sendTestPredictionReminder, syncMatchesFromApi } from '@/actions/admin'
+import { overrideMatchScore, recalculateAllPoints, removeUser, resetMatchOverride, sendTestPredictionReminder, syncMatchesFromApi } from '@/actions/admin'
 import { createChampionship, deleteChampionship, setChampionshipManagers, setChampionshipMembers, updateChampionship } from '@/actions/championships'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -333,36 +333,49 @@ function ChampionshipRow({ championship, users }: { championship: Championship; 
 
 function MatchOverrideRow({ match, timezone }: { match: Match; timezone: string }) {
   const [state, formAction, pending] = useActionState(overrideMatchScore, null)
+  const [resetState, resetAction, resetPending] = useActionState(resetMatchOverride, null)
 
   return (
-    <form action={formAction} className="flex items-center gap-3 rounded-lg border border-white/10 bg-white/5 px-4 py-2 flex-wrap">
-      <input type="hidden" name="matchId" value={match.id} />
-      <span className="text-sm text-white flex-1 min-w-0">
-        <span className="text-white/30 text-xs mr-2">{stageLabel(match.stage)}</span>
-        {match.homeTeam} vs {match.awayTeam}
-        <span className="ml-2 text-white/30 text-xs">{new Intl.DateTimeFormat('en-GB', { timeZone: timezone, day: 'numeric', month: 'short', year: 'numeric' }).format(new Date(match.kickoff))}</span>
-        {match.adminOverride && <Badge className="ml-2 bg-orange-600/20 text-orange-400 text-xs">overridden</Badge>}
-      </span>
-      <Input name="homeScore" type="number" min="0" max="20" defaultValue={match.homeScore ?? ''} placeholder="H" className="w-14 bg-white/10 text-white border-white/20 text-sm h-7 text-center" />
-      <span className="text-white/40">–</span>
-      <Input name="awayScore" type="number" min="0" max="20" defaultValue={match.awayScore ?? ''} placeholder="A" className="w-14 bg-white/10 text-white border-white/20 text-sm h-7 text-center" />
-      {match.stage !== 'GROUP' && (
-        <select
-          name="winnerTeam"
-          defaultValue={match.winnerTeam ?? ''}
-          className="h-7 w-44 rounded-md border border-white/20 bg-[#0A1628] px-2 text-sm text-white"
-        >
-          <option value="" disabled>Advancing team</option>
-          <option value={match.homeTeam}>{match.homeTeam}</option>
-          <option value={match.awayTeam}>{match.awayTeam}</option>
-        </select>
+    <div className="rounded-lg border border-white/10 bg-white/5 px-4 py-2">
+      <form action={formAction} className="flex items-center gap-3 flex-wrap">
+        <input type="hidden" name="matchId" value={match.id} />
+        <span className="text-sm text-white flex-1 min-w-0">
+          <span className="text-white/30 text-xs mr-2">{stageLabel(match.stage)}</span>
+          {match.homeTeam} vs {match.awayTeam}
+          <span className="ml-2 text-white/30 text-xs">{new Intl.DateTimeFormat('en-GB', { timeZone: timezone, day: 'numeric', month: 'short', year: 'numeric' }).format(new Date(match.kickoff))}</span>
+          {match.adminOverride && <Badge className="ml-2 bg-orange-600/20 text-orange-400 text-xs">overridden</Badge>}
+        </span>
+        <Input name="homeScore" type="number" min="0" max="20" defaultValue={match.homeScore ?? ''} placeholder="H" className="w-14 bg-white/10 text-white border-white/20 text-sm h-7 text-center" />
+        <span className="text-white/40">–</span>
+        <Input name="awayScore" type="number" min="0" max="20" defaultValue={match.awayScore ?? ''} placeholder="A" className="w-14 bg-white/10 text-white border-white/20 text-sm h-7 text-center" />
+        {match.stage !== 'GROUP' && (
+          <select
+            name="winnerTeam"
+            defaultValue={match.winnerTeam ?? ''}
+            className="h-7 w-44 rounded-md border border-white/20 bg-[#0A1628] px-2 text-sm text-white"
+          >
+            <option value="" disabled>Advancing team</option>
+            <option value={match.homeTeam}>{match.homeTeam}</option>
+            <option value={match.awayTeam}>{match.awayTeam}</option>
+          </select>
+        )}
+        <Button type="submit" size="sm" disabled={pending} className="h-7 bg-[#C9A84C] text-[#0A1628] hover:bg-[#C9A84C]/90 text-xs font-semibold">
+          {pending ? '…' : 'Set'}
+        </Button>
+        {state?.error && <span className="text-xs text-red-400">{state.error}</span>}
+        {state?.success && <span className="text-xs text-green-400">✓</span>}
+      </form>
+      {match.adminOverride && (
+        <form action={resetAction} className="mt-1.5">
+          <input type="hidden" name="matchId" value={match.id} />
+          <Button type="submit" size="sm" disabled={resetPending} variant="outline" className="h-6 text-xs border-orange-500/30 text-orange-400 hover:bg-orange-500/10 bg-transparent">
+            {resetPending ? 'Resetting…' : 'Reset override'}
+          </Button>
+          {resetState?.error && <span className="ml-2 text-xs text-red-400">{resetState.error}</span>}
+          {resetState?.success && <span className="ml-2 text-xs text-green-400">Reset</span>}
+        </form>
       )}
-      <Button type="submit" size="sm" disabled={pending} className="h-7 bg-[#C9A84C] text-[#0A1628] hover:bg-[#C9A84C]/90 text-xs font-semibold">
-        {pending ? '…' : 'Set'}
-      </Button>
-      {state?.error && <span className="text-xs text-red-400">{state.error}</span>}
-      {state?.success && <span className="text-xs text-green-400">✓</span>}
-    </form>
+    </div>
   )
 }
 
