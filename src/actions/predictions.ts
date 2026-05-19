@@ -195,3 +195,25 @@ export async function saveTournamentWinnerPrediction(prevState: unknown, formDat
   revalidatePath(`/championships/${championshipId}/predictions`)
   return { success: true }
 }
+
+export async function resetTournamentWinnerPrediction(prevState: unknown, formData: FormData) {
+  const session = await requireAuth()
+  const championshipId = parseInt(formData.get('championshipId') as string, 10)
+  if (!Number.isInteger(championshipId) || championshipId <= 0) return { error: 'Missing fields' }
+
+  const firstGroupMatch = await prisma.match.findFirst({
+    where: { stage: 'GROUP' },
+    orderBy: { kickoff: 'asc' },
+    select: { kickoff: true },
+  })
+  if (firstGroupMatch && firstGroupMatch.kickoff <= new Date()) {
+    return { error: 'Tournament winner prediction is locked' }
+  }
+
+  await prisma.tournamentWinnerPrediction.deleteMany({
+    where: { userId: session.userId!, championshipId },
+  })
+
+  revalidatePath(`/championships/${championshipId}/predictions`)
+  return { success: true }
+}

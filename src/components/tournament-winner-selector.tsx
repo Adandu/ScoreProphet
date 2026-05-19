@@ -2,9 +2,10 @@
 
 import { useState, useRef, useEffect, useActionState } from 'react'
 import Image from 'next/image'
-import { saveTournamentWinnerPrediction } from '@/actions/predictions'
+import { saveTournamentWinnerPrediction, resetTournamentWinnerPrediction } from '@/actions/predictions'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import { CheckCircle2 } from 'lucide-react'
 
 interface Team {
   name: string
@@ -20,12 +21,25 @@ interface Props {
 }
 
 export function TournamentWinnerSelector({ teams, existing, championshipId, locked }: Props) {
-  const [state, formAction, isPending] = useActionState(saveTournamentWinnerPrediction, null)
+  const [saveState, saveAction, savePending] = useActionState(saveTournamentWinnerPrediction, null)
+  const [resetState, resetAction, resetPending] = useActionState(resetTournamentWinnerPrediction, null)
   const [open, setOpen] = useState(false)
   const [search, setSearch] = useState('')
   const [selected, setSelected] = useState<string | null>(existing)
+  const [isEditing, setIsEditing] = useState(false)
   const containerRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
+
+  useEffect(() => {
+    if (saveState?.success) setIsEditing(false)
+  }, [saveState])
+
+  useEffect(() => {
+    if (resetState?.success) {
+      setSelected(null)
+      setIsEditing(false)
+    }
+  }, [resetState])
 
   const filtered = search.trim()
     ? teams.filter(
@@ -62,14 +76,17 @@ export function TournamentWinnerSelector({ teams, existing, championshipId, lock
   if (locked) {
     const existingTeam = existing ? teams.find((t) => t.name === existing) : null
     return (
-      <div className="flex items-center gap-3 rounded-xl border border-white/5 bg-white/[0.03] p-4">
+      <div className="flex items-center gap-3 rounded-xl border border-white/10 bg-white/5 p-4">
         <div className="flex-1">
           {existing ? (
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-3">
               {existingTeam?.crest && (
-                <Image src={existingTeam.crest} alt="" width={20} height={20} className="max-h-5 w-auto object-contain" />
+                <Image src={existingTeam.crest} alt="" width={28} height={28} className="max-h-7 w-auto object-contain" />
               )}
-              <span className="text-sm font-semibold text-white">{existing}</span>
+              <div>
+                <div className="text-[10px] font-semibold uppercase tracking-wider text-[#C9A84C] mb-0.5">Your pick</div>
+                <span className="text-sm font-bold text-white">{existing}</span>
+              </div>
             </div>
           ) : (
             <span className="text-sm text-white/40">No prediction set</span>
@@ -80,8 +97,49 @@ export function TournamentWinnerSelector({ teams, existing, championshipId, lock
     )
   }
 
+  // Confirmed state — prediction is set and not in editing mode
+  if (selected && !isEditing) {
+    return (
+      <div className="space-y-3" ref={containerRef}>
+        <div className="flex items-center gap-4 rounded-xl border border-[#C9A84C]/40 bg-[#C9A84C]/10 px-5 py-4">
+          {selectedTeam?.crest && (
+            <Image src={selectedTeam.crest} alt="" width={36} height={36} className="max-h-9 w-auto object-contain shrink-0" />
+          )}
+          <div className="flex-1 min-w-0">
+            <div className="text-[10px] font-semibold uppercase tracking-wider text-[#C9A84C] mb-0.5">Your pick</div>
+            <div className="text-base font-bold text-white truncate">{selected}</div>
+          </div>
+          <CheckCircle2 className="h-5 w-5 text-[#C9A84C] shrink-0" />
+        </div>
+
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => setIsEditing(true)}
+            className="text-xs text-white/40 hover:text-white/70 transition-colors underline underline-offset-2"
+          >
+            Change
+          </button>
+          <span className="text-white/20">·</span>
+          <form action={resetAction}>
+            <input type="hidden" name="championshipId" value={championshipId} />
+            <button
+              type="submit"
+              disabled={resetPending}
+              className="text-xs text-red-400/70 hover:text-red-400 transition-colors underline underline-offset-2 disabled:opacity-50"
+            >
+              {resetPending ? 'Clearing…' : 'Reset prediction'}
+            </button>
+          </form>
+          {resetState?.error && <span className="text-xs text-red-400">{resetState.error}</span>}
+        </div>
+      </div>
+    )
+  }
+
+  // Edit / no-prediction state
   return (
-    <div ref={containerRef} className="rounded-xl border border-white/10 bg-white/5 p-4 space-y-3">
+    <div ref={containerRef} className="space-y-3">
       <div className="relative">
         <button
           type="button"
@@ -136,20 +194,28 @@ export function TournamentWinnerSelector({ teams, existing, championshipId, lock
         )}
       </div>
 
-      <form action={formAction}>
+      <form action={saveAction}>
         <input type="hidden" name="championshipId" value={championshipId} />
         <input type="hidden" name="predictedTeam" value={selected ?? ''} />
         <div className="flex items-center gap-3">
           <Button
             type="submit"
             size="sm"
-            disabled={isPending || !selected}
+            disabled={savePending || !selected}
             className="bg-[#C9A84C] hover:bg-[#C9A84C]/80 text-black font-semibold disabled:opacity-50"
           >
-            {isPending ? 'Saving…' : 'Save prediction'}
+            {savePending ? 'Saving…' : 'Save prediction'}
           </Button>
-          {state?.success && <span className="text-xs text-green-400">Saved!</span>}
-          {state?.error && <span className="text-xs text-red-400">{state.error}</span>}
+          {isEditing && (
+            <button
+              type="button"
+              onClick={() => { setSelected(existing); setIsEditing(false) }}
+              className="text-xs text-white/40 hover:text-white/70 transition-colors"
+            >
+              Cancel
+            </button>
+          )}
+          {saveState?.error && <span className="text-xs text-red-400">{saveState.error}</span>}
         </div>
       </form>
     </div>

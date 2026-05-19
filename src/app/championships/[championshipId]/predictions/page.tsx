@@ -70,12 +70,15 @@ export default async function ChampionshipPredictionsPage({ params }: { params: 
       <ChampionshipPageNav championshipId={championship.id} name={championship.name} />
       <h2 className="text-xl font-bold text-white">Predictions</h2>
 
-      <section>
-        <h3 className="mb-3 text-lg font-semibold text-[#C9A84C] flex items-center gap-2">
-          <Trophy className="h-5 w-5" aria-hidden="true" />
-          Tournament Winner
-          <span className="text-xs font-normal text-white/40 ml-1">50 pts</span>
-        </h3>
+      <section className="rounded-2xl border border-[#C9A84C]/30 bg-gradient-to-br from-[#C9A84C]/10 to-transparent p-5">
+        <div className="mb-1 flex items-center gap-2">
+          <Trophy className="h-5 w-5 text-[#C9A84C]" aria-hidden="true" />
+          <h3 className="text-lg font-bold text-[#F2D27A]">Tournament Winner</h3>
+          <span className="ml-auto rounded bg-[#C9A84C]/20 px-2 py-0.5 text-xs font-bold text-[#F2D27A]">50 pts</span>
+        </div>
+        <p className="mb-4 text-sm text-white/50">
+          Pick the team that wins the whole tournament. Locks when the first group-stage match kicks off.
+        </p>
         <TournamentWinnerSelector
           teams={teams}
           existing={winnerPrediction?.predictedTeam ?? null}
