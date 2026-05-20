@@ -129,6 +129,7 @@ model Team {
   staffJson               String @default("[]")
   runningCompetitionsJson String @default("[]")
   rawJson                 String @default("{}")
+  wcStatsJson             String @default("{}")
 }
 
 model Prediction {
