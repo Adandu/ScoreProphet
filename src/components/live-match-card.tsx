@@ -129,7 +129,7 @@ export function LiveMatchCard({ match, timezone, countdown, headToHead = [], rev
                 </div>
                 <span className="text-right tabular-nums text-white/35">
                   {result.utcDate && !isNaN(new Date(result.utcDate).getTime())
-                    ? new Date(result.utcDate).getFullYear()
+                    ? result.utcDate.slice(0, 10)
                     : 'TBD'}
                 </span>
               </div>
