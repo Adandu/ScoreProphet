@@ -1,3 +1,4 @@
+import { Fragment } from 'react'
 import Image from 'next/image'
 import { fetchLiveMatches, fetchLiveMatchDetails, type NormalizedMatch } from '@/lib/football-api'
 import { PitchFormation } from '@/components/pitch-formation'
@@ -237,16 +238,16 @@ function MatchStatsRow({
       <div className="border-b border-white/5 px-4 py-2.5 text-xs font-bold uppercase tracking-widest text-white/40">
         Match Stats
       </div>
-      <div className="flex flex-col p-3">
+      <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-x-6 p-3 text-sm">
         {rows.map(({ label, type }) => {
           const h = get(homeId, type)
           const a = get(awayId, type)
           return (
-            <div key={type} className="grid grid-cols-[1fr_auto_1fr] items-center gap-x-6 py-1 text-sm">
-              <span className="text-right font-bold text-white">{h}</span>
-              <span className="text-center text-xs text-white/50">{label}</span>
-              <span className="text-left font-bold text-white">{a}</span>
-            </div>
+            <Fragment key={type}>
+              <span className="py-1 text-right font-bold text-white">{h}</span>
+              <span className="py-1 text-center text-xs text-white/50">{label}</span>
+              <span className="py-1 text-left font-bold text-white">{a}</span>
+            </Fragment>
           )
         })}
       </div>
