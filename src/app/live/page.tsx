@@ -38,7 +38,7 @@ export default async function LivePage() {
 }
 
 async function LiveMatchPanel({ liveMatch }: { liveMatch: NormalizedMatch }) {
-  let details
+  let details: Awaited<ReturnType<typeof fetchLiveMatchDetails>>
   try {
     details = await fetchLiveMatchDetails(liveMatch.externalId)
   } catch {

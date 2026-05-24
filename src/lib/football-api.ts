@@ -380,8 +380,6 @@ export async function fetchLiveMatchDetails(matchId: string | number): Promise<L
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const m: any = await res.json()
 
-  const homeId = String(m.homeTeam?.id ?? '')
-
   const POSITION_GROUP: Record<string, number> = {
     Goalkeeper: 0,
     Defence: 1, 'Centre-Back': 1, 'Right-Back': 1, 'Left-Back': 1, 'Wing-Back': 1,
