@@ -96,16 +96,18 @@ async function LiveMatchPanel({ liveMatch }: { liveMatch: NormalizedMatch }) {
         <TeamBlock name={details.awayTeam.name} crest={details.awayTeam.crest} />
       </div>
 
-      {/* 3D Pitch */}
-      <PitchFormation
-        homeTeam={details.homeTeam}
-        awayTeam={details.awayTeam}
-        goals={details.goals}
-        bookings={details.bookings}
-        substitutions={details.substitutions}
-        referee={details.referee}
-        homePossession={details.homePossession}
-      />
+      {/* 3D Pitch — hidden on mobile */}
+      <div className="hidden md:block">
+        <PitchFormation
+          homeTeam={details.homeTeam}
+          awayTeam={details.awayTeam}
+          goals={details.goals}
+          bookings={details.bookings}
+          substitutions={details.substitutions}
+          referee={details.referee}
+          homePossession={details.homePossession}
+        />
+      </div>
 
       {/* Match Stats */}
       {details.teamStats.length > 0 && (

@@ -4,8 +4,9 @@ import { LiveMatchCard } from '@/components/live-match-card'
 import { Countdown } from '@/components/countdown'
 import { parseStoredHeadToHead } from '@/lib/head-to-head'
 import { getSelectedChampionship } from '@/lib/championships'
+import { fetchLiveMatches } from '@/lib/football-api'
 
-export const revalidate = 60
+export const revalidate = 30
 
 async function getFeaturedMatches() {
   const now = new Date()
@@ -109,10 +110,15 @@ async function getRevealedPredictionsByMatch(
 
 export default async function HomePage() {
   const session = await requireAuth()
-  const [matches, selectedChampionship] = await Promise.all([
+  const [matches, selectedChampionship, liveApiMatches] = await Promise.all([
     getFeaturedMatches(),
     getSelectedChampionship(session.userId!),
+    fetchLiveMatches().catch(() => []),
   ])
+
+  const liveScoreByExternalId = new Map(
+    liveApiMatches.map((m) => [m.externalId, { homeScore: m.homeScore, awayScore: m.awayScore }])
+  )
   const timezone = session.timezone ?? 'Europe/Bucharest'
   const now = new Date()
   const startedMatchIds = matches
@@ -143,8 +149,8 @@ export default async function HomePage() {
                     awayTeamCrest: match.awayTeamCrest,
                     homeTeamUrl: match.headToHeadHomeTeamId ? `/teams/${match.headToHeadHomeTeamId}` : undefined,
                     awayTeamUrl: match.headToHeadAwayTeamId ? `/teams/${match.headToHeadAwayTeamId}` : undefined,
-                    homeScore: match.fullTimeHomeScore ?? match.homeScore,
-                    awayScore: match.fullTimeAwayScore ?? match.awayScore,
+                    homeScore: match.fullTimeHomeScore ?? liveScoreByExternalId.get(match.externalId)?.homeScore ?? match.homeScore,
+                    awayScore: match.fullTimeAwayScore ?? liveScoreByExternalId.get(match.externalId)?.awayScore ?? match.awayScore,
                     status: match.status,
                     kickoff: match.kickoff.toISOString(),
                   }}
