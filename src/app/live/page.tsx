@@ -73,6 +73,18 @@ async function LiveMatchPanel({ liveMatch }: { liveMatch: NormalizedMatch }) {
   const homeSubs = details.substitutions.filter((s) => s.teamId === homeId)
   const awaySubs = details.substitutions.filter((s) => s.teamId === awayId)
 
+  function nameKey(name: string) { return name.toLowerCase() }
+  function lastName(name: string) { return name.toLowerCase().split(' ').pop() ?? name.toLowerCase() }
+  const goalCountByName = new Map<string, number>()
+  for (const g of details.goals) {
+    const k = nameKey(g.playerName)
+    goalCountByName.set(k, (goalCountByName.get(k) ?? 0) + 1)
+  }
+  const cardByName = new Map<string, string>()
+  for (const b of [...homeBookings, ...awayBookings]) {
+    cardByName.set(nameKey(b.playerName), b.card)
+  }
+
   return (
     <div className="space-y-4">
       {/* Score header */}
@@ -201,27 +213,41 @@ async function LiveMatchPanel({ liveMatch }: { liveMatch: NormalizedMatch }) {
           </div>
           <div className="grid grid-cols-[1fr_1px_1fr]">
             <div className="flex flex-col gap-2 p-3">
-              {homeSubs.map((s, i) => (
-                <div key={i} className="flex items-center gap-1.5 text-sm">
-                  <span className="font-bold text-green-400">↑</span>
-                  <span className="font-semibold text-white/80">{s.playerInName}</span>
-                  <span className="font-bold text-red-400">↓</span>
-                  <span className="text-white/50">{s.playerOutName}</span>
-                  <span className="ml-auto text-xs font-bold text-white/40">{s.minute}&apos;</span>
-                </div>
-              ))}
+              {homeSubs.map((s, i) => {
+                const k = nameKey(s.playerInName); const kl = lastName(s.playerInName)
+                const goals = goalCountByName.get(k) ?? goalCountByName.get(kl)
+                const card = cardByName.get(k) ?? cardByName.get(kl)
+                return (
+                  <div key={i} className="flex items-center gap-1.5 text-sm">
+                    <span className="font-bold text-green-400">↑</span>
+                    <span className="font-semibold text-white/80">{s.playerInName}</span>
+                    {goals ? <span className="text-green-400">{'⚽'.repeat(goals)}</span> : null}
+                    {card ? <CardBadge card={card} /> : null}
+                    <span className="font-bold text-red-400">↓</span>
+                    <span className="text-white/50">{s.playerOutName}</span>
+                    <span className="ml-auto text-xs font-bold text-white/40">{s.minute}&apos;</span>
+                  </div>
+                )
+              })}
             </div>
             <div className="bg-white/5" />
             <div className="flex flex-col items-end gap-2 p-3">
-              {awaySubs.map((s, i) => (
-                <div key={i} className="flex items-center gap-1.5 text-sm">
-                  <span className="text-xs font-bold text-white/40">{s.minute}&apos;</span>
-                  <span className="text-white/50">{s.playerOutName}</span>
-                  <span className="font-bold text-red-400">↓</span>
-                  <span className="font-semibold text-white/80">{s.playerInName}</span>
-                  <span className="font-bold text-blue-400">↑</span>
-                </div>
-              ))}
+              {awaySubs.map((s, i) => {
+                const k = nameKey(s.playerInName); const kl = lastName(s.playerInName)
+                const goals = goalCountByName.get(k) ?? goalCountByName.get(kl)
+                const card = cardByName.get(k) ?? cardByName.get(kl)
+                return (
+                  <div key={i} className="flex items-center gap-1.5 text-sm">
+                    <span className="text-xs font-bold text-white/40">{s.minute}&apos;</span>
+                    <span className="text-white/50">{s.playerOutName}</span>
+                    <span className="font-bold text-red-400">↓</span>
+                    <span className="font-semibold text-white/80">{s.playerInName}</span>
+                    {card ? <CardBadge card={card} /> : null}
+                    {goals ? <span className="text-blue-400">{'⚽'.repeat(goals)}</span> : null}
+                    <span className="font-bold text-blue-400">↑</span>
+                  </div>
+                )
+              })}
             </div>
           </div>
         </div>
