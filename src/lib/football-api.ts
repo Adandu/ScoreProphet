@@ -124,7 +124,7 @@ export interface LiveMatchDetails {
   goals: LiveMatchEvent[]
   bookings: LiveMatchBooking[]
   substitutions: LiveMatchSubstitution[]
-  teamStats: Array<{ teamId: string; teamName: string; type: 'FOULS' | 'CORNERS'; value: number }>
+  teamStats: Array<{ teamId: string; teamName: string; type: 'CORNERS' | 'FREE_KICKS' | 'GOAL_KICKS' | 'OFFSIDES' | 'FOULS' | 'SAVES' | 'THROW_INS' | 'SHOTS_ON_GOAL' | 'SHOTS_OFF_GOAL' | 'YELLOW_CARDS' | 'RED_CARDS'; value: number }>
   homePossession: number | null  // 0–100, null if not available
 }
 
@@ -380,6 +380,20 @@ export async function fetchLiveMatchDetails(matchId: string | number): Promise<L
 
   const homeId = String(m.homeTeam?.id ?? '')
 
+  const POSITION_GROUP: Record<string, number> = {
+    Goalkeeper: 0,
+    Defence: 1, 'Centre-Back': 1, 'Right-Back': 1, 'Left-Back': 1, 'Wing-Back': 1,
+    Midfield: 2, 'Defensive Midfield': 2, 'Central Midfield': 2, 'Attacking Midfield': 2,
+    'Right Midfield': 2, 'Left Midfield': 2,
+    Offence: 3, 'Right Winger': 3, 'Left Winger': 3, 'Centre-Forward': 3, Striker: 3,
+  }
+
+  // Within Offence group, wingers before centre-forwards so the lone striker lands at the deepest slot
+  const OFFENCE_SUBORDER: Record<string, number> = {
+    'Right Winger': 0, 'Left Winger': 0, Offence: 0,
+    'Centre-Forward': 1, Striker: 1,
+  }
+
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const normalizePlayer = (p: any): LivePlayer => ({
     id: String(p.id ?? ''),
@@ -388,6 +402,27 @@ export async function fetchLiveMatchDetails(matchId: string | number): Promise<L
     position: p.position ?? '',
   })
 
+  function sortLineup(players: LivePlayer[], formation: string): LivePlayer[] {
+    const backLineSize = parseInt(formation.split('-')[0] ?? '4', 10)
+    const gks = players.filter((p) => (POSITION_GROUP[p.position] ?? 2) === 0)
+    const defs = players.filter((p) => (POSITION_GROUP[p.position] ?? 2) === 1)
+    const mids = players.filter((p) => (POSITION_GROUP[p.position] ?? 2) === 2)
+    const fwds = players.filter((p) => (POSITION_GROUP[p.position] ?? 2) === 3)
+    // In 3-back formations, non-CB defenders are wing-backs playing in the mid line
+    const backLine =
+      backLineSize <= 3
+        ? defs.filter((p) => p.position === 'Centre-Back' || p.position === 'Defence')
+        : defs
+    const overflowDefs =
+      backLineSize <= 3
+        ? defs.filter((p) => p.position !== 'Centre-Back' && p.position !== 'Defence')
+        : []
+    const sortedFwds = [...fwds].sort(
+      (a, b) => (OFFENCE_SUBORDER[a.position] ?? 0) - (OFFENCE_SUBORDER[b.position] ?? 0)
+    )
+    return [...gks, ...backLine, ...overflowDefs, ...mids, ...sortedFwds]
+  }
+
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const normalizeTeam = (t: any): LiveTeam => ({
     id: String(t.id ?? ''),
@@ -395,7 +430,7 @@ export async function fetchLiveMatchDetails(matchId: string | number): Promise<L
     crest: t.crest ?? '',
     clubColors: t.clubColors ?? '',
     formation: t.formation ?? '',
-    lineup: (t.lineup ?? []).map(normalizePlayer),
+    lineup: sortLineup((t.lineup ?? []).map(normalizePlayer), t.formation ?? ''),
     bench: (t.bench ?? []).map(normalizePlayer),
     coach: t.coach?.name ?? null,
   })
@@ -405,28 +440,28 @@ export async function fetchLiveMatchDetails(matchId: string | number): Promise<L
     (r: any) => r.role === 'REFEREE'
   )
 
-  // Extract possession from statistics if present
+  // Extract per-team statistics from the new API format (homeTeam.statistics / awayTeam.statistics as objects)
   let homePossession: number | null = null
   const teamStats: LiveMatchDetails['teamStats'] = []
-  if (Array.isArray(m.statistics)) {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const homeStats = m.statistics.find((s: any) => String(s.team?.id) === homeId)
-    if (homeStats) {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const poss = homeStats.statistics?.find((s: any) => s.type === 'BALL_POSSESSION')
-      if (poss?.value != null) homePossession = Number(poss.value)
-    }
 
-    for (const statGroup of m.statistics) {
-      const teamId = String(statGroup.team?.id ?? '')
-      const teamName = statGroup.team?.name ?? ''
-      for (const stat of statGroup.statistics ?? []) {
-        const type = normalizeTeamStatType(stat.type)
-        const value = Number(stat.value)
-        if (type && Number.isFinite(value)) teamStats.push({ teamId, teamName, type, value })
-      }
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  function extractTeamStats(teamObj: any) {
+    const stats = teamObj?.statistics
+    if (!stats || typeof stats !== 'object' || Array.isArray(stats)) return
+    const id = String(teamObj.id ?? '')
+    const name = teamObj.name ?? ''
+    for (const [key, val] of Object.entries(stats)) {
+      const type = normalizeTeamStatType(key)
+      const value = Number(val)
+      if (type && Number.isFinite(value)) teamStats.push({ teamId: id, teamName: name, type, value })
     }
   }
+
+  extractTeamStats(m.homeTeam)
+  extractTeamStats(m.awayTeam)
+
+  const homePoss = m.homeTeam?.statistics?.ball_possession
+  if (homePoss != null) homePossession = Number(homePoss)
 
   return {
     matchId: String(m.id),
@@ -468,9 +503,18 @@ export async function fetchLiveMatchDetails(matchId: string | number): Promise<L
   }
 }
 
-function normalizeTeamStatType(value: string | undefined): 'FOULS' | 'CORNERS' | null {
-  const normalized = String(value ?? '').toUpperCase()
-  if (normalized.includes('FOUL')) return 'FOULS'
-  if (normalized.includes('CORNER')) return 'CORNERS'
+function normalizeTeamStatType(value: string | undefined): 'CORNERS' | 'FREE_KICKS' | 'GOAL_KICKS' | 'OFFSIDES' | 'FOULS' | 'SAVES' | 'THROW_INS' | 'SHOTS_ON_GOAL' | 'SHOTS_OFF_GOAL' | 'YELLOW_CARDS' | 'RED_CARDS' | null {
+  const n = String(value ?? '').toLowerCase()
+  if (n === 'corner_kicks') return 'CORNERS'
+  if (n === 'free_kicks') return 'FREE_KICKS'
+  if (n === 'goal_kicks') return 'GOAL_KICKS'
+  if (n === 'offsides') return 'OFFSIDES'
+  if (n === 'fouls') return 'FOULS'
+  if (n === 'saves') return 'SAVES'
+  if (n === 'throw_ins') return 'THROW_INS'
+  if (n === 'shots_on_goal') return 'SHOTS_ON_GOAL'
+  if (n === 'shots_off_goal') return 'SHOTS_OFF_GOAL'
+  if (n === 'yellow_cards') return 'YELLOW_CARDS'
+  if (n === 'red_cards') return 'RED_CARDS'
   return null
 }

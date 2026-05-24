@@ -2,7 +2,7 @@ import { PrismaClient } from '@prisma/client'
 import { PrismaBetterSqlite3 } from '@prisma/adapter-better-sqlite3'
 
 const BASE_URL = 'https://api.football-data.org/v4'
-const COMPETITION = 'WC'
+const COMPETITION = process.env.FOOTBALL_API_COMPETITION ?? 'WC'
 
 const STAGE_MAP = {
   GROUP_STAGE: 'GROUP',
@@ -120,7 +120,7 @@ async function fetchAllTeams() {
 }
 
 async function main() {
-  console.log('[seed] Syncing WC2026 matches from football-data.org...')
+  console.log(`[seed] Syncing ${COMPETITION} matches from football-data.org...`)
   let matches
   try {
     matches = await fetchAllMatches()
