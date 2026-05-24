@@ -482,7 +482,7 @@ export async function fetchLiveMatchDetails(matchId: string | number): Promise<L
       teamName: g.team?.name ?? '',
       playerName: g.scorer?.name ?? '',
       assistName: g.assist?.name ?? undefined,
-      type: g.type ?? undefined,
+      type: g.type === 'OWN' ? 'OWN_GOAL' : g.type ?? undefined,
     })),
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     bookings: (m.bookings ?? []).map((b: any): LiveMatchBooking => ({
@@ -490,7 +490,7 @@ export async function fetchLiveMatchDetails(matchId: string | number): Promise<L
       teamId: String(b.team?.id ?? ''),
       teamName: b.team?.name ?? '',
       playerName: b.player?.name ?? '',
-      card: b.card ?? 'YELLOW_CARD',
+      card: b.card === 'YELLOW' ? 'YELLOW_CARD' : b.card === 'RED' ? 'RED_CARD' : b.card === 'YELLOW_RED' ? 'YELLOW_RED_CARD' : 'YELLOW_CARD',
     })),
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     substitutions: (m.substitutions ?? []).map((s: any): LiveMatchSubstitution => ({
