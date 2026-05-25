@@ -13,6 +13,10 @@ import type { Stage } from '@/lib/types'
 
 const STAGE_ORDER: Stage[] = ['GROUP', 'ROUND_OF_32', 'ROUND_OF_16', 'QUARTER_FINAL', 'SEMI_FINAL', 'THIRD_PLACE', 'FINAL']
 
+const COMPETITION_LABEL: Record<string, string> = {
+  WC: 'World Cup', CL: 'Champions League', PL: 'Premier League',
+}
+
 export default async function ChampionshipPredictionsPage({ params }: { params: Promise<{ championshipId: string }> }) {
   const { championshipId: rawId } = await params
   const championshipId = parseInt(rawId, 10)
@@ -26,7 +30,7 @@ export default async function ChampionshipPredictionsPage({ params }: { params: 
       select: {
         id: true, externalId: true, homeTeam: true, awayTeam: true,
         homeTeamCrest: true, awayTeamCrest: true, stage: true,
-        kickoff: true, status: true, headToHeadJson: true,
+        kickoff: true, status: true, headToHeadJson: true, competitionCode: true,
       },
     }),
     prisma.prediction.findMany({ where: { userId: session.userId, championshipId } }),
@@ -63,10 +67,17 @@ export default async function ChampionshipPredictionsPage({ params }: { params: 
     return acc
   }, {})
 
-  const grouped = STAGE_ORDER.reduce<Record<Stage, typeof matches>>((acc, stage) => {
-    acc[stage] = matches.filter((m) => m.stage === stage)
-    return acc
-  }, {} as Record<Stage, typeof matches>)
+  // Group by competitionCode+stage, sorted by earliest kickoff so cross-competition sections interleave correctly
+  const sectionMap = new Map<string, typeof matches>()
+  for (const m of matches) {
+    const key = `${m.competitionCode}__${m.stage}`
+    if (!sectionMap.has(key)) sectionMap.set(key, [])
+    sectionMap.get(key)!.push(m)
+  }
+  const competitions = [...new Set(matches.map((m) => m.competitionCode))]
+  const multiCompetition = competitions.length > 1
+  const sections = [...sectionMap.entries()]
+    .sort(([, a], [, b]) => (a[0]?.kickoff?.getTime() ?? 0) - (b[0]?.kickoff?.getTime() ?? 0))
 
   const now = new Date()
 
@@ -92,12 +103,14 @@ export default async function ChampionshipPredictionsPage({ params }: { params: 
         />
       </section>
 
-      {STAGE_ORDER.filter((stage) => grouped[stage]?.length > 0).map((stage) => {
-        const stageMatches = grouped[stage]
-        if (!stageMatches.length) return null
+      {sections.map(([key, stageMatches]) => {
+        const [competitionCode, stage] = key.split('__') as [string, Stage]
+        const heading = multiCompetition
+          ? `${COMPETITION_LABEL[competitionCode] ?? competitionCode} · ${stageLabel(stage)}`
+          : stageLabel(stage)
         return (
-          <section key={stage}>
-            <h3 className="mb-3 text-lg font-semibold text-[#C9A84C]">{stageLabel(stage)}</h3>
+          <section key={key}>
+            <h3 className="mb-3 text-lg font-semibold text-[#C9A84C]">{heading}</h3>
             <div className="grid gap-4 sm:grid-cols-2">
               {stageMatches.map((match) => {
                 const locked = match.kickoff <= now
