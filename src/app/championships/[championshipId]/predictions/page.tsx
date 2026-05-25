@@ -68,6 +68,14 @@ export default async function ChampionshipPredictionsPage({ params }: { params: 
     return acc
   }, {} as Record<Stage, typeof matches>)
 
+  const sortedStages = STAGE_ORDER
+    .filter((s) => grouped[s].length > 0)
+    .sort((a, b) => {
+      const aTime = grouped[a][0]?.kickoff?.getTime() ?? 0
+      const bTime = grouped[b][0]?.kickoff?.getTime() ?? 0
+      return aTime - bTime
+    })
+
   const now = new Date()
 
   return (
@@ -92,7 +100,7 @@ export default async function ChampionshipPredictionsPage({ params }: { params: 
         />
       </section>
 
-      {STAGE_ORDER.map((stage) => {
+      {sortedStages.map((stage) => {
         const stageMatches = grouped[stage]
         if (!stageMatches.length) return null
         return (
