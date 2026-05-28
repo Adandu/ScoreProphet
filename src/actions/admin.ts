@@ -77,7 +77,7 @@ export async function recalculateAllPoints(prevState: unknown) {
 
   // Pre-fetch winner predictions for all FINAL matches in bulk (avoid per-match queries)
   const finalMatches = matches.filter((m) => m.stage === 'FINAL' && m.winnerTeam)
-  let winnerPredictionsByCompCode = new Map<string, { id: number; predictedTeam: string }[]>()
+  const winnerPredictionsByCompCode = new Map<string, { id: number; predictedTeam: string }[]>()
   if (finalMatches.length > 0) {
     const compCodes = [...new Set(finalMatches.map((m) => m.competitionCode))]
     const championships = await prisma.championship.findMany({
