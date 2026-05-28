@@ -15,6 +15,16 @@ ENV DATABASE_URL="file:/tmp/build.db"
 ENV SESSION_SECRET="build-time-placeholder-not-used-in-production"
 RUN npx prisma generate
 RUN npm run build
+RUN npx esbuild scripts/send-prediction-reminders.ts \
+  --bundle \
+  --platform=node \
+  --format=esm \
+  --outfile=scripts/send-prediction-reminders.mjs \
+  --external:@prisma/client \
+  "--external:@prisma/adapter-better-sqlite3" \
+  --external:nodemailer \
+  "--external:@resvg/resvg-js" \
+  --external:better-sqlite3
 
 FROM base AS prod-deps
 WORKDIR /app
@@ -40,10 +50,8 @@ COPY --from=prod-deps /app/node_modules ./node_modules
 
 COPY --from=builder /app/scripts/seed.mjs ./scripts/seed.mjs
 COPY --from=builder /app/scripts/sync-head-to-head.mjs ./scripts/sync-head-to-head.mjs
-COPY --from=builder /app/scripts/send-prediction-reminders.ts ./scripts/send-prediction-reminders.ts
+COPY --from=builder /app/scripts/send-prediction-reminders.mjs ./scripts/send-prediction-reminders.mjs
 COPY --from=builder /app/scripts/sync-match-statistics.mjs ./scripts/sync-match-statistics.mjs
-COPY --from=builder /app/src/lib/email.ts ./src/lib/email.ts
-COPY --from=builder /app/tsconfig.json ./tsconfig.json
 
 COPY entrypoint.sh ./
 RUN chmod +x entrypoint.sh
