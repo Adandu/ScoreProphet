@@ -1,5 +1,5 @@
 import { prisma } from '@/lib/db'
-import { requireChampionshipAccess } from '@/lib/championships'
+import { requireChampionshipAccessLean } from '@/lib/championships'
 import { PredictionForm } from '@/components/prediction-form'
 import { ResetButton } from '@/components/reset-button'
 import { TournamentWinnerSelector } from '@/components/tournament-winner-selector'
@@ -20,7 +20,7 @@ const COMPETITION_LABEL: Record<string, string> = {
 export default async function ChampionshipPredictionsPage({ params }: { params: Promise<{ championshipId: string }> }) {
   const { championshipId: rawId } = await params
   const championshipId = parseInt(rawId, 10)
-  const { session, championship } = await requireChampionshipAccess(championshipId)
+  const { session, championship } = await requireChampionshipAccessLean(championshipId)
   const timezone = session.timezone ?? 'Europe/Bucharest'
 
   const [matches, userPredictions, userAdvances, dbTeams, firstGroupMatch, winnerPrediction] = await Promise.all([

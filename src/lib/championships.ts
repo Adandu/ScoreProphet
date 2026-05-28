@@ -64,6 +64,26 @@ export async function requireChampionshipAccess(championshipId: number) {
   return { session, championship }
 }
 
+export async function requireChampionshipAccessLean(championshipId: number) {
+  const session = await requireAuth()
+  if (!Number.isInteger(championshipId) || championshipId <= 0) redirect('/')
+  const championship = await prisma.championship.findUnique({
+    where: { id: championshipId },
+    select: { id: true, name: true, description: true, isActive: true, doubleChanceEnabled: true, competitionCode: true },
+  })
+
+  if (!championship || !championship.isActive) redirect('/')
+  if (!session.isAdmin) {
+    const membership = await prisma.championshipMember.findFirst({
+      where: { championshipId, userId: session.userId! },
+      select: { championshipId: true },
+    })
+    if (!membership) redirect('/')
+  }
+
+  return { session, championship }
+}
+
 export async function getManagedChampionships(userId: number): Promise<ChampionshipSummary[]> {
   const assignments = await prisma.championshipManager.findMany({
     where: { userId },
