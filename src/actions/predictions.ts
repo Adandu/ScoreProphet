@@ -170,18 +170,25 @@ export async function saveTournamentWinnerPrediction(prevState: unknown, formDat
     return { error: 'Missing fields' }
   }
 
-  const [firstGroupMatch, membership] = await Promise.all([
-    prisma.match.findFirst({
-      where: { stage: 'GROUP' },
-      orderBy: { kickoff: 'asc' },
-      select: { kickoff: true },
+  const [championship, membership] = await Promise.all([
+    prisma.championship.findUnique({
+      where: { id: championshipId },
+      select: { competitionCode: true },
     }),
     prisma.championshipMember.findFirst({
       where: { userId: session.userId!, championshipId },
     }),
   ])
 
+  if (!championship) return { error: 'Championship not found' }
   if (!membership) return { error: 'You are not a member of this championship' }
+
+  const firstGroupMatch = await prisma.match.findFirst({
+    where: { stage: 'GROUP', competitionCode: championship.competitionCode },
+    orderBy: { kickoff: 'asc' },
+    select: { kickoff: true },
+  })
+
   if (firstGroupMatch && firstGroupMatch.kickoff <= new Date()) {
     return { error: 'Tournament winner prediction is locked' }
   }
@@ -201,8 +208,21 @@ export async function resetTournamentWinnerPrediction(prevState: unknown, formDa
   const championshipId = parseInt(formData.get('championshipId') as string, 10)
   if (!Number.isInteger(championshipId) || championshipId <= 0) return { error: 'Missing fields' }
 
+  const [championship, membership] = await Promise.all([
+    prisma.championship.findUnique({
+      where: { id: championshipId },
+      select: { competitionCode: true },
+    }),
+    prisma.championshipMember.findFirst({
+      where: { userId: session.userId!, championshipId },
+    }),
+  ])
+
+  if (!championship) return { error: 'Championship not found' }
+  if (!membership) return { error: 'You are not a member of this championship' }
+
   const firstGroupMatch = await prisma.match.findFirst({
-    where: { stage: 'GROUP' },
+    where: { stage: 'GROUP', competitionCode: championship.competitionCode },
     orderBy: { kickoff: 'asc' },
     select: { kickoff: true },
   })

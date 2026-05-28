@@ -78,7 +78,14 @@ async function recalculateMatchPoints(match) {
     }
 
     if (match.stage === 'FINAL' && match.winnerTeam) {
-      const winnerPreds = await prisma.tournamentWinnerPrediction.findMany()
+      const championships = await prisma.championship.findMany({
+        where: { competitionCode: match.competitionCode },
+        select: { id: true },
+      })
+      const championshipIds = championships.map(c => c.id)
+      const winnerPreds = await prisma.tournamentWinnerPrediction.findMany({
+        where: { championshipId: { in: championshipIds } },
+      })
       for (const wp of winnerPreds) {
         ops.push(prisma.tournamentWinnerPrediction.update({
           where: { id: wp.id },

@@ -106,7 +106,14 @@ async function recalculateMatchPoints(matchId: number) {
   }
 
   if (match.stage === 'FINAL' && match.winnerTeam) {
-    const winnerPredictions = await prisma.tournamentWinnerPrediction.findMany()
+    const championships = await prisma.championship.findMany({
+      where: { competitionCode: match.competitionCode },
+      select: { id: true },
+    })
+    const championshipIds = championships.map((c) => c.id)
+    const winnerPredictions = await prisma.tournamentWinnerPrediction.findMany({
+      where: { championshipId: { in: championshipIds } },
+    })
     for (const wp of winnerPredictions) {
       const pts = calculateTournamentWinnerPoints(wp.predictedTeam, match.winnerTeam)
       operations.push(
@@ -151,7 +158,10 @@ export async function resetMatchOverride(prevState: unknown, formData: FormData)
   await prisma.knockoutAdvance.updateMany({ where: { matchId }, data: { pointsAwarded: null } })
 
   if (match.stage === 'FINAL') {
-    await prisma.tournamentWinnerPrediction.updateMany({ data: { pointsAwarded: null } })
+    await prisma.tournamentWinnerPrediction.updateMany({
+      where: { championship: { competitionCode: match.competitionCode } },
+      data: { pointsAwarded: null },
+    })
   }
 
   await logAdminAction({
