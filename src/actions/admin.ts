@@ -68,10 +68,47 @@ export async function overrideMatchScore(prevState: unknown, formData: FormData)
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 export async function recalculateAllPoints(prevState: unknown) {
   const session = await requireAdmin()
-  const matches = await prisma.match.findMany({ where: { status: 'FINISHED' } })
-  for (const match of matches) {
-    await recalculateMatchPoints(match.id)
+
+  // Bulk-fetch all finished matches with their predictions and advances in one query
+  const matches = await prisma.match.findMany({
+    where: { status: 'FINISHED' },
+    include: { predictions: true, advances: true },
+  })
+
+  // Pre-fetch winner predictions for all FINAL matches in bulk (avoid per-match queries)
+  const finalMatches = matches.filter((m) => m.stage === 'FINAL' && m.winnerTeam)
+  let winnerPredictionsByCompCode = new Map<string, { id: number; predictedTeam: string }[]>()
+  if (finalMatches.length > 0) {
+    const compCodes = [...new Set(finalMatches.map((m) => m.competitionCode))]
+    const championships = await prisma.championship.findMany({
+      where: { competitionCode: { in: compCodes } },
+      select: { id: true, competitionCode: true },
+    })
+    const championshipIds = championships.map((c) => c.id)
+    const winnerPredictions = await prisma.tournamentWinnerPrediction.findMany({
+      where: { championshipId: { in: championshipIds } },
+      select: { id: true, championshipId: true, predictedTeam: true },
+    })
+    // Group winner predictions by competitionCode for fast lookup
+    for (const champ of championships) {
+      const preds = winnerPredictions.filter((wp) => wp.championshipId === champ.id)
+      const existing = winnerPredictionsByCompCode.get(champ.competitionCode) ?? []
+      winnerPredictionsByCompCode.set(champ.competitionCode, [...existing, ...preds])
+    }
   }
+
+  // Build all operations in a single pass — no additional DB queries per match
+  const allOperations = []
+  for (const match of matches) {
+    if (match.homeScore === null || match.awayScore === null) continue
+    const winnerPredictions = match.stage === 'FINAL' && match.winnerTeam
+      ? (winnerPredictionsByCompCode.get(match.competitionCode) ?? [])
+      : []
+    allOperations.push(...buildPointsOps(match, winnerPredictions))
+  }
+
+  if (allOperations.length > 0) await prisma.$transaction(allOperations)
+
   await logAdminAction({
     adminId: session.userId!,
     adminUsername: session.username ?? String(session.userId),
@@ -83,13 +120,22 @@ export async function recalculateAllPoints(prevState: unknown) {
   return { success: true, count: matches.length }
 }
 
-async function recalculateMatchPoints(matchId: number) {
-  const match = await prisma.match.findUnique({
-    where: { id: matchId },
-    include: { predictions: true, advances: true },
-  })
-  if (!match || match.homeScore === null || match.awayScore === null) return
+type MatchWithRelations = {
+  id: number
+  homeScore: number | null
+  awayScore: number | null
+  winnerTeam: string | null
+  scoreDuration: string
+  stage: string
+  competitionCode: string
+  predictions: { id: number; type: string; value: string }[]
+  advances: { id: number; predictedTeam: string }[]
+}
 
+type WinnerPredictionRecord = { id: number; predictedTeam: string }
+
+function buildPointsOps(match: MatchWithRelations, winnerPredictions: WinnerPredictionRecord[]) {
+  if (match.homeScore === null || match.awayScore === null) return []
   const operations = []
 
   for (const pred of match.predictions) {
@@ -106,14 +152,6 @@ async function recalculateMatchPoints(matchId: number) {
   }
 
   if (match.stage === 'FINAL' && match.winnerTeam) {
-    const championships = await prisma.championship.findMany({
-      where: { competitionCode: match.competitionCode },
-      select: { id: true },
-    })
-    const championshipIds = championships.map((c) => c.id)
-    const winnerPredictions = await prisma.tournamentWinnerPrediction.findMany({
-      where: { championshipId: { in: championshipIds } },
-    })
     for (const wp of winnerPredictions) {
       const pts = calculateTournamentWinnerPoints(wp.predictedTeam, match.winnerTeam)
       operations.push(
@@ -122,6 +160,30 @@ async function recalculateMatchPoints(matchId: number) {
     }
   }
 
+  return operations
+}
+
+async function recalculateMatchPoints(matchId: number) {
+  const match = await prisma.match.findUnique({
+    where: { id: matchId },
+    include: { predictions: true, advances: true },
+  })
+  if (!match || match.homeScore === null || match.awayScore === null) return
+
+  let winnerPredictions: WinnerPredictionRecord[] = []
+  if (match.stage === 'FINAL' && match.winnerTeam) {
+    const championships = await prisma.championship.findMany({
+      where: { competitionCode: match.competitionCode },
+      select: { id: true },
+    })
+    const championshipIds = championships.map((c) => c.id)
+    winnerPredictions = await prisma.tournamentWinnerPrediction.findMany({
+      where: { championshipId: { in: championshipIds } },
+      select: { id: true, predictedTeam: true },
+    })
+  }
+
+  const operations = buildPointsOps(match, winnerPredictions)
   if (operations.length > 0) await prisma.$transaction(operations)
 }
 
