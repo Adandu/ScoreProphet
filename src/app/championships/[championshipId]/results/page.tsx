@@ -1,8 +1,11 @@
+import Link from 'next/link'
 import { prisma } from '@/lib/db'
 import { requireChampionshipAccess } from '@/lib/championships'
 import { Badge } from '@/components/ui/badge'
 import { formatMatchTime } from '@/lib/format-date'
 import { ChampionshipPageNav } from '@/components/championship-page-nav'
+
+const PAGE_SIZE = 10
 
 function pointsBadge(pts: number | null) {
   if (pts === null) return <span className="text-white/30">-</span>
@@ -30,28 +33,44 @@ function formatDisplayScore(match: {
   return base
 }
 
-export default async function ChampionshipResultsPage({ params }: { params: Promise<{ championshipId: string }> }) {
+export default async function ChampionshipResultsPage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ championshipId: string }>
+  searchParams: Promise<{ page?: string }>
+}) {
   const { championshipId: rawId } = await params
   const championshipId = parseInt(rawId, 10)
+  const page = Math.max(1, parseInt((await searchParams).page ?? '1', 10))
   const { session, championship } = await requireChampionshipAccess(championshipId)
   const timezone = session.timezone ?? 'Europe/Bucharest'
   const memberIds = championship.members.map((member) => member.userId)
   const members = championship.members.map((member) => member.user)
 
-  const matches = await prisma.match.findMany({
-    where: { status: { in: ['FINISHED', 'LIVE'] } },
-    orderBy: { kickoff: 'desc' },
-    include: {
-      predictions: { where: { userId: { in: memberIds } }, include: { user: true } },
-      advances: { where: { userId: { in: memberIds } }, include: { user: true } },
-    },
-  })
+  const matchWhere = { status: { in: ['FINISHED', 'LIVE'] } } as const
+
+  const [totalMatches, matches] = await Promise.all([
+    prisma.match.count({ where: matchWhere }),
+    prisma.match.findMany({
+      where: matchWhere,
+      orderBy: { kickoff: 'desc' },
+      take: PAGE_SIZE,
+      skip: (page - 1) * PAGE_SIZE,
+      include: {
+        predictions: { where: { userId: { in: memberIds } }, include: { user: true } },
+        advances: { where: { userId: { in: memberIds } }, include: { user: true } },
+      },
+    }),
+  ])
+
+  const totalPages = Math.max(1, Math.ceil(totalMatches / PAGE_SIZE))
 
   return (
     <div className="space-y-8">
       <ChampionshipPageNav championshipId={championship.id} name={championship.name} />
       <h2 className="text-xl font-bold text-white">Results</h2>
-      {matches.length === 0 && <p className="text-white/40">No completed or live matches yet.</p>}
+      {totalMatches === 0 && <p className="text-white/40">No completed or live matches yet.</p>}
       {matches.map((match) => (
         <div key={match.id} className="rounded-xl border border-white/10 bg-white/5 overflow-hidden">
           <div className="flex items-center justify-between px-4 py-3 border-b border-white/10">
@@ -107,6 +126,31 @@ export default async function ChampionshipResultsPage({ params }: { params: Prom
           </div>
         </div>
       ))}
+      {totalPages > 1 && (
+        <div className="flex items-center justify-center gap-4 pt-2">
+          {page > 1 ? (
+            <Link
+              href={`/championships/${championship.id}/results?page=${page - 1}`}
+              className="text-sm text-white/60 hover:text-white transition-colors"
+            >
+              ← Prev
+            </Link>
+          ) : (
+            <span className="text-sm text-white/20">← Prev</span>
+          )}
+          <span className="text-sm text-white/40">Page {page} of {totalPages}</span>
+          {page < totalPages ? (
+            <Link
+              href={`/championships/${championship.id}/results?page=${page + 1}`}
+              className="text-sm text-white/60 hover:text-white transition-colors"
+            >
+              Next →
+            </Link>
+          ) : (
+            <span className="text-sm text-white/20">Next →</span>
+          )}
+        </div>
+      )}
     </div>
   )
 }
