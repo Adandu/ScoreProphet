@@ -131,6 +131,7 @@ export async function LiveMatchPanel({ liveMatch }: { liveMatch: NormalizedMatch
                   <span className="text-green-400">⚽</span>
                   <span className="font-semibold text-white/80">{g.playerName}</span>
                   {g.type === 'OWN_GOAL' && <span className="text-xs font-bold text-orange-400">OG</span>}
+                  {g.type === 'PENALTY' && <span className="text-xs font-bold text-yellow-400">P</span>}
                   <span className="text-xs font-bold text-white/40">{fmtMin(g.minute, g.injuryTime)}</span>
                 </div>
               ))}
@@ -141,6 +142,7 @@ export async function LiveMatchPanel({ liveMatch }: { liveMatch: NormalizedMatch
                 <div key={i} className="flex items-center gap-2 text-sm">
                   <span className="text-xs font-bold text-white/40">{fmtMin(g.minute, g.injuryTime)}</span>
                   {g.type === 'OWN_GOAL' && <span className="text-xs font-bold text-orange-400">OG</span>}
+                  {g.type === 'PENALTY' && <span className="text-xs font-bold text-yellow-400">P</span>}
                   <span className="font-semibold text-white/80">{g.playerName}</span>
                   <span className="text-blue-400">⚽</span>
                 </div>
