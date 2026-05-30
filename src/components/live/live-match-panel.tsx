@@ -71,7 +71,9 @@ export async function LiveMatchPanel({ liveMatch, prefetchedDetails }: { liveMat
             </div>
           ) : details.halftime ? (
             <div className="flex items-center gap-2 rounded-full bg-blue-950 px-3 py-0.5">
-              <span className="text-xs font-bold uppercase tracking-widest text-blue-300">Half Time</span>
+              <span className="text-xs font-bold uppercase tracking-widest text-blue-300">
+                {details.minute !== null && details.minute > 45 ? 'ET Break' : 'Half Time'}
+              </span>
             </div>
           ) : (
             <div className="flex items-center gap-2 rounded-full bg-red-950 px-3 py-0.5">
@@ -83,7 +85,7 @@ export async function LiveMatchPanel({ liveMatch, prefetchedDetails }: { liveMat
             {homeScore} <span className="text-white/30">:</span> {awayScore}
           </div>
           {liveMatch.status !== 'FINISHED' && (details.halftime ? (
-            <div className="text-sm font-bold text-white/50">HT</div>
+            <div className="text-sm font-bold text-white/50">{details.minute !== null && details.minute > 45 ? 'ET' : 'HT'}</div>
           ) : details.minute !== null && (
             <div className="text-sm text-white/50">{fmtMin(details.minute, details.injuryTime)}</div>
           ))}
