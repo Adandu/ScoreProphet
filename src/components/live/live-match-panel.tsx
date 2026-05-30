@@ -1,4 +1,4 @@
-import { fetchLiveMatchDetails, type NormalizedMatch } from '@/lib/football-api'
+import { fetchLiveMatchDetails, type NormalizedMatch, type LiveMatchDetails } from '@/lib/football-api'
 import { PitchFormation } from '@/components/pitch-formation'
 import { TeamBlock } from './team-block'
 import { CardBadge } from './card-badge'
@@ -26,18 +26,22 @@ function finishedLabel(scoreDuration: string): string {
   return 'Full Time'
 }
 
-export async function LiveMatchPanel({ liveMatch }: { liveMatch: NormalizedMatch }) {
-  let details: Awaited<ReturnType<typeof fetchLiveMatchDetails>>
-  try {
-    details = await fetchLiveMatchDetails(liveMatch.externalId)
-  } catch {
-    return (
-      <div className="flex flex-col items-center justify-center gap-4 py-24 text-center">
-        <div className="text-5xl">⚽</div>
-        <h2 className="text-2xl font-bold text-white">{liveMatch.homeTeam} vs {liveMatch.awayTeam}</h2>
-        <p className="text-white/50">Live match data is unavailable. Please try again shortly.</p>
-      </div>
-    )
+export async function LiveMatchPanel({ liveMatch, prefetchedDetails }: { liveMatch: NormalizedMatch; prefetchedDetails?: LiveMatchDetails }) {
+  let details: LiveMatchDetails
+  if (prefetchedDetails) {
+    details = prefetchedDetails
+  } else {
+    try {
+      details = await fetchLiveMatchDetails(liveMatch.externalId)
+    } catch {
+      return (
+        <div className="flex flex-col items-center justify-center gap-4 py-24 text-center">
+          <div className="text-5xl">⚽</div>
+          <h2 className="text-2xl font-bold text-white">{liveMatch.homeTeam} vs {liveMatch.awayTeam}</h2>
+          <p className="text-white/50">Live match data is unavailable. Please try again shortly.</p>
+        </div>
+      )
+    }
   }
 
   const homeId = details.homeTeam.id

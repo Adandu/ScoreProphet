@@ -102,6 +102,7 @@ model Match {
   awayScore                  Int?
   winnerTeam                 String?
   competitionCode            String            @default("WC")
+  detailJson                 String            @default("")
   adminOverride              Boolean           @default(false)
   headToHeadHomeTeamId       String?
   headToHeadAwayTeamId       String?
