@@ -94,6 +94,7 @@ export interface LiveTeam {
 
 export interface LiveMatchEvent {
   minute: number
+  injuryTime?: number
   teamId: string
   teamName: string
   playerName: string
@@ -103,6 +104,7 @@ export interface LiveMatchEvent {
 
 export interface LiveMatchSubstitution {
   minute: number
+  injuryTime?: number
   teamId: string
   playerOutName: string
   playerInName: string
@@ -116,6 +118,7 @@ export interface LiveMatchDetails {
   matchId: string
   status: string
   minute: number | null
+  injuryTime: number | null
   venue: string | null
   homeScore: number | null
   awayScore: number | null
@@ -466,6 +469,7 @@ export async function fetchLiveMatchDetails(matchId: string | number): Promise<L
     matchId: String(m.id),
     status: STATUS_MAP[m.status] ?? m.status ?? '',
     minute: m.minute ?? null,
+    injuryTime: m.injuryTime != null ? Number(m.injuryTime) : null,
     venue: m.venue ?? null,
     homeScore: m.score?.fullTime?.home ?? null,
     awayScore: m.score?.fullTime?.away ?? null,
@@ -477,6 +481,7 @@ export async function fetchLiveMatchDetails(matchId: string | number): Promise<L
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     goals: (m.goals ?? []).map((g: any): LiveMatchEvent => ({
       minute: g.minute ?? 0,
+      injuryTime: g.injuryTime != null ? Number(g.injuryTime) : undefined,
       teamId: String(g.team?.id ?? ''),
       teamName: g.team?.name ?? '',
       playerName: g.scorer?.name ?? '',
@@ -486,6 +491,7 @@ export async function fetchLiveMatchDetails(matchId: string | number): Promise<L
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     bookings: (m.bookings ?? []).map((b: any): LiveMatchBooking => ({
       minute: b.minute ?? 0,
+      injuryTime: b.injuryTime != null ? Number(b.injuryTime) : undefined,
       teamId: String(b.team?.id ?? ''),
       teamName: b.team?.name ?? '',
       playerName: b.player?.name ?? '',
@@ -494,6 +500,7 @@ export async function fetchLiveMatchDetails(matchId: string | number): Promise<L
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     substitutions: (m.substitutions ?? []).map((s: any): LiveMatchSubstitution => ({
       minute: s.minute ?? 0,
+      injuryTime: s.injuryTime != null ? Number(s.injuryTime) : undefined,
       teamId: String(s.team?.id ?? ''),
       playerOutName: s.playerOut?.name ?? '',
       playerInName: s.playerIn?.name ?? '',
