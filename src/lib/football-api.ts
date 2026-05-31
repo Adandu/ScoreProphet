@@ -97,7 +97,9 @@ export interface LiveMatchEvent {
   injuryTime?: number
   teamId: string
   teamName: string
+  playerId: string
   playerName: string
+  assistId?: string
   assistName?: string
   type?: string
 }
@@ -106,7 +108,9 @@ export interface LiveMatchSubstitution {
   minute: number
   injuryTime?: number
   teamId: string
+  playerOutId: string
   playerOutName: string
+  playerInId: string
   playerInName: string
 }
 
@@ -495,7 +499,9 @@ export async function fetchLiveMatchDetails(matchId: string | number): Promise<L
       injuryTime: g.injuryTime != null ? Number(g.injuryTime) : undefined,
       teamId: String(g.team?.id ?? ''),
       teamName: g.team?.name ?? '',
+      playerId: String(g.scorer?.id ?? ''),
       playerName: g.scorer?.name ?? '',
+      assistId: g.assist?.id != null ? String(g.assist.id) : undefined,
       assistName: g.assist?.name ?? undefined,
       type: g.type === 'OWN' ? 'OWN_GOAL' : g.type ?? undefined,
     })),
@@ -505,6 +511,7 @@ export async function fetchLiveMatchDetails(matchId: string | number): Promise<L
       injuryTime: b.injuryTime != null ? Number(b.injuryTime) : undefined,
       teamId: String(b.team?.id ?? ''),
       teamName: b.team?.name ?? '',
+      playerId: String(b.player?.id ?? ''),
       playerName: b.player?.name ?? '',
       card: b.card === 'YELLOW' ? 'YELLOW_CARD' : b.card === 'RED' ? 'RED_CARD' : b.card === 'YELLOW_RED' ? 'YELLOW_RED_CARD' : 'YELLOW_CARD',
     })),
@@ -513,7 +520,9 @@ export async function fetchLiveMatchDetails(matchId: string | number): Promise<L
       minute: s.minute ?? 0,
       injuryTime: s.injuryTime != null ? Number(s.injuryTime) : undefined,
       teamId: String(s.team?.id ?? ''),
+      playerOutId: String(s.playerOut?.id ?? ''),
       playerOutName: s.playerOut?.name ?? '',
+      playerInId: String(s.playerIn?.id ?? ''),
       playerInName: s.playerIn?.name ?? '',
     })),
     teamStats,

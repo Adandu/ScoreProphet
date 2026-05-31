@@ -111,48 +111,40 @@ export function PitchFormation({ homeTeam, awayTeam, goals, bookings, substituti
   const homePositions = computeFormationPositions(homeTeam.formation, 'home')
   const awayPositions = computeFormationPositions(awayTeam.formation, 'away')
 
-  // Build per-player event maps keyed by full lowercase name AND last word (for API name-format mismatches)
+  // Build per-player event maps keyed by player ID (preferred) with name fallback
   const goalsByPlayer = new Map<string, number>()
   for (const g of goals) {
-    const full = g.playerName.toLowerCase()
-    const last = full.split(' ').pop() ?? full
-    goalsByPlayer.set(full, (goalsByPlayer.get(full) ?? 0) + 1)
-    goalsByPlayer.set(last, (goalsByPlayer.get(last) ?? 0) + 1)
+    const key = g.playerId || g.playerName.toLowerCase()
+    goalsByPlayer.set(key, (goalsByPlayer.get(key) ?? 0) + 1)
   }
-
-  // Build a set of last names that appear more than once in either lineup (ambiguous)
-  const allLineupLastNames = [...homeTeam.lineup, ...awayTeam.lineup].map(
-    (p) => (p.name.toLowerCase().split(' ').pop() ?? p.name.toLowerCase())
-  )
-  const ambiguousLastNames = new Set(
-    allLineupLastNames.filter((ln, _, arr) => arr.filter((x) => x === ln).length > 1)
-  )
 
   const yellowsByPlayer = new Map<string, number>()
   const redsByPlayer = new Set<string>()
   for (const b of bookings) {
-    const full = b.playerName.toLowerCase()
-    const last = full.split(' ').pop() ?? full
+    const key = b.playerId || b.playerName.toLowerCase()
     if (b.card === 'YELLOW_CARD') {
-      yellowsByPlayer.set(full, (yellowsByPlayer.get(full) ?? 0) + 1)
-      if (!ambiguousLastNames.has(last)) yellowsByPlayer.set(last, (yellowsByPlayer.get(last) ?? 0) + 1)
+      yellowsByPlayer.set(key, (yellowsByPlayer.get(key) ?? 0) + 1)
     }
     if (b.card === 'RED_CARD' || b.card === 'YELLOW_RED_CARD') {
-      redsByPlayer.add(full)
-      if (!ambiguousLastNames.has(last)) redsByPlayer.add(last)
+      redsByPlayer.add(key)
     }
   }
 
   const subOnMinutes = new Map<string, number>()
   for (const s of substitutions) {
-    subOnMinutes.set(s.playerInName.toLowerCase(), s.minute)
+    const key = s.playerInId || s.playerInName.toLowerCase()
+    subOnMinutes.set(key, s.minute)
   }
 
   const possession = homePossession ?? 50
   const awayPossession = 100 - possession
 
-  const homeBenchSubbed = new Set(substitutions.filter(s => s.teamId === homeTeam.id).map(s => s.playerOutName.toLowerCase()))
-  const awayBenchSubbed = new Set(substitutions.filter(s => s.teamId === awayTeam.id).map(s => s.playerOutName.toLowerCase()))
+  const homeBenchSubbed = new Set(
+    substitutions.filter(s => s.teamId === homeTeam.id).map(s => s.playerOutId || s.playerOutName.toLowerCase())
+  )
+  const awayBenchSubbed = new Set(
+    substitutions.filter(s => s.teamId === awayTeam.id).map(s => s.playerOutId || s.playerOutName.toLowerCase())
+  )
 
   return (
     <div style={{ border: '1px solid rgba(255,255,255,0.08)', borderRadius: 12, overflow: 'hidden' }}>
@@ -209,13 +201,12 @@ export function PitchFormation({ homeTeam, awayTeam, goals, bookings, substituti
             {homeTeam.name} bench
           </div>
           {homeTeam.bench.map((p) => {
-            const subMin = subOnMinutes.get(p.name.toLowerCase())
-            const wasSubbedOut = homeBenchSubbed.has(p.name.toLowerCase())
-            const key = p.name.toLowerCase()
-            const keyL = key.split(' ').pop() ?? key
-            const goals = goalsByPlayer.get(key) ?? goalsByPlayer.get(keyL) ?? 0
-            const yellows = yellowsByPlayer.get(key) ?? yellowsByPlayer.get(keyL) ?? 0
-            const red = redsByPlayer.has(key) || redsByPlayer.has(keyL)
+            const key = p.id || p.name.toLowerCase()
+            const subMin = subOnMinutes.get(key)
+            const wasSubbedOut = homeBenchSubbed.has(key)
+            const goals = goalsByPlayer.get(key) ?? 0
+            const yellows = yellowsByPlayer.get(key) ?? 0
+            const red = redsByPlayer.has(key)
             const cardColor = red || yellows >= 2 ? '#EF4444' : yellows === 1 ? '#FACC15' : null
             return (
               <div key={p.id} style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 11, color: wasSubbedOut ? 'rgba(255,255,255,0.35)' : 'rgba(255,255,255,0.73)', lineHeight: 1.5 }}>
@@ -257,8 +248,7 @@ export function PitchFormation({ homeTeam, awayTeam, goals, bookings, substituti
               {/* Home players */}
               {homeTeam.lineup.map((player, i) => {
                 const pos = homePositions[i] ?? { left: 25, top: 50 }
-                const key = player.name.toLowerCase()
-                const keyL = key.split(' ').pop() ?? key
+                const key = player.id || player.name.toLowerCase()
                 return (
                   <PlayerDot
                     key={player.id}
@@ -268,9 +258,9 @@ export function PitchFormation({ homeTeam, awayTeam, goals, bookings, substituti
                     gradientId={homeGradId}
                     left={pos.left}
                     top={pos.top}
-                    goalCount={goalsByPlayer.get(key) ?? goalsByPlayer.get(keyL) ?? 0}
-                    yellowCards={yellowsByPlayer.get(key) ?? yellowsByPlayer.get(keyL) ?? 0}
-                    redCard={redsByPlayer.has(key) || redsByPlayer.has(keyL)}
+                    goalCount={goalsByPlayer.get(key) ?? 0}
+                    yellowCards={yellowsByPlayer.get(key) ?? 0}
+                    redCard={redsByPlayer.has(key)}
                     subMinute={null}
                   />
                 )
@@ -279,8 +269,7 @@ export function PitchFormation({ homeTeam, awayTeam, goals, bookings, substituti
               {/* Away players */}
               {awayTeam.lineup.map((player, i) => {
                 const pos = awayPositions[i] ?? { left: 75, top: 50 }
-                const key = player.name.toLowerCase()
-                const keyL = key.split(' ').pop() ?? key
+                const key = player.id || player.name.toLowerCase()
                 return (
                   <PlayerDot
                     key={player.id}
@@ -290,9 +279,9 @@ export function PitchFormation({ homeTeam, awayTeam, goals, bookings, substituti
                     gradientId={awayGradId}
                     left={pos.left}
                     top={pos.top}
-                    goalCount={goalsByPlayer.get(key) ?? goalsByPlayer.get(keyL) ?? 0}
-                    yellowCards={yellowsByPlayer.get(key) ?? yellowsByPlayer.get(keyL) ?? 0}
-                    redCard={redsByPlayer.has(key) || redsByPlayer.has(keyL)}
+                    goalCount={goalsByPlayer.get(key) ?? 0}
+                    yellowCards={yellowsByPlayer.get(key) ?? 0}
+                    redCard={redsByPlayer.has(key)}
                     subMinute={null}
                   />
                 )
@@ -320,13 +309,12 @@ export function PitchFormation({ homeTeam, awayTeam, goals, bookings, substituti
             {awayTeam.name} bench
           </div>
           {awayTeam.bench.map((p) => {
-            const subMin = subOnMinutes.get(p.name.toLowerCase())
-            const wasSubbedOut = awayBenchSubbed.has(p.name.toLowerCase())
-            const key = p.name.toLowerCase()
-            const keyL = key.split(' ').pop() ?? key
-            const goals = goalsByPlayer.get(key) ?? goalsByPlayer.get(keyL) ?? 0
-            const yellows = yellowsByPlayer.get(key) ?? yellowsByPlayer.get(keyL) ?? 0
-            const red = redsByPlayer.has(key) || redsByPlayer.has(keyL)
+            const key = p.id || p.name.toLowerCase()
+            const subMin = subOnMinutes.get(key)
+            const wasSubbedOut = awayBenchSubbed.has(key)
+            const goals = goalsByPlayer.get(key) ?? 0
+            const yellows = yellowsByPlayer.get(key) ?? 0
+            const red = redsByPlayer.has(key)
             const cardColor = red || yellows >= 2 ? '#EF4444' : yellows === 1 ? '#FACC15' : null
             return (
               <div key={p.id} style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 11, color: wasSubbedOut ? 'rgba(255,255,255,0.35)' : 'rgba(255,255,255,0.73)', lineHeight: 1.5 }}>
