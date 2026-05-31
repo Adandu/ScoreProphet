@@ -393,7 +393,8 @@ export async function fetchLiveMatchDetails(matchId: string | number): Promise<L
   }
 
   // Lateral sort order within each line: Left-side(0) → Centre(1) → Right-side(2)
-  // Left-flank players appear at the top of the screen, right-flank at the bottom.
+  // For home (attacking right): Left-flank at top of screen, Right-flank at bottom.
+  // For away (attacking left): Right-flank at top of screen, Left-flank at bottom — reversed.
   const LATERAL_ORDER: Record<string, number> = {
     'Left-Back': 0, 'Left Midfield': 0, 'Left Winger': 0,
     'Centre-Back': 1, Defence: 1, 'Defensive Midfield': 1, 'Central Midfield': 1,
@@ -401,8 +402,11 @@ export async function fetchLiveMatchDetails(matchId: string | number): Promise<L
     'Right-Back': 2, 'Right Midfield': 2, 'Right Winger': 2,
   }
 
-  const lateralSort = (players: LivePlayer[]) =>
-    [...players].sort((a, b) => (LATERAL_ORDER[a.position] ?? 1) - (LATERAL_ORDER[b.position] ?? 1))
+  const lateralSort = (players: LivePlayer[], side: 'home' | 'away') =>
+    [...players].sort((a, b) => {
+      const diff = (LATERAL_ORDER[a.position] ?? 1) - (LATERAL_ORDER[b.position] ?? 1)
+      return side === 'away' ? -diff : diff
+    })
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const normalizePlayer = (p: any): LivePlayer => ({
@@ -412,7 +416,7 @@ export async function fetchLiveMatchDetails(matchId: string | number): Promise<L
     position: p.position ?? '',
   })
 
-  function sortLineup(players: LivePlayer[], formation: string): LivePlayer[] {
+  function sortLineup(players: LivePlayer[], formation: string, side: 'home' | 'away'): LivePlayer[] {
     const backLineSize = parseInt(formation.split('-')[0] ?? '4', 10)
     const gks = players.filter((p) => (POSITION_GROUP[p.position] ?? 2) === 0)
     const defs = players.filter((p) => (POSITION_GROUP[p.position] ?? 2) === 1)
@@ -429,21 +433,21 @@ export async function fetchLiveMatchDetails(matchId: string | number): Promise<L
         : []
     return [
       ...gks,
-      ...lateralSort(backLine),
-      ...lateralSort(overflowDefs),
-      ...lateralSort(mids),
-      ...lateralSort(fwds),
+      ...lateralSort(backLine, side),
+      ...lateralSort(overflowDefs, side),
+      ...lateralSort(mids, side),
+      ...lateralSort(fwds, side),
     ]
   }
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const normalizeTeam = (t: any): LiveTeam => ({
+  const normalizeTeam = (t: any, side: 'home' | 'away'): LiveTeam => ({
     id: String(t.id ?? ''),
     name: t.name ?? '',
     crest: t.crest ?? '',
     clubColors: t.clubColors ?? '',
     formation: t.formation ?? '',
-    lineup: sortLineup((t.lineup ?? []).map(normalizePlayer), t.formation ?? ''),
+    lineup: sortLineup((t.lineup ?? []).map(normalizePlayer), t.formation ?? '', side),
     bench: (t.bench ?? []).map(normalizePlayer),
     coach: t.coach?.name ?? null,
   })
@@ -483,8 +487,8 @@ export async function fetchLiveMatchDetails(matchId: string | number): Promise<L
     venue: m.venue ?? null,
     homeScore: m.score?.fullTime?.home ?? null,
     awayScore: m.score?.fullTime?.away ?? null,
-    homeTeam: normalizeTeam(m.homeTeam ?? {}),
-    awayTeam: normalizeTeam(m.awayTeam ?? {}),
+    homeTeam: normalizeTeam(m.homeTeam ?? {}, 'home'),
+    awayTeam: normalizeTeam(m.awayTeam ?? {}, 'away'),
     referee: referee
       ? { name: referee.name ?? '', nationality: referee.nationality ?? '' }
       : null,
