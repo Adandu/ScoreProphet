@@ -120,6 +120,14 @@ export function PitchFormation({ homeTeam, awayTeam, goals, bookings, substituti
     goalsByPlayer.set(last, (goalsByPlayer.get(last) ?? 0) + 1)
   }
 
+  // Build a set of last names that appear more than once in either lineup (ambiguous)
+  const allLineupLastNames = [...homeTeam.lineup, ...awayTeam.lineup].map(
+    (p) => (p.name.toLowerCase().split(' ').pop() ?? p.name.toLowerCase())
+  )
+  const ambiguousLastNames = new Set(
+    allLineupLastNames.filter((ln, _, arr) => arr.filter((x) => x === ln).length > 1)
+  )
+
   const yellowsByPlayer = new Map<string, number>()
   const redsByPlayer = new Set<string>()
   for (const b of bookings) {
@@ -127,11 +135,11 @@ export function PitchFormation({ homeTeam, awayTeam, goals, bookings, substituti
     const last = full.split(' ').pop() ?? full
     if (b.card === 'YELLOW_CARD') {
       yellowsByPlayer.set(full, (yellowsByPlayer.get(full) ?? 0) + 1)
-      yellowsByPlayer.set(last, (yellowsByPlayer.get(last) ?? 0) + 1)
+      if (!ambiguousLastNames.has(last)) yellowsByPlayer.set(last, (yellowsByPlayer.get(last) ?? 0) + 1)
     }
     if (b.card === 'RED_CARD' || b.card === 'YELLOW_RED_CARD') {
       redsByPlayer.add(full)
-      redsByPlayer.add(last)
+      if (!ambiguousLastNames.has(last)) redsByPlayer.add(last)
     }
   }
 

@@ -393,8 +393,8 @@ export async function fetchLiveMatchDetails(matchId: string | number): Promise<L
   }
 
   // Lateral sort order within each line: Left-side(0) → Centre(1) → Right-side(2)
-  // For home (attacking right): Left-flank at top of screen, Right-flank at bottom.
-  // For away (attacking left): Right-flank at top of screen, Left-flank at bottom — reversed.
+  // Both home and away use the same top-to-bottom order (Left-flank at top, Right-flank at bottom)
+  // so each team's formation reads consistently from the viewer's fixed perspective.
   const LATERAL_ORDER: Record<string, number> = {
     'Left-Back': 0, 'Left Midfield': 0, 'Left Winger': 0,
     'Centre-Back': 1, Defence: 1, 'Defensive Midfield': 1, 'Central Midfield': 1,
@@ -402,11 +402,8 @@ export async function fetchLiveMatchDetails(matchId: string | number): Promise<L
     'Right-Back': 2, 'Right Midfield': 2, 'Right Winger': 2,
   }
 
-  const lateralSort = (players: LivePlayer[], side: 'home' | 'away') =>
-    [...players].sort((a, b) => {
-      const diff = (LATERAL_ORDER[a.position] ?? 1) - (LATERAL_ORDER[b.position] ?? 1)
-      return side === 'away' ? -diff : diff
-    })
+  const lateralSort = (players: LivePlayer[]) =>
+    [...players].sort((a, b) => (LATERAL_ORDER[a.position] ?? 1) - (LATERAL_ORDER[b.position] ?? 1))
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const normalizePlayer = (p: any): LivePlayer => ({
@@ -416,7 +413,7 @@ export async function fetchLiveMatchDetails(matchId: string | number): Promise<L
     position: p.position ?? '',
   })
 
-  function sortLineup(players: LivePlayer[], formation: string, side: 'home' | 'away'): LivePlayer[] {
+  function sortLineup(players: LivePlayer[], formation: string): LivePlayer[] {
     const backLineSize = parseInt(formation.split('-')[0] ?? '4', 10)
     const gks = players.filter((p) => (POSITION_GROUP[p.position] ?? 2) === 0)
     const defs = players.filter((p) => (POSITION_GROUP[p.position] ?? 2) === 1)
@@ -433,10 +430,10 @@ export async function fetchLiveMatchDetails(matchId: string | number): Promise<L
         : []
     return [
       ...gks,
-      ...lateralSort(backLine, side),
-      ...lateralSort(overflowDefs, side),
-      ...lateralSort(mids, side),
-      ...lateralSort(fwds, side),
+      ...lateralSort(backLine),
+      ...lateralSort(overflowDefs),
+      ...lateralSort(mids),
+      ...lateralSort(fwds),
     ]
   }
 
@@ -447,7 +444,7 @@ export async function fetchLiveMatchDetails(matchId: string | number): Promise<L
     crest: t.crest ?? '',
     clubColors: t.clubColors ?? '',
     formation: t.formation ?? '',
-    lineup: sortLineup((t.lineup ?? []).map(normalizePlayer), t.formation ?? '', side),
+    lineup: sortLineup((t.lineup ?? []).map(normalizePlayer), t.formation ?? ''),
     bench: (t.bench ?? []).map(normalizePlayer),
     coach: t.coach?.name ?? null,
   })
