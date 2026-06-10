@@ -7,8 +7,11 @@ const teams = [
     name: 'Alpha',
     crest: 'a.png',
     squadJson: JSON.stringify([
-      { name: 'Young A', dateOfBirth: '2005-01-01' },
-      { name: 'Old A', dateOfBirth: '1990-01-01' },
+      { name: 'Young A', position: 'Midfield', dateOfBirth: '2005-01-01' },
+      { name: 'Old A', position: 'Goalkeeper', dateOfBirth: '1990-01-01' },
+      // National-team squads from football-data.org include the coach as a
+      // squad entry with position "Coach" — must be excluded from player stats.
+      { name: 'Coach Old', position: 'Coach', dateOfBirth: '1970-01-01' },
     ]),
   },
   { externalId: '2', name: 'Beta', crest: 'b.png', squadJson: '[]' },
@@ -50,6 +53,10 @@ describe('computeTournamentStatistics', () => {
   it('identifies youngest and oldest players from squad birthdates', () => {
     expect(stats.youngestPlayer?.name).toBe('Young A')
     expect(stats.oldestPlayer?.name).toBe('Old A')
+  })
+
+  it('excludes coaches (position "Coach") from youngest/oldest player stats', () => {
+    expect(stats.oldestPlayer?.name).not.toBe('Coach Old')
   })
 
   it('returns lean team references without squadJson for rendering', () => {

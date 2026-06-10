@@ -3,6 +3,7 @@ import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { prisma } from '@/lib/db'
 import { requireAuth } from '@/lib/auth'
+import { isCoachEntry } from '@/lib/tournament-statistics'
 
 interface Props {
   params: Promise<{ teamId: string }>
@@ -71,8 +72,13 @@ export default async function TeamDetailPage({ params }: Props) {
   const team: DisplayTeam | null = await prisma.team.findUnique({ where: { externalId: teamId } })
   if (!team) notFound()
 
-  const squad = parseJson<ApiPerson[]>(team.squadJson, [])
-  const staff = parseJson<ApiPerson[]>(team.staffJson, [])
+  const squadAndCoaches = parseJson<ApiPerson[]>(team.squadJson, [])
+  // National-team squads from football-data.org include the coach as a squad
+  // entry (position "Coach"); separate them so coaches show as staff, not players.
+  const squad = squadAndCoaches.filter((person) => !isCoachEntry(person.position))
+  const coaches = squadAndCoaches.filter((person) => isCoachEntry(person.position))
+  const staff = [...parseJson<ApiPerson[]>(team.staffJson, []), ...coaches]
+  const coachName = team.coachName || (coaches[0] ? getPersonName(coaches[0]) : '')
   const competitions = parseJson<ApiCompetition[]>(team.runningCompetitionsJson, [])
   const wcStats = parseJson<WcStats>(team.wcStatsJson, {})
 
@@ -99,7 +105,7 @@ export default async function TeamDetailPage({ params }: Props) {
           <InfoItem label="Founded" value={team.founded ? String(team.founded) : ''} />
           <InfoItem label="Club colors" value={team.clubColors} />
           <InfoItem label="Venue" value={team.venue} />
-          <InfoItem label="Coach" value={team.coachName} />
+          <InfoItem label="Coach" value={coachName} />
           <InfoItem label="Address" value={team.address} wide />
           <InfoItem label="Website" value={team.website} href={team.website} wide />
         </dl>

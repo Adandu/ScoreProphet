@@ -30,6 +30,7 @@ type SquadPerson = {
   firstName?: string
   lastName?: string
   dateOfBirth?: string
+  position?: string
 }
 
 type FinishedMatchScore = {
@@ -238,11 +239,15 @@ function countCleanSheets(matches: Array<{ homeScore: number | null; awayScore: 
 }
 
 function getAgeExtreme(teams: TeamWithSquad[], mode: 'youngest' | 'oldest') {
-  const players = teams.flatMap((team) => parseJson<SquadPerson[]>(team.squadJson, []).map((person) => ({
-    name: person.name ?? ([person.firstName, person.lastName].filter(Boolean).join(' ') || 'Unknown'),
-    dateOfBirth: person.dateOfBirth ?? '',
-    teamName: team.name,
-  }))).filter((person) => isPlausiblePlayerBirthdate(person.dateOfBirth))
+  const players = teams.flatMap((team) => parseJson<SquadPerson[]>(team.squadJson, [])
+    // National-team squads include the coach (and assistants) as squad entries
+    // with a "Coach" position — exclude them so they don't skew player ages.
+    .filter((person) => !isCoachEntry(person.position))
+    .map((person) => ({
+      name: person.name ?? ([person.firstName, person.lastName].filter(Boolean).join(' ') || 'Unknown'),
+      dateOfBirth: person.dateOfBirth ?? '',
+      teamName: team.name,
+    }))).filter((person) => isPlausiblePlayerBirthdate(person.dateOfBirth))
   return players.sort((a, b) => mode === 'youngest'
     ? new Date(b.dateOfBirth).getTime() - new Date(a.dateOfBirth).getTime()
     : new Date(a.dateOfBirth).getTime() - new Date(b.dateOfBirth).getTime()
@@ -262,6 +267,12 @@ function isPlausiblePlayerBirthdate(value: string): boolean {
       : 0)
 
   return age >= MIN_PLAYER_AGE && age <= MAX_PLAYER_AGE
+}
+
+// football-data.org returns national-team coaches inside the squad array with a
+// "Coach" position (the separate `coach` field is null for national teams).
+export function isCoachEntry(position?: string | null): boolean {
+  return (position ?? '').toLowerCase().includes('coach')
 }
 
 function parseJson<T>(value: string, fallback: T): T {
