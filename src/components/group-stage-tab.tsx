@@ -1,4 +1,5 @@
 import Image from 'next/image'
+import Link from 'next/link'
 import { computeGroupStandings, type GroupMatch } from '@/lib/standings'
 
 const GROUP_LABELS: Record<string, string> = {
@@ -16,7 +17,7 @@ const GROUP_LABELS: Record<string, string> = {
   GROUP_L: 'Group L',
 }
 
-export function GroupStageTab({ matches, formByTeam = {} }: { matches: GroupMatch[]; formByTeam?: Record<string, string> }) {
+export function GroupStageTab({ matches, formByTeam = {}, teamIdByName = {} }: { matches: GroupMatch[]; formByTeam?: Record<string, string>; teamIdByName?: Record<string, string> }) {
   const standings = computeGroupStandings(matches)
   const groups = Object.keys(standings).sort()
 
@@ -48,19 +49,14 @@ export function GroupStageTab({ matches, formByTeam = {} }: { matches: GroupMatc
                   <th className="px-1 text-right font-normal">GA</th>
                   <th className="px-1 text-right font-normal">GD</th>
                   <th className="px-1 text-right font-normal">Pts</th>
-                  <th className="pl-2 text-left font-normal">Form</th>
+                  <th className="w-[104px] pl-2 text-left font-normal">Form</th>
                 </tr>
               </thead>
               <tbody>
                 {standings[group].map((row) => (
                   <tr key={row.team} className={`border-b border-white/5 last:border-0 ${row.advancing ? 'bg-green-900/30 text-green-300' : 'text-white/75'}`}>
                     <td className="py-2 pr-2">
-                      <div className="flex items-center gap-2">
-                        <span className="flex h-5 w-5 items-center justify-center">
-                          {row.crest ? <Image src={row.crest} alt="" width={20} height={20} className="max-h-5 object-contain" /> : <span className="h-4 w-4 rounded bg-white/10" />}
-                        </span>
-                        <span className="truncate text-[10px] sm:text-[11px]">{row.team}</span>
-                      </div>
+                      <TeamCell team={row.team} crest={row.crest} teamId={teamIdByName[row.team]} />
                     </td>
                     <td className="px-1 text-right tabular-nums">{row.played}</td>
                     <td className="px-1 text-right tabular-nums">{row.w}</td>
@@ -79,6 +75,23 @@ export function GroupStageTab({ matches, formByTeam = {} }: { matches: GroupMatc
         </section>
       ))}
     </div>
+  )
+}
+
+function TeamCell({ team, crest, teamId }: { team: string; crest: string; teamId?: string }) {
+  const inner = (
+    <>
+      <span className="flex h-5 w-5 items-center justify-center">
+        {crest ? <Image src={crest} alt="" width={20} height={20} className="max-h-5 object-contain" /> : <span className="h-4 w-4 rounded bg-white/10" />}
+      </span>
+      <span className="truncate text-[10px] sm:text-[11px]">{team}</span>
+    </>
+  )
+  if (!teamId) return <div className="flex items-center gap-2">{inner}</div>
+  return (
+    <Link href={`/teams/${teamId}`} className="flex items-center gap-2 transition-opacity hover:opacity-80">
+      {inner}
+    </Link>
   )
 }
 

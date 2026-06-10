@@ -11,9 +11,16 @@ export default async function TournamentPage() {
   const session = await requireAuth()
   const timezone = session.timezone ?? 'Europe/Bucharest'
 
-  const matches = await prisma.match.findMany({ orderBy: { kickoff: 'asc' } })
+  const [matches, teams] = await Promise.all([
+    prisma.match.findMany({ orderBy: { kickoff: 'asc' } }),
+    prisma.team.findMany({ select: { externalId: true, name: true } }),
+  ])
   const groupMatches = matches.filter((match) => match.stage === 'GROUP')
   const knockoutMatches = matches.filter((match) => match.stage !== 'GROUP')
+
+  // Name -> team id lookup so group-stage rows can link to each team's page.
+  const teamIdByName: Record<string, string> = {}
+  for (const team of teams) teamIdByName[team.name] = team.externalId
 
   // Pull the last-5 form for each team from the official standings (best-effort).
   const formByTeam: Record<string, string> = {}
@@ -42,6 +49,7 @@ export default async function TournamentPage() {
               awayScore: match.awayScore,
             }))}
             formByTeam={formByTeam}
+            teamIdByName={teamIdByName}
           />
         }
         bracket={
