@@ -163,6 +163,92 @@ function getHeaders(): HeadersInit {
   }
 }
 
+export interface StandingRow {
+  position: number
+  teamName: string
+  teamCrest: string
+  playedGames: number
+  won: number
+  draw: number
+  lost: number
+  goalsFor: number
+  goalsAgainst: number
+  goalDifference: number
+  points: number
+  form: string
+}
+
+export interface StandingsGroup {
+  group: string
+  table: StandingRow[]
+}
+
+export interface TopScorer {
+  playerName: string
+  teamName: string
+  teamCrest: string
+  playedMatches: number
+  goals: number
+  assists: number
+  penalties: number
+}
+
+export async function fetchStandings(): Promise<StandingsGroup[]> {
+  const res = await fetch(
+    `${BASE_URL}/competitions/${COMPETITION}/standings`,
+    { headers: getHeaders(), next: { revalidate: 300 } },
+  )
+  if (!res.ok) {
+    throw new Error(`football-data.org error ${res.status}: ${res.statusText}`)
+  }
+  const data = await res.json()
+  const groups = data.standings ?? []
+  return groups
+    // Each group is returned once as TOTAL (leagues also return HOME/AWAY splits).
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    .filter((g: any) => (g.type ?? 'TOTAL') === 'TOTAL')
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    .map((g: any): StandingsGroup => ({
+      group: g.group ?? g.stage ?? '',
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      table: (g.table ?? []).map((r: any): StandingRow => ({
+        position: r.position ?? 0,
+        teamName: r.team?.name ?? '',
+        teamCrest: r.team?.crest ?? '',
+        playedGames: r.playedGames ?? 0,
+        won: r.won ?? 0,
+        draw: r.draw ?? 0,
+        lost: r.lost ?? 0,
+        goalsFor: r.goalsFor ?? 0,
+        goalsAgainst: r.goalsAgainst ?? 0,
+        goalDifference: r.goalDifference ?? 0,
+        points: r.points ?? 0,
+        form: r.form ?? '',
+      })),
+    }))
+}
+
+export async function fetchTopScorers(limit = 20): Promise<TopScorer[]> {
+  const res = await fetch(
+    `${BASE_URL}/competitions/${COMPETITION}/scorers?limit=${limit}`,
+    { headers: getHeaders(), next: { revalidate: 300 } },
+  )
+  if (!res.ok) {
+    throw new Error(`football-data.org error ${res.status}: ${res.statusText}`)
+  }
+  const data = await res.json()
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  return (data.scorers ?? []).map((s: any): TopScorer => ({
+    playerName: s.player?.name ?? 'Unknown',
+    teamName: s.team?.name ?? '',
+    teamCrest: s.team?.crest ?? '',
+    playedMatches: s.playedMatches ?? 0,
+    goals: s.goals ?? 0,
+    assists: s.assists ?? 0,
+    penalties: s.penalties ?? 0,
+  }))
+}
+
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function scorePart(score: any, key: 'regularTime' | 'fullTime' | 'extraTime' | 'penalties', side: 'home' | 'away'): number | null {
   const value = score?.[key]?.[side]

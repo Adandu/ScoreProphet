@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { fetchAllMatches, fetchAllTeams, fetchLiveMatches, type NormalizedMatch, type NormalizedTeam } from '@/lib/football-api'
+import { fetchAllMatches, fetchAllTeams, fetchLiveMatches, fetchStandings, fetchTopScorers, type NormalizedMatch, type NormalizedTeam } from '@/lib/football-api'
 
 // We test normalizeMatch and normalizeTeam indirectly by mocking fetch and
 // calling the public fetchAllMatches / fetchAllTeams functions, which pipe
@@ -280,5 +280,60 @@ describe('normalizeTeam — via fetchAllTeams', () => {
     })
     const [t] = await fetchAllTeams()
     expect(t.founded).toBeNull()
+  })
+})
+
+// ---------------------------------------------------------------------------
+// fetchStandings
+// ---------------------------------------------------------------------------
+
+describe('fetchStandings', () => {
+  it('normalizes group standings and keeps only the TOTAL table per group', async () => {
+    mockFetch({
+      standings: [
+        { stage: 'ALL', type: 'TOTAL', group: 'Group A', table: [
+          { position: 1, team: { name: 'Brazil', crest: 'b.png' }, playedGames: 3, form: 'W,W,D', won: 2, draw: 1, lost: 0, points: 7, goalsFor: 5, goalsAgainst: 1, goalDifference: 4 },
+        ] },
+        { stage: 'ALL', type: 'HOME', group: 'Group A', table: [] },
+      ],
+    })
+    const groups = await fetchStandings()
+    expect(groups).toHaveLength(1)
+    expect(groups[0].group).toBe('Group A')
+    expect(groups[0].table[0]).toMatchObject({
+      position: 1, teamName: 'Brazil', teamCrest: 'b.png',
+      playedGames: 3, won: 2, draw: 1, lost: 0,
+      goalsFor: 5, goalsAgainst: 1, goalDifference: 4, points: 7, form: 'W,W,D',
+    })
+  })
+
+  it('returns an empty array when no standings are present', async () => {
+    mockFetch({})
+    expect(await fetchStandings()).toEqual([])
+  })
+})
+
+// ---------------------------------------------------------------------------
+// fetchTopScorers
+// ---------------------------------------------------------------------------
+
+describe('fetchTopScorers', () => {
+  it('normalizes scorer records', async () => {
+    mockFetch({
+      scorers: [
+        { player: { name: 'Haaland' }, team: { name: 'Man City', crest: 'c.png' }, playedMatches: 5, goals: 7, assists: 2, penalties: 1 },
+      ],
+    })
+    const scorers = await fetchTopScorers()
+    expect(scorers[0]).toMatchObject({
+      playerName: 'Haaland', teamName: 'Man City', teamCrest: 'c.png',
+      playedMatches: 5, goals: 7, assists: 2, penalties: 1,
+    })
+  })
+
+  it('defaults missing assists/penalties to 0 and tolerates missing team', async () => {
+    mockFetch({ scorers: [{ player: { name: 'X' }, goals: 3 }] })
+    const [s] = await fetchTopScorers()
+    expect(s).toMatchObject({ playerName: 'X', teamName: '', goals: 3, assists: 0, penalties: 0 })
   })
 })

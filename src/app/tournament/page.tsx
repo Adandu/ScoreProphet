@@ -4,6 +4,8 @@ import { GroupStageTab } from '@/components/group-stage-tab'
 import { KnockoutBracket } from '@/components/knockout-bracket'
 import { TournamentTabs } from '@/components/tournament-tabs'
 import { TournamentStatisticsPanel } from '@/components/tournament-statistics-panel'
+import { StandingsPanel } from '@/components/standings-panel'
+import { TopScorersPanel } from '@/components/top-scorers-panel'
 
 export default async function TournamentPage() {
   const session = await requireAuth()
@@ -50,6 +52,8 @@ export default async function TournamentPage() {
             }))}
           />
         }
+        standings={<StandingsPanel />}
+        scorers={<TopScorersPanel />}
         statistics={<TournamentStatisticsPanel />}
       />
     </div>
