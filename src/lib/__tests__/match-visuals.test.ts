@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { computeFormationPositions, getTeamColor, resolveMatchColors } from '@/lib/live-match'
+import { computeFormationPositions, getTeamColor, resolveMatchColors } from '@/lib/match-visuals'
 
 describe('computeFormationPositions', () => {
   it('returns 11 positions for a valid 4-3-3 home formation', () => {

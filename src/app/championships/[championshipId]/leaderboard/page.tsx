@@ -1,19 +1,17 @@
 import { getCurrentUser } from '@/lib/auth'
-import { requireChampionshipAccess } from '@/lib/championships'
+import { requireChampionshipAccessLean, getChampionshipMemberIds } from '@/lib/championships'
 import { getRankedUsers } from '@/lib/leaderboard'
 import { ChampionshipPageNav } from '@/components/championship-page-nav'
-
-export const revalidate = 60
 
 export default async function ChampionshipLeaderboardPage({ params }: { params: Promise<{ championshipId: string }> }) {
   const { championshipId: rawId } = await params
   const championshipId = parseInt(rawId, 10)
   const [{ championship }, currentUser] = await Promise.all([
-    requireChampionshipAccess(championshipId),
+    requireChampionshipAccessLean(championshipId),
     getCurrentUser(),
   ])
 
-  const memberIds = championship.members.map((member) => member.userId)
+  const memberIds = await getChampionshipMemberIds(championship.id)
   const ranked = await getRankedUsers(memberIds, championship)
   const medals = ['🥇', '🥈', '🥉']
 

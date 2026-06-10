@@ -247,11 +247,6 @@ export async function fetchAllMatches(): Promise<NormalizedMatch[]> {
   return (data.matches ?? []).map((m: any) => normalizeMatch(m))
 }
 
-export async function fetchLiveMatch(): Promise<NormalizedMatch | null> {
-  const matches = await fetchLiveMatches()
-  return matches[0] ?? null
-}
-
 export async function fetchLiveMatches(): Promise<NormalizedMatch[]> {
   const res = await fetch(
     `${BASE_URL}/competitions/${COMPETITION}/matches?status=IN_PLAY,PAUSED`,
@@ -267,28 +262,6 @@ export async function fetchLiveMatches(): Promise<NormalizedMatch[]> {
   const matches = data.matches ?? []
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   return matches.map((m: any) => normalizeMatch(m))
-}
-
-export async function fetchNextMatch(): Promise<NormalizedMatch | null> {
-  const res = await fetch(
-    `${BASE_URL}/competitions/${COMPETITION}/matches?status=SCHEDULED`,
-    {
-      headers: getHeaders(),
-      next: { revalidate: 60 },
-    }
-  )
-  if (!res.ok) {
-    throw new Error(`football-data.org error ${res.status}: ${res.statusText}`)
-  }
-  const data = await res.json()
-  const matches = data.matches ?? []
-  if (matches.length === 0) return null
-  // Sort ascending by date and return the earliest
-  matches.sort(
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    (a: any, b: any) => new Date(a.utcDate).getTime() - new Date(b.utcDate).getTime()
-  )
-  return normalizeMatch(matches[0])
 }
 
 export async function fetchAllTeams(): Promise<NormalizedTeam[]> {
@@ -313,13 +286,6 @@ export async function fetchAllTeams(): Promise<NormalizedTeam[]> {
     teamsCache = { expiresAt: Date.now() + TEAMS_CACHE_MS, teams }
   }
   return teams
-}
-
-export async function fetchTeamById(id: string | number): Promise<NormalizedTeam> {
-  const teams = await fetchAllTeams()
-  const team = teams.find((t) => t.externalId === String(id))
-  if (!team) throw new Error(`Team ${id} not found in ${COMPETITION} teams`)
-  return team
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -442,7 +408,7 @@ export async function fetchLiveMatchDetails(matchId: string | number): Promise<L
   }
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const normalizeTeam = (t: any, side: 'home' | 'away'): LiveTeam => ({
+  const normalizeTeam = (t: any): LiveTeam => ({
     id: String(t.id ?? ''),
     name: t.name ?? '',
     crest: t.crest ?? '',
@@ -488,8 +454,8 @@ export async function fetchLiveMatchDetails(matchId: string | number): Promise<L
     venue: m.venue ?? null,
     homeScore: m.score?.fullTime?.home ?? null,
     awayScore: m.score?.fullTime?.away ?? null,
-    homeTeam: normalizeTeam(m.homeTeam ?? {}, 'home'),
-    awayTeam: normalizeTeam(m.awayTeam ?? {}, 'away'),
+    homeTeam: normalizeTeam(m.homeTeam ?? {}),
+    awayTeam: normalizeTeam(m.awayTeam ?? {}),
     referee: referee
       ? { name: referee.name ?? '', nationality: referee.nationality ?? '' }
       : null,

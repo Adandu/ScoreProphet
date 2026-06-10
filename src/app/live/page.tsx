@@ -5,8 +5,6 @@ import { prisma } from '@/lib/db'
 import { PreMatchPanel } from '@/components/live/pre-match-panel'
 import { LiveMatchPanel } from '@/components/live/live-match-panel'
 
-export const revalidate = 5
-
 export default async function LivePage() {
   await requireAuth()
 

@@ -1,7 +1,5 @@
 import { redirectToSelectedChampionshipPage } from '@/lib/championships'
 
-export const revalidate = 60
-
 export default async function LeaderboardPage() {
   await redirectToSelectedChampionshipPage('leaderboard')
 }

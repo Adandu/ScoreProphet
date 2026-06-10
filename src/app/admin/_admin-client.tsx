@@ -18,6 +18,7 @@ interface Match {
   homeScore: number | null
   awayScore: number | null
   winnerTeam: string | null
+  scoreDuration: string
   stage: string
   adminOverride: boolean
 }
@@ -349,15 +350,27 @@ function MatchOverrideRow({ match, timezone }: { match: Match; timezone: string 
         <span className="text-white/40">–</span>
         <Input name="awayScore" type="number" min="0" max="20" defaultValue={match.awayScore ?? ''} placeholder="A" className="w-14 bg-white/10 text-white border-white/20 text-sm h-7 text-center" />
         {match.stage !== 'GROUP' && (
-          <select
-            name="winnerTeam"
-            defaultValue={match.winnerTeam ?? ''}
-            className="h-7 w-44 rounded-md border border-white/20 bg-[#0A1628] px-2 text-sm text-white"
-          >
-            <option value="" disabled>Advancing team</option>
-            <option value={match.homeTeam}>{match.homeTeam}</option>
-            <option value={match.awayTeam}>{match.awayTeam}</option>
-          </select>
+          <>
+            <select
+              name="winnerTeam"
+              defaultValue={match.winnerTeam ?? ''}
+              className="h-7 w-44 rounded-md border border-white/20 bg-[#0A1628] px-2 text-sm text-white"
+            >
+              <option value="" disabled>Advancing team</option>
+              <option value={match.homeTeam}>{match.homeTeam}</option>
+              <option value={match.awayTeam}>{match.awayTeam}</option>
+            </select>
+            <select
+              name="scoreDuration"
+              defaultValue={match.scoreDuration || 'REGULAR'}
+              title="How the match was decided (advance points are only awarded for extra time / penalties)"
+              className="h-7 w-32 rounded-md border border-white/20 bg-[#0A1628] px-2 text-sm text-white"
+            >
+              <option value="REGULAR">Regular</option>
+              <option value="EXTRA_TIME">Extra time</option>
+              <option value="PENALTY_SHOOTOUT">Penalties</option>
+            </select>
+          </>
         )}
         <Button type="submit" size="sm" disabled={pending} className="h-7 bg-[#C9A84C] text-[#0A1628] hover:bg-[#C9A84C]/90 text-xs font-semibold">
           {pending ? '…' : 'Set'}

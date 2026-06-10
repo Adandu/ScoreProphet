@@ -3,11 +3,12 @@ import Link from 'next/link'
 import { prisma } from '@/lib/db'
 import { requireAuth } from '@/lib/auth'
 
-export const revalidate = 300
-
 export default async function TeamsPage() {
   await requireAuth()
-  const teams = await prisma.team.findMany({ orderBy: { name: 'asc' } })
+  const teams = await prisma.team.findMany({
+    orderBy: { name: 'asc' },
+    select: { externalId: true, name: true, crest: true },
+  })
 
   return (
     <div className="space-y-6">

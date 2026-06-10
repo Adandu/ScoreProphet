@@ -1,5 +1,3 @@
-'use client'
-
 import Image from 'next/image'
 import { formatMatchTime } from '@/lib/format-date'
 

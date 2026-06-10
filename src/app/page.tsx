@@ -6,8 +6,6 @@ import { parseStoredHeadToHead } from '@/lib/head-to-head'
 import { getSelectedChampionship } from '@/lib/championships'
 import { fetchLiveMatches } from '@/lib/football-api'
 
-export const revalidate = 30
-
 async function getFeaturedMatches() {
   const now = new Date()
   const next24Hours = new Date(now.getTime() + 24 * 60 * 60 * 1000)

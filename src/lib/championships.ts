@@ -84,6 +84,14 @@ export async function requireChampionshipAccessLean(championshipId: number) {
   return { session, championship }
 }
 
+export async function getChampionshipMemberIds(championshipId: number): Promise<number[]> {
+  const members = await prisma.championshipMember.findMany({
+    where: { championshipId },
+    select: { userId: true },
+  })
+  return members.map((member) => member.userId)
+}
+
 export async function getManagedChampionships(userId: number): Promise<ChampionshipSummary[]> {
   const assignments = await prisma.championshipManager.findMany({
     where: { userId },

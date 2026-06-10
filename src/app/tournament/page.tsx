@@ -5,8 +5,6 @@ import { KnockoutBracket } from '@/components/knockout-bracket'
 import { TournamentTabs } from '@/components/tournament-tabs'
 import { TournamentStatisticsPanel } from '@/components/tournament-statistics-panel'
 
-export const revalidate = 60
-
 export default async function TournamentPage() {
   const session = await requireAuth()
   const timezone = session.timezone ?? 'Europe/Bucharest'

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { calculatePredictionPoints, calculateAdvancePoints, calculateTournamentWinnerPoints } from '@/lib/scoring';
+import { calculatePredictionPoints, calculateAdvancePoints, calculateAdvancePointsForMatch, calculateTournamentWinnerPoints } from '@/lib/scoring';
 
 describe('calculatePredictionPoints - SINGLE_OUTCOME', () => {
   it('awards 3 points for correct prediction of home win (1)', () => {
@@ -74,6 +74,38 @@ describe('calculateAdvancePoints', () => {
 
   it('awards 1 point for exact string match including spaces', () => {
     expect(calculateAdvancePoints('Real Madrid', 'Real Madrid')).toBe(1);
+  });
+});
+
+describe('calculateAdvancePointsForMatch', () => {
+  it('awards 1 point when the match went to extra time and predicted team is the winner', () => {
+    expect(
+      calculateAdvancePointsForMatch('TeamA', { winnerTeam: 'TeamA', scoreDuration: 'EXTRA_TIME' })
+    ).toBe(1);
+  });
+
+  it('awards 1 point when the match was decided on penalties and predicted team is the winner', () => {
+    expect(
+      calculateAdvancePointsForMatch('TeamA', { winnerTeam: 'TeamA', scoreDuration: 'PENALTY_SHOOTOUT' })
+    ).toBe(1);
+  });
+
+  it('awards 0 points when the match was decided in regular time even if predicted team is the winner', () => {
+    expect(
+      calculateAdvancePointsForMatch('TeamA', { winnerTeam: 'TeamA', scoreDuration: 'REGULAR' })
+    ).toBe(0);
+  });
+
+  it('awards 0 points when there is no winner team', () => {
+    expect(
+      calculateAdvancePointsForMatch('TeamA', { winnerTeam: null, scoreDuration: 'EXTRA_TIME' })
+    ).toBe(0);
+  });
+
+  it('awards 0 points when the predicted team is not the winner', () => {
+    expect(
+      calculateAdvancePointsForMatch('TeamA', { winnerTeam: 'TeamB', scoreDuration: 'PENALTY_SHOOTOUT' })
+    ).toBe(0);
   });
 });
 

@@ -25,6 +25,14 @@ RUN npx esbuild scripts/send-prediction-reminders.ts \
   --external:nodemailer \
   "--external:@resvg/resvg-js" \
   --external:better-sqlite3
+RUN npx esbuild scripts/sync-scores.ts \
+  --bundle \
+  --platform=node \
+  --format=esm \
+  --outfile=scripts/sync-scores.mjs \
+  --external:@prisma/client \
+  "--external:@prisma/adapter-better-sqlite3" \
+  --external:better-sqlite3
 
 FROM base AS prod-deps
 WORKDIR /app

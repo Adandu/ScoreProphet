@@ -1,5 +1,5 @@
 import type { LiveTeam, LiveMatchEvent, LiveMatchBooking, LiveMatchSubstitution } from '@/lib/football-api'
-import { computeFormationPositions, resolveMatchColors } from '@/lib/live-match'
+import { computeFormationPositions, resolveMatchColors } from '@/lib/match-visuals'
 
 interface Props {
   homeTeam: LiveTeam

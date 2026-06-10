@@ -3,7 +3,7 @@
 import { revalidatePath } from 'next/cache'
 import { prisma } from '@/lib/db'
 import { requireAdmin } from '@/lib/auth'
-import { calculatePredictionPoints, calculateAdvancePoints, calculateTournamentWinnerPoints } from '@/lib/scoring'
+import { calculatePredictionPoints, calculateAdvancePointsForMatch, calculateTournamentWinnerPoints } from '@/lib/scoring'
 import type { PredictionType } from '@/lib/types'
 import { normalizeEmail } from '@/lib/utils'
 import { sendPredictionReminderEmail } from '@/lib/email'
@@ -18,12 +18,18 @@ export async function overrideMatchScore(prevState: unknown, formData: FormData)
   const homeScore = parseInt(formData.get('homeScore') as string, 10)
   const awayScore = parseInt(formData.get('awayScore') as string, 10)
   const winnerTeam = (formData.get('winnerTeam') as string)?.trim() || null
+  const rawDuration = (formData.get('scoreDuration') as string)?.trim() || 'REGULAR'
 
   if (isNaN(homeScore) || isNaN(awayScore)) return { error: 'Invalid scores' }
   if (homeScore < 0 || awayScore < 0 || homeScore > 20 || awayScore > 20) return { error: 'Scores must be between 0 and 20' }
 
   const match = await prisma.match.findUnique({ where: { id: matchId } })
   if (!match) return { error: 'Match not found' }
+  // Group matches can't go to extra time / penalties and award no advance points.
+  const scoreDuration = match.stage === 'GROUP' ? 'REGULAR' : rawDuration
+  if (!['REGULAR', 'EXTRA_TIME', 'PENALTY_SHOOTOUT'].includes(scoreDuration)) {
+    return { error: 'Invalid score duration' }
+  }
   if (match.stage !== 'GROUP') {
     if (!winnerTeam) return { error: 'Advancing team is required for knockout matches' }
     if (![match.homeTeam, match.awayTeam].includes(winnerTeam)) return { error: 'Advancing team must match one of the teams in this match' }
@@ -32,7 +38,7 @@ export async function overrideMatchScore(prevState: unknown, formData: FormData)
   await prisma.match.update({
     where: { id: matchId },
     data: {
-      scoreDuration: 'REGULAR',
+      scoreDuration,
       regularTimeHomeScore: homeScore,
       regularTimeAwayScore: awayScore,
       fullTimeHomeScore: homeScore,
@@ -144,10 +150,7 @@ function buildPointsOps(match: MatchWithRelations, winnerPredictions: WinnerPred
   }
 
   for (const advance of match.advances) {
-    const pts = match.winnerTeam
-      && ['EXTRA_TIME', 'PENALTY_SHOOTOUT'].includes(match.scoreDuration)
-      ? calculateAdvancePoints(advance.predictedTeam, match.winnerTeam)
-      : 0
+    const pts = calculateAdvancePointsForMatch(advance.predictedTeam, match)
     operations.push(prisma.knockoutAdvance.update({ where: { id: advance.id }, data: { pointsAwarded: pts } }))
   }
 
@@ -196,35 +199,40 @@ export async function resetMatchOverride(prevState: unknown, formData: FormData)
   if (!match) return { error: 'Match not found' }
   if (!match.adminOverride) return { error: 'No override to reset' }
 
-  await prisma.match.update({
-    where: { id: matchId },
-    data: {
-      adminOverride: false,
-      status: 'SCHEDULED',
-      scoreDuration: 'REGULAR',
-      homeScore: null,
-      awayScore: null,
-      winnerTeam: null,
-      regularTimeHomeScore: null,
-      regularTimeAwayScore: null,
-      fullTimeHomeScore: null,
-      fullTimeAwayScore: null,
-      extraTimeHomeScore: null,
-      extraTimeAwayScore: null,
-      penaltiesHomeScore: null,
-      penaltiesAwayScore: null,
-    },
-  })
-
-  await prisma.prediction.updateMany({ where: { matchId }, data: { pointsAwarded: null } })
-  await prisma.knockoutAdvance.updateMany({ where: { matchId }, data: { pointsAwarded: null } })
+  const resetOps = [
+    prisma.match.update({
+      where: { id: matchId },
+      data: {
+        adminOverride: false,
+        status: 'SCHEDULED',
+        scoreDuration: 'REGULAR',
+        homeScore: null,
+        awayScore: null,
+        winnerTeam: null,
+        regularTimeHomeScore: null,
+        regularTimeAwayScore: null,
+        fullTimeHomeScore: null,
+        fullTimeAwayScore: null,
+        extraTimeHomeScore: null,
+        extraTimeAwayScore: null,
+        penaltiesHomeScore: null,
+        penaltiesAwayScore: null,
+      },
+    }),
+    prisma.prediction.updateMany({ where: { matchId }, data: { pointsAwarded: null } }),
+    prisma.knockoutAdvance.updateMany({ where: { matchId }, data: { pointsAwarded: null } }),
+  ]
 
   if (match.stage === 'FINAL') {
-    await prisma.tournamentWinnerPrediction.updateMany({
-      where: { championship: { competitionCode: match.competitionCode } },
-      data: { pointsAwarded: null },
-    })
+    resetOps.push(
+      prisma.tournamentWinnerPrediction.updateMany({
+        where: { championship: { competitionCode: match.competitionCode } },
+        data: { pointsAwarded: null },
+      })
+    )
   }
+
+  await prisma.$transaction(resetOps)
 
   await logAdminAction({
     adminId: session.userId!,
@@ -404,6 +412,7 @@ export async function syncMatchesFromApi(prevState: unknown) {
       const transitionedToFinished = existing?.status !== 'FINISHED' && m.status === 'FINISHED'
       // Skip API H2H fetch if we already have static data (headToHeadJson not empty)
       const hasStaticH2H = existing?.headToHeadJson && existing.headToHeadJson !== '[]'
+      let didFetchH2H = false
       if (!hasStaticH2H && (!h2hIsFresh || transitionedToFinished)) {
         try {
           const headToHead = await fetchHeadToHead(m.externalId, 10)
@@ -417,14 +426,15 @@ export async function syncMatchesFromApi(prevState: unknown) {
             },
           })
           h2hFetched++
+          didFetchH2H = true
         } catch (h2hErr) {
           console.warn(`[syncMatchesFromApi] H2H fetch failed for match ${m.externalId}:`, h2hErr)
         }
       }
       synced++
 
-      // Rate-limit H2H calls: wait before the next iteration
-      if (h2hFetched > 0 && synced < matches.length) {
+      // Rate-limit H2H calls: only wait when this iteration actually hit the API
+      if (didFetchH2H && synced < matches.length) {
         await sleep(h2hDelayMs)
       }
     }
@@ -479,7 +489,7 @@ export async function syncMatchesFromApi(prevState: unknown) {
       adminId: session.userId!,
       adminUsername: session.username ?? String(session.userId),
       action: 'SYNC_MATCHES',
-      details: `Synced ${synced} matches`,
+      details: `Synced ${synced} matches (${h2hFetched} head-to-head fetches)`,
     })
     return { success: true, synced }
   } catch (err) {

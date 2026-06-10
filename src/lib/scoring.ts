@@ -55,6 +55,19 @@ export function calculateAdvancePoints(
   return predictedTeam === actualWinner ? SCORING.ADVANCE : 0;
 }
 
+// Knockout "advance" points are only awarded when the match was actually
+// decided in extra time or on penalties (not in regular time).
+export const ADVANCE_SCORE_DURATIONS = ['EXTRA_TIME', 'PENALTY_SHOOTOUT'] as const;
+
+export function calculateAdvancePointsForMatch(
+  predictedTeam: string,
+  match: { winnerTeam: string | null; scoreDuration: string }
+): number {
+  if (!match.winnerTeam) return 0;
+  if (!ADVANCE_SCORE_DURATIONS.includes(match.scoreDuration as (typeof ADVANCE_SCORE_DURATIONS)[number])) return 0;
+  return calculateAdvancePoints(predictedTeam, match.winnerTeam);
+}
+
 export function calculateTournamentWinnerPoints(
   predictedTeam: string,
   actualWinner: string

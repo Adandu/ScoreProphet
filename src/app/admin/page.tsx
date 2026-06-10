@@ -7,15 +7,33 @@ export default async function AdminPage() {
   const timezone = session.timezone ?? 'Europe/Bucharest'
 
   const [matches, users, championships, auditLogs] = await Promise.all([
-    prisma.match.findMany({ orderBy: { kickoff: 'asc' } }),
-    prisma.user.findMany({ orderBy: { username: 'asc' } }),
+    prisma.match.findMany({
+      orderBy: { kickoff: 'asc' },
+      select: {
+        id: true, homeTeam: true, awayTeam: true, kickoff: true, status: true,
+        homeScore: true, awayScore: true, winnerTeam: true, scoreDuration: true,
+        stage: true, adminOverride: true,
+      },
+    }),
+    prisma.user.findMany({
+      orderBy: { username: 'asc' },
+      select: { id: true, username: true, isAdmin: true },
+    }),
     prisma.championship.findMany({
       orderBy: { name: 'asc' },
-      include: { members: true, managers: true },
+      select: {
+        id: true, name: true, description: true, isActive: true, doubleChanceEnabled: true,
+        members: { select: { userId: true } },
+        managers: { select: { userId: true } },
+      },
     }),
     prisma.adminAuditLog.findMany({
       orderBy: { createdAt: 'desc' },
       take: 50,
+      select: {
+        id: true, adminUsername: true, action: true, entityType: true,
+        entityId: true, details: true, createdAt: true,
+      },
     }),
   ])
 
@@ -31,6 +49,7 @@ export default async function AdminPage() {
         homeScore: m.homeScore,
         awayScore: m.awayScore,
         winnerTeam: m.winnerTeam,
+        scoreDuration: m.scoreDuration,
         stage: m.stage,
         adminOverride: m.adminOverride,
       }))}

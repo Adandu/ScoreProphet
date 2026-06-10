@@ -4,8 +4,6 @@ import { notFound } from 'next/navigation'
 import { prisma } from '@/lib/db'
 import { requireAuth } from '@/lib/auth'
 
-export const revalidate = 300
-
 interface Props {
   params: Promise<{ teamId: string }>
 }
