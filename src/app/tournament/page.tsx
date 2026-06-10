@@ -1,10 +1,10 @@
 import { requireAuth } from '@/lib/auth'
 import { prisma } from '@/lib/db'
+import { fetchStandings } from '@/lib/football-api'
 import { GroupStageTab } from '@/components/group-stage-tab'
 import { KnockoutBracket } from '@/components/knockout-bracket'
 import { TournamentTabs } from '@/components/tournament-tabs'
 import { TournamentStatisticsPanel } from '@/components/tournament-statistics-panel'
-import { StandingsPanel } from '@/components/standings-panel'
 import { TopScorersPanel } from '@/components/top-scorers-panel'
 
 export default async function TournamentPage() {
@@ -14,6 +14,16 @@ export default async function TournamentPage() {
   const matches = await prisma.match.findMany({ orderBy: { kickoff: 'asc' } })
   const groupMatches = matches.filter((match) => match.stage === 'GROUP')
   const knockoutMatches = matches.filter((match) => match.stage !== 'GROUP')
+
+  // Pull the last-5 form for each team from the official standings (best-effort).
+  const formByTeam: Record<string, string> = {}
+  try {
+    for (const group of await fetchStandings()) {
+      for (const row of group.table) formByTeam[row.teamName] = row.form
+    }
+  } catch {
+    // Standings unavailable — the group tables simply render without form.
+  }
 
   return (
     <div className="space-y-6">
@@ -31,6 +41,7 @@ export default async function TournamentPage() {
               homeScore: match.homeScore,
               awayScore: match.awayScore,
             }))}
+            formByTeam={formByTeam}
           />
         }
         bracket={
@@ -52,7 +63,6 @@ export default async function TournamentPage() {
             }))}
           />
         }
-        standings={<StandingsPanel />}
         scorers={<TopScorersPanel />}
         statistics={<TournamentStatisticsPanel />}
       />

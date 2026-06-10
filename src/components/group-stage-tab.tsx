@@ -16,7 +16,7 @@ const GROUP_LABELS: Record<string, string> = {
   GROUP_L: 'Group L',
 }
 
-export function GroupStageTab({ matches }: { matches: GroupMatch[] }) {
+export function GroupStageTab({ matches, formByTeam = {} }: { matches: GroupMatch[]; formByTeam?: Record<string, string> }) {
   const standings = computeGroupStandings(matches)
   const groups = Object.keys(standings).sort()
 
@@ -29,7 +29,7 @@ export function GroupStageTab({ matches }: { matches: GroupMatch[] }) {
   }
 
   return (
-    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+    <div className="grid gap-4 md:grid-cols-2">
       {groups.map((group) => (
         <section key={group} className="rounded-xl border border-white/10 bg-white/5 p-4">
           <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-[#C9A84C]">
@@ -39,7 +39,7 @@ export function GroupStageTab({ matches }: { matches: GroupMatch[] }) {
             <table className="w-full table-fixed text-[11px]">
               <thead>
                 <tr className="border-b border-white/10 text-white/40">
-                  <th className="w-[42%] py-2 pr-2 text-left font-normal">Team</th>
+                  <th className="w-[34%] py-2 pr-2 text-left font-normal">Team</th>
                   <th className="px-1 text-right font-normal">P</th>
                   <th className="px-1 text-right font-normal">W</th>
                   <th className="px-1 text-right font-normal">D</th>
@@ -47,7 +47,8 @@ export function GroupStageTab({ matches }: { matches: GroupMatch[] }) {
                   <th className="px-1 text-right font-normal">GF</th>
                   <th className="px-1 text-right font-normal">GA</th>
                   <th className="px-1 text-right font-normal">GD</th>
-                  <th className="pl-1 text-right font-normal">Pts</th>
+                  <th className="px-1 text-right font-normal">Pts</th>
+                  <th className="pl-2 text-left font-normal">Form</th>
                 </tr>
               </thead>
               <tbody>
@@ -68,7 +69,8 @@ export function GroupStageTab({ matches }: { matches: GroupMatch[] }) {
                     <td className="px-1 text-right tabular-nums">{row.gf}</td>
                     <td className="px-1 text-right tabular-nums">{row.ga}</td>
                     <td className="px-1 text-right tabular-nums">{row.gd > 0 ? `+${row.gd}` : row.gd}</td>
-                    <td className="pl-1 text-right font-bold tabular-nums text-[#C9A84C]">{row.pts}</td>
+                    <td className="px-1 text-right font-bold tabular-nums text-[#C9A84C]">{row.pts}</td>
+                    <td className="pl-2"><FormStrip form={formByTeam[row.team] ?? ''} /></td>
                   </tr>
                 ))}
               </tbody>
@@ -77,5 +79,27 @@ export function GroupStageTab({ matches }: { matches: GroupMatch[] }) {
         </section>
       ))}
     </div>
+  )
+}
+
+function FormStrip({ form }: { form: string }) {
+  const results = form.split(',').map((r) => r.trim()).filter(Boolean)
+  if (results.length === 0) return <span className="text-white/25">–</span>
+  return (
+    <span className="flex gap-1">
+      {results.slice(-5).map((result, index) => (
+        <span
+          key={index}
+          title={result}
+          className={`inline-flex h-4 w-4 items-center justify-center rounded text-[10px] font-bold ${
+            result === 'W' ? 'bg-green-500/25 text-green-300'
+              : result === 'L' ? 'bg-red-500/25 text-red-300'
+                : 'bg-white/15 text-white/60'
+          }`}
+        >
+          {result}
+        </span>
+      ))}
+    </span>
   )
 }

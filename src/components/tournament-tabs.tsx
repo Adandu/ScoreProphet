@@ -2,14 +2,13 @@
 
 import { useState, type ReactNode } from 'react'
 
-type TournamentTab = 'groups' | 'bracket' | 'standings' | 'scorers' | 'statistics'
+type TournamentTab = 'groups' | 'bracket' | 'scorers' | 'statistics'
 
-export function TournamentTabs({ groups, bracket, standings, scorers, statistics }: { groups: ReactNode; bracket: ReactNode; standings: ReactNode; scorers: ReactNode; statistics: ReactNode }) {
+export function TournamentTabs({ groups, bracket, scorers, statistics }: { groups: ReactNode; bracket: ReactNode; scorers: ReactNode; statistics: ReactNode }) {
   const [active, setActive] = useState<TournamentTab>('groups')
   const tabs: Array<{ id: TournamentTab; label: string }> = [
     { id: 'groups', label: 'Group Stage' },
     { id: 'bracket', label: 'Knockout Bracket' },
-    { id: 'standings', label: 'Standings' },
     { id: 'scorers', label: 'Top Scorers' },
     { id: 'statistics', label: 'Statistics' },
   ]
@@ -32,7 +31,6 @@ export function TournamentTabs({ groups, bracket, standings, scorers, statistics
       </div>
       {active === 'groups' && groups}
       {active === 'bracket' && bracket}
-      {active === 'standings' && standings}
       {active === 'scorers' && scorers}
       {active === 'statistics' && statistics}
     </div>
