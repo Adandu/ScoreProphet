@@ -74,11 +74,12 @@ export default async function TeamDetailPage({ params }: Props) {
 
   const squadAndCoaches = parseJson<ApiPerson[]>(team.squadJson, [])
   // National-team squads from football-data.org include the coach as a squad
-  // entry (position "Coach"); separate them so coaches show as staff, not players.
+  // entry (position "Coach"); keep them out of the player list. The coach is
+  // surfaced in the Team Profile "Coach" field, so no separate staff list is
+  // needed (the API never returns a populated staff array).
   const squad = squadAndCoaches.filter((person) => !isCoachEntry(person.position))
-  const coaches = squadAndCoaches.filter((person) => isCoachEntry(person.position))
-  const staff = [...parseJson<ApiPerson[]>(team.staffJson, []), ...coaches]
-  const coachName = team.coachName || (coaches[0] ? getPersonName(coaches[0]) : '')
+  const squadCoach = squadAndCoaches.find((person) => isCoachEntry(person.position))
+  const coachName = team.coachName || (squadCoach ? getPersonName(squadCoach) : '')
   const competitions = parseJson<ApiCompetition[]>(team.runningCompetitionsJson, [])
   const wcStats = parseJson<WcStats>(team.wcStatsJson, {})
 
@@ -135,7 +136,6 @@ export default async function TeamDetailPage({ params }: Props) {
       )}
 
       <PeopleSection title="Squad" people={squad} emptyText="No squad data returned by the API for this team." />
-      <PeopleSection title="Staff" people={staff} emptyText="No staff data returned by the API for this team." />
     </div>
   )
 }

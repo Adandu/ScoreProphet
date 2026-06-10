@@ -15,6 +15,14 @@ export class RateLimitStore {
   set(key: string, entry: BucketEntry): void {
     this.map.set(key, entry)
   }
+
+  // Drop entries whose window has expired so the map cannot grow unbounded as
+  // new client IPs arrive over time.
+  prune(now: number): void {
+    for (const [key, entry] of this.map) {
+      if (now >= entry.resetAt) this.map.delete(key)
+    }
+  }
 }
 
 export function checkRateLimit(
@@ -24,6 +32,7 @@ export function checkRateLimit(
   windowMs: number,
 ): boolean {
   const now = Date.now()
+  store.prune(now)
   const entry = store.get(key)
 
   if (!entry || now >= entry.resetAt) {
@@ -36,6 +45,17 @@ export function checkRateLimit(
   return true
 }
 
+// Behind a single trusted reverse proxy (Traefik), the real client IP is the
+// LAST value appended to X-Forwarded-For. Taking the first entry would let a
+// client spoof the header and rotate fake IPs to defeat the limiter.
+export function extractClientIp(forwardedFor: string | null, realIp: string | null): string {
+  if (forwardedFor) {
+    const parts = forwardedFor.split(',').map((part) => part.trim()).filter(Boolean)
+    if (parts.length > 0) return parts[parts.length - 1]
+  }
+  return realIp?.trim() || 'unknown'
+}
+
 // Singleton stores (in-process, reset on server restart)
 const loginStore = new RateLimitStore()
 const registerStore = new RateLimitStore()
@@ -44,7 +64,7 @@ const resetExecuteStore = new RateLimitStore()
 
 async function getClientIp(): Promise<string> {
   const h = await headers()
-  return h.get('x-forwarded-for')?.split(',')[0]?.trim() ?? h.get('x-real-ip') ?? 'unknown'
+  return extractClientIp(h.get('x-forwarded-for'), h.get('x-real-ip'))
 }
 
 export async function rateLimitLogin(): Promise<boolean> {

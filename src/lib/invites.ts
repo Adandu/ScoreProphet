@@ -7,6 +7,20 @@ export function hashInviteToken(token: string): string {
   return crypto.createHash('sha256').update(token).digest('hex')
 }
 
+// Read-only lookup used to render the invite confirmation page (no state change).
+export async function getInvitePreview(token: string) {
+  const invite = await prisma.championshipInvite.findUnique({
+    where: { tokenHash: hashInviteToken(token) },
+    include: { championship: { select: { id: true, name: true, isActive: true } } },
+  })
+  if (!invite || invite.revokedAt || (invite.expiresAt && invite.expiresAt <= new Date())) return null
+  return {
+    championshipId: invite.championshipId,
+    championshipName: invite.championship.name,
+    isActive: invite.championship.isActive,
+  }
+}
+
 export async function acceptInviteToken(token: string) {
   const session = await getSession()
   if (!session.userId) return { error: 'You must be signed in to accept this invitation' }

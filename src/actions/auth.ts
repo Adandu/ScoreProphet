@@ -3,7 +3,7 @@ import crypto, { timingSafeEqual } from 'crypto'
 import { redirect } from 'next/navigation'
 import { revalidatePath } from 'next/cache'
 import { prisma } from '@/lib/db'
-import { hashPassword, verifyPassword, requireAuth } from '@/lib/auth'
+import { hashPassword, verifyPassword, fakeVerifyPassword, requireAuth } from '@/lib/auth'
 import { getSession } from '@/lib/session'
 import { sendPasswordResetEmail, sendPredictionReminderEmail } from '@/lib/email'
 import { getAppUrl, getSafeRedirectPath } from '@/lib/app-url'
@@ -48,7 +48,12 @@ export async function login(prevState: unknown, formData: FormData) {
   const password = formData.get('password') as string
   const redirectTo = getSafeRedirectPath(formData.get('redirectTo'))
   const user = await prisma.user.findUnique({ where: { username } })
-  if (!user) return { error: 'Invalid username or password' }
+  if (!user) {
+    // Spend the same time as a real bcrypt comparison so response timing does
+    // not reveal whether the username exists.
+    await fakeVerifyPassword(password)
+    return { error: 'Invalid username or password' }
+  }
   const valid = await verifyPassword(password, user.passwordHash)
   if (!valid) return { error: 'Invalid username or password' }
   const session = await getSession()
@@ -189,8 +194,10 @@ export async function requestPasswordReset(prevState: unknown, formData: FormDat
       const resetUrl = `${await getAppUrl()}/reset-password?token=${encodeURIComponent(token)}`
       try {
         await sendPasswordResetEmail(user.email!, resetUrl)
-      } catch {
-        return { error: 'Failed to send email. Please try again.' }
+      } catch (err) {
+        // Do not reveal whether the email exists — return the same success
+        // response as the non-existent-email path; log for operators.
+        console.error('[requestPasswordReset] Failed to send reset email:', err)
       }
     }
   }
@@ -241,7 +248,12 @@ export async function sendTestReminderEmail(): Promise<{ error?: string; success
   if (!user?.email) return { error: 'No email address saved on your account.' }
   if (!user.predictionReminderEnabled) return { error: 'Save your profile with reminders enabled first.' }
 
-  const match = await prisma.match.findFirst({ orderBy: { kickoff: 'asc' } })
+  // Prefer the next upcoming match for a realistic sample; fall back to the
+  // most recent one if the tournament is over.
+  const match = await prisma.match.findFirst({
+    where: { kickoff: { gte: new Date() } },
+    orderBy: { kickoff: 'asc' },
+  }) ?? await prisma.match.findFirst({ orderBy: { kickoff: 'desc' } })
   const membership = await prisma.championshipMember.findFirst({
     where: { userId: user.id },
     include: { championship: true },

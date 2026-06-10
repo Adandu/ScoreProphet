@@ -11,6 +11,15 @@ export async function verifyPassword(password: string, hash: string): Promise<bo
   return bcrypt.compare(password, hash)
 }
 
+// Pre-computed bcrypt hash (cost 12) with no known plaintext. Used to spend the
+// same time on the login "user not found" path as a real bcrypt comparison,
+// so response timing does not reveal whether a username exists.
+const DUMMY_PASSWORD_HASH = '$2b$12$cvzX0voKD1It.jFZH15qHOa9f0Qmc0naT93WrtYS80z.X8GyngDH.'
+
+export async function fakeVerifyPassword(password: string): Promise<void> {
+  await bcrypt.compare(password, DUMMY_PASSWORD_HASH)
+}
+
 export async function requireAuth() {
   const session = await getSession()
   if (!session.userId) redirect('/login')
