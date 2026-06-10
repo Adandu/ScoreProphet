@@ -23,7 +23,7 @@ export async function StandingsPanel() {
               <thead>
                 <tr className="text-left text-white/40">
                   <th className="w-6 py-1 pr-1 font-normal">#</th>
-                  <th className="py-1 pr-1 font-normal">Team</th>
+                  <th className="w-36 py-1 pr-1 font-normal">Team</th>
                   <th className="w-7 py-1 text-center font-normal">P</th>
                   <th className="w-7 py-1 text-center font-normal">W</th>
                   <th className="w-7 py-1 text-center font-normal">D</th>
@@ -31,6 +31,7 @@ export async function StandingsPanel() {
                   <th className="w-9 py-1 text-center font-normal">GD</th>
                   <th className="w-8 py-1 text-center font-semibold text-white/60">Pts</th>
                   <th className="w-[88px] py-1 pl-2 font-normal">Form</th>
+                  <th className="py-1" aria-hidden />
                 </tr>
               </thead>
               <tbody>
@@ -54,6 +55,7 @@ export async function StandingsPanel() {
                     <td className="py-1.5 text-center text-white/60 tabular-nums">{row.goalDifference > 0 ? `+${row.goalDifference}` : row.goalDifference}</td>
                     <td className="py-1.5 text-center font-bold text-white tabular-nums">{row.points}</td>
                     <td className="py-1.5 pl-2"><FormStrip form={row.form} /></td>
+                    <td aria-hidden />
                   </tr>
                 ))}
               </tbody>
