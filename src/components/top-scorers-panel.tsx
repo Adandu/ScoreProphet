@@ -36,9 +36,11 @@ export async function TopScorersPanel() {
                 <td className="py-1.5 pr-2 font-medium text-white">{scorer.playerName}</td>
                 <td className="py-1.5 pr-2">
                   <span className="flex items-center gap-2">
-                    {scorer.teamCrest
-                      ? <Image src={scorer.teamCrest} alt="" width={18} height={18} className="max-h-[18px] w-auto object-contain" />
-                      : <span className="h-[18px] w-[18px] rounded bg-white/10" />}
+                    <span className="inline-flex h-4 w-6 shrink-0 items-center justify-center">
+                      {scorer.teamCrest
+                        ? <Image src={scorer.teamCrest} alt="" width={24} height={16} className="max-h-4 max-w-full object-contain" />
+                        : <span className="h-4 w-4 rounded bg-white/10" />}
+                    </span>
                     <span className="text-white/70">{scorer.teamName}</span>
                   </span>
                 </td>

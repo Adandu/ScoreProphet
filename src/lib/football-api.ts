@@ -124,6 +124,7 @@ export interface LiveMatchDetails {
   minute: number | null
   injuryTime: number | null
   venue: string | null
+  attendance: number | null
   homeScore: number | null
   awayScore: number | null
   homeTeam: LiveTeam
@@ -538,6 +539,7 @@ export async function fetchLiveMatchDetails(matchId: string | number): Promise<L
     minute: m.minute ?? null,
     injuryTime: m.injuryTime != null ? Number(m.injuryTime) : null,
     venue: m.venue ?? null,
+    attendance: typeof m.attendance === 'number' ? m.attendance : null,
     homeScore: m.score?.fullTime?.home ?? null,
     awayScore: m.score?.fullTime?.away ?? null,
     homeTeam: normalizeTeam(m.homeTeam ?? {}),

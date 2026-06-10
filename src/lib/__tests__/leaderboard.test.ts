@@ -118,6 +118,48 @@ describe('getRankedUsers', () => {
     expect(ranked[0].winner).toBe(1)
   })
 
+  it('GROUP scope filters predictions to group-stage matches and excludes advances/winner', async () => {
+    vi.mocked(prisma.user.findMany).mockResolvedValueOnce([
+      { id: 1, username: 'anna', predictions: [{ type: 'EXACT_SCORE', pointsAwarded: 5 }], advances: [], winnerPredictions: [] },
+    ] as never)
+
+    const ranked = await getRankedUsers([1], champOn, 'GROUP')
+
+    expect(prisma.user.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        include: expect.objectContaining({
+          predictions: expect.objectContaining({
+            where: expect.objectContaining({ championshipId: 1, match: { stage: 'GROUP' } }),
+          }),
+          advances: false,
+          winnerPredictions: false,
+        }),
+      })
+    )
+    expect(ranked[0].total).toBe(5)
+  })
+
+  it('KNOCKOUT scope filters predictions to non-group matches and keeps advances but not winner', async () => {
+    vi.mocked(prisma.user.findMany).mockResolvedValueOnce([
+      { id: 1, username: 'anna', predictions: [], advances: [{ pointsAwarded: 1 }], winnerPredictions: [] },
+    ] as never)
+
+    const ranked = await getRankedUsers([1], champOn, 'KNOCKOUT')
+
+    expect(prisma.user.findMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        include: expect.objectContaining({
+          predictions: expect.objectContaining({
+            where: expect.objectContaining({ match: { stage: { not: 'GROUP' } } }),
+          }),
+          advances: expect.objectContaining({ where: expect.objectContaining({ championshipId: 1 }) }),
+          winnerPredictions: false,
+        }),
+      })
+    )
+    expect(ranked[0].total).toBe(1)
+  })
+
   it('winner is 0 when winner prediction scored 0 points', async () => {
     vi.mocked(prisma.user.findMany).mockResolvedValueOnce([
       {

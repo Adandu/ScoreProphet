@@ -1,5 +1,7 @@
 import { prisma } from '@/lib/db'
 
+export type LeaderboardScope = 'OVERALL' | 'GROUP' | 'KNOCKOUT'
+
 export interface RankedUser {
   id: number
   username: string
@@ -13,16 +15,30 @@ export interface RankedUser {
 
 export async function getRankedUsers(
   userIds: number[],
-  championship: { id: number; doubleChanceEnabled: boolean }
+  championship: { id: number; doubleChanceEnabled: boolean },
+  scope: LeaderboardScope = 'OVERALL'
 ): Promise<RankedUser[]> {
   if (userIds.length === 0) return []
+
+  // Restrict predictions by the stage of their match; advances are knockout-only
+  // and the tournament-winner pick only contributes to the overall standing.
+  const stageFilter =
+    scope === 'GROUP' ? { match: { stage: 'GROUP' as const } }
+      : scope === 'KNOCKOUT' ? { match: { stage: { not: 'GROUP' as const } } }
+        : {}
+  const advancesInclude = scope !== 'GROUP'
+    ? { where: { pointsAwarded: { not: null }, championshipId: championship.id } }
+    : false
+  const winnerInclude = scope === 'OVERALL'
+    ? { where: { pointsAwarded: { not: null }, championshipId: championship.id } }
+    : false
 
   const users = await prisma.user.findMany({
     where: { id: { in: userIds } },
     include: {
-      predictions: { where: { pointsAwarded: { not: null }, championshipId: championship.id } },
-      advances: { where: { pointsAwarded: { not: null }, championshipId: championship.id } },
-      winnerPredictions: { where: { pointsAwarded: { not: null }, championshipId: championship.id } },
+      predictions: { where: { pointsAwarded: { not: null }, championshipId: championship.id, ...stageFilter } },
+      advances: advancesInclude,
+      winnerPredictions: winnerInclude,
     },
   })
 
@@ -38,10 +54,12 @@ export async function getRankedUsers(
         },
         { exactPts: 0, singlePts: 0, doublePts: 0, exact: 0, single: 0, double: 0 }
       )
-      const advancePts = u.advances.reduce((sum, a) => sum + (a.pointsAwarded ?? 0), 0)
-      const advance = u.advances.filter((a) => (a.pointsAwarded ?? 0) > 0).length
-      const winnerPts = u.winnerPredictions.reduce((sum, w) => sum + (w.pointsAwarded ?? 0), 0)
-      const winner = u.winnerPredictions.filter((w) => (w.pointsAwarded ?? 0) > 0).length
+      const advances = u.advances ?? []
+      const winnerPredictions = u.winnerPredictions ?? []
+      const advancePts = advances.reduce((sum, a) => sum + (a.pointsAwarded ?? 0), 0)
+      const advance = advances.filter((a) => (a.pointsAwarded ?? 0) > 0).length
+      const winnerPts = winnerPredictions.reduce((sum, w) => sum + (w.pointsAwarded ?? 0), 0)
+      const winner = winnerPredictions.filter((w) => (w.pointsAwarded ?? 0) > 0).length
 
       const result: RankedUser = {
         id: u.id,

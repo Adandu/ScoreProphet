@@ -120,8 +120,10 @@ export async function LiveMatchPanel({ liveMatch, prefetchedDetails }: { liveMat
           ) : isShootout ? null : details.minute !== null && (
             <div className="text-sm text-white/50">{fmtMin(details.minute, details.injuryTime, liveMatch.scoreDuration)}</div>
           ))}
-          {details.venue && (
-            <div className="text-xs text-white/30">{details.venue}</div>
+          {(details.venue || details.attendance) && (
+            <div className="text-xs text-white/30">
+              {[details.venue, details.attendance ? `${details.attendance.toLocaleString()} fans` : null].filter(Boolean).join(' · ')}
+            </div>
           )}
         </div>
 

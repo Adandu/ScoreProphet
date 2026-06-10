@@ -19,38 +19,40 @@ export async function StandingsPanel() {
         <section key={group.group} className="rounded-xl border border-white/10 bg-white/5 p-4">
           <h3 className="mb-3 text-sm font-semibold uppercase tracking-wide text-[#C9A84C]">{group.group}</h3>
           <div className="overflow-x-auto">
-            <table className="w-full text-sm">
+            <table className="w-full table-fixed text-sm">
               <thead>
                 <tr className="text-left text-white/40">
-                  <th className="py-1 pr-2 font-normal">#</th>
-                  <th className="py-1 pr-2 font-normal">Team</th>
-                  <th className="py-1 px-1 text-center font-normal">P</th>
-                  <th className="py-1 px-1 text-center font-normal">W</th>
-                  <th className="py-1 px-1 text-center font-normal">D</th>
-                  <th className="py-1 px-1 text-center font-normal">L</th>
-                  <th className="py-1 px-1 text-center font-normal">GD</th>
-                  <th className="py-1 px-1 text-center font-semibold text-white/60">Pts</th>
-                  <th className="py-1 pl-2 font-normal">Form</th>
+                  <th className="w-6 py-1 pr-1 font-normal">#</th>
+                  <th className="py-1 pr-1 font-normal">Team</th>
+                  <th className="w-7 py-1 text-center font-normal">P</th>
+                  <th className="w-7 py-1 text-center font-normal">W</th>
+                  <th className="w-7 py-1 text-center font-normal">D</th>
+                  <th className="w-7 py-1 text-center font-normal">L</th>
+                  <th className="w-9 py-1 text-center font-normal">GD</th>
+                  <th className="w-8 py-1 text-center font-semibold text-white/60">Pts</th>
+                  <th className="w-[88px] py-1 pl-2 font-normal">Form</th>
                 </tr>
               </thead>
               <tbody>
                 {group.table.map((row) => (
                   <tr key={`${group.group}-${row.position}-${row.teamName}`} className="border-t border-white/5">
-                    <td className="py-1.5 pr-2 text-white/50">{row.position}</td>
-                    <td className="py-1.5 pr-2">
+                    <td className="py-1.5 pr-1 text-white/50 tabular-nums">{row.position}</td>
+                    <td className="py-1.5 pr-1">
                       <span className="flex items-center gap-2">
-                        {row.teamCrest
-                          ? <Image src={row.teamCrest} alt="" width={18} height={18} className="max-h-[18px] w-auto object-contain" />
-                          : <span className="h-[18px] w-[18px] rounded bg-white/10" />}
-                        <span className="font-medium text-white">{row.teamName}</span>
+                        <span className="inline-flex h-4 w-6 shrink-0 items-center justify-center">
+                          {row.teamCrest
+                            ? <Image src={row.teamCrest} alt="" width={24} height={16} className="max-h-4 max-w-full object-contain" />
+                            : <span className="h-4 w-4 rounded bg-white/10" />}
+                        </span>
+                        <span className="truncate font-medium text-white">{row.teamName}</span>
                       </span>
                     </td>
-                    <td className="py-1.5 px-1 text-center text-white/60">{row.playedGames}</td>
-                    <td className="py-1.5 px-1 text-center text-white/60">{row.won}</td>
-                    <td className="py-1.5 px-1 text-center text-white/60">{row.draw}</td>
-                    <td className="py-1.5 px-1 text-center text-white/60">{row.lost}</td>
-                    <td className="py-1.5 px-1 text-center text-white/60">{row.goalDifference > 0 ? `+${row.goalDifference}` : row.goalDifference}</td>
-                    <td className="py-1.5 px-1 text-center font-bold text-white">{row.points}</td>
+                    <td className="py-1.5 text-center text-white/60 tabular-nums">{row.playedGames}</td>
+                    <td className="py-1.5 text-center text-white/60 tabular-nums">{row.won}</td>
+                    <td className="py-1.5 text-center text-white/60 tabular-nums">{row.draw}</td>
+                    <td className="py-1.5 text-center text-white/60 tabular-nums">{row.lost}</td>
+                    <td className="py-1.5 text-center text-white/60 tabular-nums">{row.goalDifference > 0 ? `+${row.goalDifference}` : row.goalDifference}</td>
+                    <td className="py-1.5 text-center font-bold text-white tabular-nums">{row.points}</td>
                     <td className="py-1.5 pl-2"><FormStrip form={row.form} /></td>
                   </tr>
                 ))}
