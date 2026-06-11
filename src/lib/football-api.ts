@@ -521,6 +521,9 @@ export async function fetchLiveMatchDetails(matchId: string | number): Promise<L
     const id = String(teamObj.id ?? '')
     const name = teamObj.name ?? ''
     for (const [key, val] of Object.entries(stats)) {
+      // The API sends null for stats it hasn't populated yet; Number(null) is 0,
+      // which would render misleading zeros, so skip nulls entirely.
+      if (val == null) continue
       const type = normalizeTeamStatType(key)
       const value = Number(val)
       if (type && Number.isFinite(value)) teamStats.push({ teamId: id, teamName: name, type, value })

@@ -31,6 +31,22 @@ function normalizeTeamStatType(value) {
   return null
 }
 
+// New API format: homeTeam.statistics / awayTeam.statistics are objects keyed
+// by stat name (corner_kicks, fouls, ...) with null for unpopulated values.
+function collectTeamStats(match, teamObj) {
+  const stats = teamObj?.statistics
+  if (!stats || typeof stats !== 'object' || Array.isArray(stats)) return []
+  const teamName = teamObj.name ?? ''
+  const rows = []
+  for (const [key, val] of Object.entries(stats)) {
+    if (val == null) continue
+    const type = normalizeTeamStatType(key)
+    const value = Number(val)
+    if (type && Number.isFinite(value)) rows.push({ matchId: match.id, teamName, type, value })
+  }
+  return rows
+}
+
 async function replaceMatchStatistics(match, details) {
   const events = []
 
@@ -57,8 +73,14 @@ async function replaceMatchStatistics(match, details) {
     })
   }
 
-  const teamStats = []
-  for (const statGroup of details.statistics ?? []) {
+  const teamStats = [
+    ...collectTeamStats(match, details.homeTeam),
+    ...collectTeamStats(match, details.awayTeam),
+  ]
+  // Legacy format fallback: top-level statistics array of { team, statistics: [{ type, value }] }.
+  // Only used when the per-team format yielded nothing, to avoid violating the
+  // (matchId, teamName, type) unique constraint with duplicate rows.
+  for (const statGroup of teamStats.length > 0 ? [] : details.statistics ?? []) {
     const teamName = statGroup.team?.name ?? ''
     for (const stat of statGroup.statistics ?? []) {
       const type = normalizeTeamStatType(stat.type)

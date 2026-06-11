@@ -149,12 +149,16 @@ export async function LiveMatchPanel({ liveMatch, prefetchedDetails }: { liveMat
       </>
 
       {/* Match Stats */}
-      {details.teamStats.length > 0 && (
+      {details.teamStats.length > 0 ? (
         <MatchStatsRow
           homeId={String(details.homeTeam.id)}
           awayId={String(details.awayTeam.id)}
           teamStats={details.teamStats}
         />
+      ) : (
+        <div className="rounded-xl border border-white/10 bg-[#0a1628] px-4 py-3 text-center text-xs text-white/40">
+          Match statistics not yet provided by the data feed
+        </div>
       )}
 
       {/* Goals */}

@@ -104,17 +104,19 @@ async function recalculateMatchPoints(match: Match) {
 }
 
 async function main() {
-  // Skip if no matches are scheduled or live today
+  // Skip unless a match is live, or a scheduled match is near its kickoff window
+  // (15 min before kickoff up to 3 h after, to cover delayed kickoffs).
+  // Keeps the 5-second sync loop from hitting the API outside match windows.
   const now = new Date()
-  const todayStart = new Date(now); todayStart.setHours(0, 0, 0, 0)
-  const todayEnd = new Date(now); todayEnd.setHours(23, 59, 59, 999)
+  const windowStart = new Date(now.getTime() - 3 * 60 * 60 * 1000)
+  const windowEnd = new Date(now.getTime() + 15 * 60 * 1000)
 
-  const [dbLiveMatches, todayMatchCount] = await Promise.all([
+  const [dbLiveMatches, nearKickoffCount] = await Promise.all([
     prisma.match.findMany({ where: { status: 'LIVE' } }),
-    prisma.match.count({ where: { kickoff: { gte: todayStart, lte: todayEnd }, status: { in: ['SCHEDULED', 'LIVE'] } } }),
+    prisma.match.count({ where: { kickoff: { gte: windowStart, lte: windowEnd }, status: 'SCHEDULED' } }),
   ])
 
-  if (dbLiveMatches.length === 0 && todayMatchCount === 0) return
+  if (dbLiveMatches.length === 0 && nearKickoffCount === 0) return
 
   // Fetch live matches from API
   const res = await fetch(`${BASE_URL}/competitions/${COMPETITION}/matches?status=IN_PLAY,PAUSED`, {
