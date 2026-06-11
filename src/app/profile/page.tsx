@@ -3,6 +3,7 @@ import { prisma } from '@/lib/db'
 import { requireAuth } from '@/lib/auth'
 import { getSession } from '@/lib/session'
 import { ProfileClient } from './_profile-client'
+import { ProfileBadges } from '@/components/profile-badges'
 
 export default async function ProfilePage() {
   const session = await requireAuth()
@@ -29,6 +30,7 @@ export default async function ProfilePage() {
           predictionReminderEnabled: user.predictionReminderEnabled,
         }}
       />
+      <ProfileBadges userId={user.id} timezone={user.timezone} />
     </div>
   )
 }

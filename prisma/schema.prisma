@@ -24,6 +24,7 @@ model User {
   generatedInvites          ChampionshipInvite[]
   passwordResetTokens       PasswordResetToken[]
   predictionReminders       PredictionReminder[]
+  achievements              UserAchievement[]
 }
 
 model Championship {
@@ -40,6 +41,7 @@ model Championship {
   invites             ChampionshipInvite[]
   predictionReminders PredictionReminder[]
   winnerPredictions   TournamentWinnerPrediction[]
+  achievements        UserAchievement[]
 
   @@index([competitionCode])
 }
@@ -113,10 +115,26 @@ model Match {
   predictionReminders        PredictionReminder[]
   events                     MatchEvent[]
   teamStats                  MatchTeamStat[]
+  userAchievements           UserAchievement[]
 
   @@index([status])
   @@index([kickoff])
   @@index([competitionCode, stage])
+}
+
+model UserAchievement {
+  id             Int          @id @default(autoincrement())
+  userId         Int
+  championshipId Int
+  badgeId        String
+  earnedAt       DateTime     @default(now())
+  matchId        Int?
+  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  championship   Championship @relation(fields: [championshipId], references: [id], onDelete: Cascade)
+  match          Match?       @relation(fields: [matchId], references: [id], onDelete: SetNull)
+
+  @@unique([userId, championshipId, badgeId])
+  @@index([userId])
 }
 
 model Team {

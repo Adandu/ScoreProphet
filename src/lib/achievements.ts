@@ -10,11 +10,25 @@ export interface Achievement {
 export interface AchievementInput {
   // One entry per finished match the user predicted, with the total points they
   // earned on it and whether they landed an exact-score hit.
-  matches: Array<{ stage: string; kickoff: number; points: number; exact: boolean }>
+  matches: Array<{ matchId?: number; stage: string; kickoff: number; points: number; exact: boolean }>
   advancePensCorrect: boolean
   tournamentWinnerCorrect: boolean
   totalPoints: number
   rank: number // 1-based position on the overall leaderboard
+  // Context for badges not tied to the user's per-match points.
+  finalMatch?: AchievementTrigger | null
+  advancePensMatch?: AchievementTrigger | null
+}
+
+export interface AchievementTrigger {
+  matchId?: number
+  kickoff: number
+}
+
+export interface DetailedAchievement {
+  achievement: Achievement
+  // The match that earned the badge, when derivable (Front Runner has none).
+  trigger?: AchievementTrigger
 }
 
 const CATALOG = {
@@ -35,44 +49,77 @@ function badge(id: keyof typeof CATALOG): Achievement {
 }
 
 export function evaluateAchievements(input: AchievementInput): Achievement[] {
-  const earned: Achievement[] = []
+  return evaluateAchievementsDetailed(input).map((d) => d.achievement)
+}
+
+export function evaluateAchievementsDetailed(input: AchievementInput): DetailedAchievement[] {
+  const earned: DetailedAchievement[] = []
   const ordered = [...input.matches].sort((a, b) => a.kickoff - b.kickoff)
+  const asTrigger = (m?: { matchId?: number; kickoff: number }): AchievementTrigger | undefined =>
+    m ? { matchId: m.matchId, kickoff: m.kickoff } : undefined
 
-  if (ordered.filter((m) => m.exact).length >= 10) earned.push(badge('sharpshooter'))
+  const exacts = ordered.filter((m) => m.exact)
+  if (exacts.length >= 10) earned.push({ achievement: badge('sharpshooter'), trigger: asTrigger(exacts[9]) })
 
-  // Longest run of consecutive predicted matches with a correct result.
+  // Longest run of consecutive predicted matches with a correct result;
+  // the trigger is the match that first completed a run of 5.
   let run = 0
   let longestRun = 0
+  let streakTrigger: AchievementTrigger | undefined
   for (const match of ordered) {
     run = match.points >= RESULT_THRESHOLD ? run + 1 : 0
     longestRun = Math.max(longestRun, run)
+    if (run === 5 && !streakTrigger) streakTrigger = asTrigger(match)
   }
-  if (longestRun >= 5) earned.push(badge('hot_streak'))
+  if (longestRun >= 5) earned.push({ achievement: badge('hot_streak'), trigger: streakTrigger })
 
-  if (input.tournamentWinnerCorrect) earned.push(badge('oracle'))
+  if (input.tournamentWinnerCorrect) earned.push({ achievement: badge('oracle'), trigger: asTrigger(input.finalMatch ?? undefined) })
 
   // A "perfect round": a stage with 2+ predicted matches all scored as correct.
-  const byStage = new Map<string, { total: number; correct: number }>()
+  // The trigger is the last match of the earliest-completed qualifying stage.
+  const byStage = new Map<string, { total: number; correct: number; last: (typeof ordered)[number] }>()
   for (const match of ordered) {
-    const entry = byStage.get(match.stage) ?? { total: 0, correct: 0 }
+    const entry = byStage.get(match.stage) ?? { total: 0, correct: 0, last: match }
     entry.total++
     if (match.points >= RESULT_THRESHOLD) entry.correct++
+    if (match.kickoff >= entry.last.kickoff) entry.last = match
     byStage.set(match.stage, entry)
   }
-  if ([...byStage.values()].some((s) => s.total >= 2 && s.correct === s.total)) earned.push(badge('perfect_round'))
+  const perfectStages = [...byStage.values()].filter((s) => s.total >= 2 && s.correct === s.total)
+  if (perfectStages.length > 0) {
+    perfectStages.sort((a, b) => a.last.kickoff - b.last.kickoff)
+    earned.push({ achievement: badge('perfect_round'), trigger: asTrigger(perfectStages[0].last) })
+  }
 
-  if (input.rank === 1 && input.totalPoints > 0) earned.push(badge('front_runner'))
-  if (input.advancePensCorrect) earned.push(badge('golden_eye'))
-  if (input.totalPoints >= 100) earned.push(badge('century'))
-  if (ordered.some((m) => m.points > 0)) earned.push(badge('first_blood'))
+  if (input.rank === 1 && input.totalPoints > 0) earned.push({ achievement: badge('front_runner') })
+  if (input.advancePensCorrect) earned.push({ achievement: badge('golden_eye'), trigger: asTrigger(input.advancePensMatch ?? undefined) })
+
+  if (input.totalPoints >= 100) {
+    // Trigger: the match whose points took the running match total to 100+.
+    // Advance/winner bonus points can push the total past 100 without any
+    // single match crossing it; in that case there is no trigger.
+    let cumulative = 0
+    let centuryTrigger: AchievementTrigger | undefined
+    for (const match of ordered) {
+      cumulative += match.points
+      if (cumulative >= 100) { centuryTrigger = asTrigger(match); break }
+    }
+    earned.push({ achievement: badge('century'), trigger: centuryTrigger })
+  }
+
+  const firstScoring = ordered.find((m) => m.points > 0)
+  if (firstScoring) earned.push({ achievement: badge('first_blood'), trigger: asTrigger(firstScoring) })
 
   return earned
 }
 
-// Builds achievement lists for every ranked member of a championship.
+// Builds achievement lists for every ranked member of a championship, and
+// persists newly earned badges to UserAchievement (lazy award-on-read).
+// earnedAt is backdated to the triggering match's kickoff when derivable, so
+// the first run after deploy backfills history with sensible dates.
 export async function getAchievementsByUser(
   memberIds: number[],
-  championship: { id: number; doubleChanceEnabled: boolean },
+  championship: { id: number; doubleChanceEnabled: boolean; competitionCode?: string },
   ranked: Array<{ id: number; total: number }>,
 ): Promise<Map<number, Achievement[]>> {
   const result = new Map<number, Achievement[]>()
@@ -81,47 +128,133 @@ export async function getAchievementsByUser(
   const rankByUser = new Map(ranked.map((r, index) => [r.id, index + 1]))
   const totalByUser = new Map(ranked.map((r) => [r.id, r.total]))
 
-  const [predictions, advances, winnerPredictions] = await Promise.all([
+  const [predictions, advances, winnerPredictions, finalMatchRow] = await Promise.all([
     prisma.prediction.findMany({
       where: { championshipId: championship.id, userId: { in: memberIds }, pointsAwarded: { not: null } },
       select: { userId: true, type: true, pointsAwarded: true, matchId: true, match: { select: { stage: true, kickoff: true } } },
     }),
     prisma.knockoutAdvance.findMany({
       where: { championshipId: championship.id, userId: { in: memberIds }, pointsAwarded: { not: null } },
-      select: { userId: true, pointsAwarded: true },
+      select: { userId: true, pointsAwarded: true, matchId: true, match: { select: { kickoff: true } } },
     }),
     prisma.tournamentWinnerPrediction.findMany({
       where: { championshipId: championship.id, userId: { in: memberIds }, pointsAwarded: { not: null } },
       select: { userId: true, pointsAwarded: true },
     }),
+    championship.competitionCode
+      ? prisma.match.findFirst({
+          where: { competitionCode: championship.competitionCode, stage: 'FINAL', status: 'FINISHED' },
+          select: { id: true, kickoff: true },
+        })
+      : Promise.resolve(null),
   ])
 
   // Aggregate per user → per match.
-  type MatchAgg = { stage: string; kickoff: number; points: number; exact: boolean }
+  type MatchAgg = { matchId: number; stage: string; kickoff: number; points: number; exact: boolean }
   const perUserMatch = new Map<number, Map<number, MatchAgg>>()
   for (const p of predictions) {
     if (!championship.doubleChanceEnabled && p.type === 'DOUBLE_CHANCE') continue
     const byMatch = perUserMatch.get(p.userId) ?? new Map<number, MatchAgg>()
-    const agg = byMatch.get(p.matchId) ?? { stage: p.match.stage, kickoff: p.match.kickoff.getTime(), points: 0, exact: false }
+    const agg = byMatch.get(p.matchId) ?? { matchId: p.matchId, stage: p.match.stage, kickoff: p.match.kickoff.getTime(), points: 0, exact: false }
     agg.points += p.pointsAwarded ?? 0
     if (p.type === 'EXACT_SCORE' && (p.pointsAwarded ?? 0) > 0) agg.exact = true
     byMatch.set(p.matchId, agg)
     perUserMatch.set(p.userId, byMatch)
   }
 
-  const advancePensByUser = new Set(advances.filter((a) => (a.pointsAwarded ?? 0) > 0).map((a) => a.userId))
+  const advancePensMatchByUser = new Map<number, AchievementTrigger>()
+  for (const a of advances) {
+    if ((a.pointsAwarded ?? 0) > 0 && !advancePensMatchByUser.has(a.userId)) {
+      advancePensMatchByUser.set(a.userId, { matchId: a.matchId, kickoff: a.match.kickoff.getTime() })
+    }
+  }
   const winnerByUser = new Set(winnerPredictions.filter((w) => (w.pointsAwarded ?? 0) > 0).map((w) => w.userId))
+  const finalMatch: AchievementTrigger | null = finalMatchRow
+    ? { matchId: finalMatchRow.id, kickoff: finalMatchRow.kickoff.getTime() }
+    : null
 
+  const detailedByUser = new Map<number, DetailedAchievement[]>()
   for (const userId of memberIds) {
     const matches = [...(perUserMatch.get(userId)?.values() ?? [])]
-    result.set(userId, evaluateAchievements({
+    const detailed = evaluateAchievementsDetailed({
       matches,
-      advancePensCorrect: advancePensByUser.has(userId),
+      advancePensCorrect: advancePensMatchByUser.has(userId),
       tournamentWinnerCorrect: winnerByUser.has(userId),
       totalPoints: totalByUser.get(userId) ?? 0,
       rank: rankByUser.get(userId) ?? memberIds.length,
-    }))
+      finalMatch,
+      advancePensMatch: advancePensMatchByUser.get(userId) ?? null,
+    })
+    detailedByUser.set(userId, detailed)
+    result.set(userId, detailed.map((d) => d.achievement))
   }
 
+  await persistNewAchievements(championship.id, detailedByUser)
   return result
+}
+
+async function persistNewAchievements(
+  championshipId: number,
+  detailedByUser: Map<number, DetailedAchievement[]>,
+): Promise<void> {
+  const existing = await prisma.userAchievement.findMany({
+    where: { championshipId, userId: { in: [...detailedByUser.keys()] } },
+    select: { userId: true, badgeId: true },
+  })
+  const have = new Set(existing.map((e) => `${e.userId}:${e.badgeId}`))
+
+  const rows: Array<{ userId: number; championshipId: number; badgeId: string; earnedAt: Date; matchId: number | null }> = []
+  for (const [userId, detailed] of detailedByUser) {
+    for (const d of detailed) {
+      if (have.has(`${userId}:${d.achievement.id}`)) continue
+      rows.push({
+        userId,
+        championshipId,
+        badgeId: d.achievement.id,
+        earnedAt: d.trigger ? new Date(d.trigger.kickoff) : new Date(),
+        matchId: d.trigger?.matchId ?? null,
+      })
+    }
+  }
+  if (rows.length > 0) {
+    await prisma.userAchievement.createMany({ data: rows })
+  }
+}
+
+export interface EarnedBadge {
+  badgeId: string
+  emoji: string
+  name: string
+  description: string
+  earnedAt: Date
+  championshipName: string
+  match: { homeTeam: string; awayTeam: string; homeScore: number | null; awayScore: number | null } | null
+}
+
+export function getCatalog(): Achievement[] {
+  return (Object.keys(CATALOG) as Array<keyof typeof CATALOG>).map((id) => badge(id))
+}
+
+// Earned badges for one user across all their championships, for the profile
+// page. Assumes lazy award has run (any leaderboard/profile view triggers it).
+export async function getUserEarnedBadges(userId: number): Promise<EarnedBadge[]> {
+  const rows = await prisma.userAchievement.findMany({
+    where: { userId },
+    orderBy: { earnedAt: 'asc' },
+    select: {
+      badgeId: true,
+      earnedAt: true,
+      championship: { select: { name: true } },
+      match: { select: { homeTeam: true, awayTeam: true, homeScore: true, awayScore: true } },
+    },
+  })
+  return rows
+    .filter((r): r is typeof r & { badgeId: keyof typeof CATALOG } => r.badgeId in CATALOG)
+    .map((r) => ({
+      badgeId: r.badgeId,
+      ...CATALOG[r.badgeId],
+      earnedAt: r.earnedAt,
+      championshipName: r.championship.name,
+      match: r.match,
+    }))
 }

@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import type { RankedUser } from '@/lib/leaderboard'
 import type { Achievement } from '@/lib/achievements'
+import { AchievementBadge } from '@/components/achievement-badge'
 
 type Scope = 'overall' | 'group' | 'knockout'
 
@@ -73,7 +74,7 @@ export function LeaderboardTabs({
                     <span className="flex items-center gap-1.5">
                       <span>{u.username} {isCurrentUser && '(you)'}</span>
                       {(achievementsByUser[u.id] ?? []).map((a) => (
-                        <span key={a.id} title={`${a.name} — ${a.description}`} className="text-sm leading-none">{a.emoji}</span>
+                        <AchievementBadge key={a.id} achievement={a} />
                       ))}
                     </span>
                   </td>

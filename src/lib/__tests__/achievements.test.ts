@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { evaluateAchievements, type AchievementInput } from '@/lib/achievements'
+import { evaluateAchievements, evaluateAchievementsDetailed, type AchievementInput } from '@/lib/achievements'
 
 function ids(input: AchievementInput): string[] {
   return evaluateAchievements(input).map((a) => a.id)
@@ -50,5 +50,64 @@ describe('evaluateAchievements', () => {
   it('awards First Blood once any match earned points', () => {
     expect(ids({ ...base, matches: [{ stage: 'GROUP', kickoff: 1, points: 1, exact: false }] })).toContain('first_blood')
     expect(ids(base)).not.toContain('first_blood')
+  })
+})
+
+describe('evaluateAchievementsDetailed — trigger matches', () => {
+  const m = (matchId: number, points: number, exact = false, stage = 'GROUP', kickoff = matchId) =>
+    ({ matchId, stage, kickoff, points, exact })
+
+  function trigger(input: AchievementInput, id: string) {
+    const found = evaluateAchievementsDetailed(input).find((d) => d.achievement.id === id)
+    expect(found).toBeDefined()
+    return found!.trigger
+  }
+
+  it('First Blood triggers on the first match with points', () => {
+    const input = { ...base, matches: [m(1, 0), m(2, 3), m(3, 5)] }
+    expect(trigger(input, 'first_blood')?.matchId).toBe(2)
+  })
+
+  it('Sharpshooter triggers on the 10th exact hit', () => {
+    const matches = Array.from({ length: 12 }, (_, i) => m(i + 1, 5, true))
+    expect(trigger({ ...base, matches }, 'sharpshooter')?.matchId).toBe(10)
+  })
+
+  it('Hot Streak triggers on the 5th consecutive correct result', () => {
+    const matches = [m(1, 0), ...Array.from({ length: 6 }, (_, i) => m(i + 2, 3))]
+    expect(trigger({ ...base, matches }, 'hot_streak')?.matchId).toBe(6)
+  })
+
+  it('Perfect Round triggers on the last match of the completed round', () => {
+    const matches = [m(1, 3, false, 'QUARTER_FINAL'), m(2, 5, true, 'QUARTER_FINAL'), m(3, 0, false, 'SEMI_FINAL')]
+    expect(trigger({ ...base, matches }, 'perfect_round')?.matchId).toBe(2)
+  })
+
+  it('Century triggers on the match whose points cross 100', () => {
+    const matches = Array.from({ length: 25 }, (_, i) => m(i + 1, 5, true))
+    expect(trigger({ ...base, matches, totalPoints: 125 }, 'century')?.matchId).toBe(20)
+  })
+
+  it('Century has no trigger when match points alone never reach 100', () => {
+    const matches = [m(1, 5, true)]
+    expect(trigger({ ...base, matches, totalPoints: 100 }, 'century')).toBeUndefined()
+  })
+
+  it('Oracle and Golden Eye use the provided context matches', () => {
+    const input: AchievementInput = {
+      ...base,
+      matches: [m(1, 3)],
+      tournamentWinnerCorrect: true,
+      advancePensCorrect: true,
+      finalMatch: { matchId: 99, kickoff: 99 },
+      advancePensMatch: { matchId: 42, kickoff: 42 },
+    }
+    expect(trigger(input, 'oracle')?.matchId).toBe(99)
+    expect(trigger(input, 'golden_eye')?.matchId).toBe(42)
+  })
+
+  it('Front Runner has no trigger match', () => {
+    const input = { ...base, matches: [m(1, 3)], totalPoints: 3, rank: 1 }
+    expect(trigger(input, 'front_runner')).toBeUndefined()
   })
 })
