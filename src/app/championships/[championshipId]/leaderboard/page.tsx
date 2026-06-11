@@ -39,6 +39,7 @@ export default async function ChampionshipLeaderboardPage({ params }: { params: 
         doubleChanceEnabled={championship.doubleChanceEnabled}
         currentUserId={currentUser?.userId}
         achievementsByUser={achievementsByUser}
+        championshipId={championship.id}
       />
     </div>
   )

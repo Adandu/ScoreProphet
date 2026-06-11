@@ -4,6 +4,7 @@ import { prisma } from '@/lib/db'
 import { requireChampionshipAccess } from '@/lib/championships'
 import { Badge } from '@/components/ui/badge'
 import { formatMatchTime } from '@/lib/format-date'
+import { formatDisplayScore } from '@/lib/format-score'
 import { ChampionshipPageNav } from '@/components/championship-page-nav'
 
 const PAGE_SIZE = 10
@@ -12,33 +13,6 @@ function pointsBadge(pts: number | null) {
   if (pts === null) return <span className="text-white/30">-</span>
   const cls = pts === 5 ? 'bg-yellow-500' : pts === 3 ? 'bg-green-600' : pts === 1 ? 'bg-blue-600' : 'bg-white/10'
   return <Badge className={`${cls} text-white text-xs`}>{pts} pt{pts !== 1 ? 's' : ''}</Badge>
-}
-
-function formatDisplayScore(match: {
-  homeScore: number | null
-  awayScore: number | null
-  regularTimeHomeScore: number | null
-  regularTimeAwayScore: number | null
-  fullTimeHomeScore: number | null
-  fullTimeAwayScore: number | null
-  penaltiesHomeScore: number | null
-  penaltiesAwayScore: number | null
-  scoreDuration: string
-}) {
-  // For penalty shootout matches the API rolls penalty goals into fullTime — use regularTime as the clean score
-  const homeScore = match.scoreDuration === 'PENALTY_SHOOTOUT'
-    ? (match.regularTimeHomeScore ?? match.homeScore)
-    : (match.fullTimeHomeScore ?? match.homeScore)
-  const awayScore = match.scoreDuration === 'PENALTY_SHOOTOUT'
-    ? (match.regularTimeAwayScore ?? match.awayScore)
-    : (match.fullTimeAwayScore ?? match.awayScore)
-  const base = `${homeScore ?? '-'}-${awayScore ?? '-'}`
-
-  if (match.scoreDuration === 'PENALTY_SHOOTOUT' && match.penaltiesHomeScore !== null && match.penaltiesAwayScore !== null) {
-    return `${base} (pens ${match.penaltiesHomeScore}-${match.penaltiesAwayScore})`
-  }
-  if (match.scoreDuration === 'EXTRA_TIME') return `${base} AET`
-  return base
 }
 
 export default async function ChampionshipResultsPage({

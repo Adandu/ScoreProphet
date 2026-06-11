@@ -256,11 +256,11 @@ export function getCatalog(): Achievement[] {
   return (Object.keys(CATALOG) as Array<keyof typeof CATALOG>).map((id) => badge(id))
 }
 
-// Earned badges for one user across all their championships, for the profile
-// page. Assumes lazy award has run (any leaderboard/profile view triggers it).
-export async function getUserEarnedBadges(userId: number): Promise<EarnedBadge[]> {
+// Earned badges for one user, optionally scoped to a championship. Assumes
+// lazy award has run (any leaderboard/profile view triggers it).
+export async function getUserEarnedBadges(userId: number, championshipId?: number): Promise<EarnedBadge[]> {
   const rows = await prisma.userAchievement.findMany({
-    where: { userId },
+    where: { userId, ...(championshipId !== undefined ? { championshipId } : {}) },
     orderBy: { earnedAt: 'asc' },
     select: {
       badgeId: true,

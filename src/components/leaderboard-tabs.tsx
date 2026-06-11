@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import Link from 'next/link'
 import type { RankedUser } from '@/lib/leaderboard'
 import type { Achievement } from '@/lib/achievements'
 import { AchievementBadge } from '@/components/achievement-badge'
@@ -16,6 +17,7 @@ export function LeaderboardTabs({
   doubleChanceEnabled,
   currentUserId,
   achievementsByUser = {},
+  championshipId,
 }: {
   overall: RankedUser[]
   group: RankedUser[]
@@ -23,6 +25,7 @@ export function LeaderboardTabs({
   doubleChanceEnabled: boolean
   currentUserId?: number
   achievementsByUser?: Record<number, Achievement[]>
+  championshipId?: number
 }) {
   const [scope, setScope] = useState<Scope>('overall')
   const rows = scope === 'group' ? group : scope === 'knockout' ? knockout : overall
@@ -72,7 +75,16 @@ export function LeaderboardTabs({
                   <td className="px-4 py-3 text-white/60">{MEDALS[i] ?? i + 1}</td>
                   <td className={`px-4 py-3 font-medium ${isCurrentUser ? 'text-[#C9A84C]' : 'text-white'}`}>
                     <span className="flex items-center gap-1.5">
-                      <span>{u.username} {isCurrentUser && '(you)'}</span>
+                      {championshipId ? (
+                        <Link
+                          href={`/championships/${championshipId}/players/${u.id}`}
+                          className="hover:underline decoration-[#C9A84C]/60 underline-offset-2"
+                        >
+                          {u.username} {isCurrentUser && '(you)'}
+                        </Link>
+                      ) : (
+                        <span>{u.username} {isCurrentUser && '(you)'}</span>
+                      )}
                       {(achievementsByUser[u.id] ?? []).map((a) => (
                         <AchievementBadge key={a.id} achievement={a} />
                       ))}
