@@ -111,3 +111,15 @@ describe('evaluateAchievementsDetailed — trigger matches', () => {
     expect(trigger(input, 'front_runner')).toBeUndefined()
   })
 })
+
+describe('front runner is a sole-leader status', () => {
+  it('is not awarded when tied at the top', () => {
+    const input: AchievementInput = { ...base, matches: [{ stage: 'GROUP', kickoff: 1, points: 3, exact: false }], totalPoints: 3, rank: 1, soleLeader: false }
+    expect(ids(input)).not.toContain('front_runner')
+  })
+
+  it('is awarded to a sole leader', () => {
+    const input: AchievementInput = { ...base, matches: [{ stage: 'GROUP', kickoff: 1, points: 3, exact: false }], totalPoints: 3, rank: 1, soleLeader: true }
+    expect(ids(input)).toContain('front_runner')
+  })
+})

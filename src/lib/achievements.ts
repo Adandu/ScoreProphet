@@ -15,6 +15,9 @@ export interface AchievementInput {
   tournamentWinnerCorrect: boolean
   totalPoints: number
   rank: number // 1-based position on the overall leaderboard
+  // Front Runner is held only by a sole leader; a tie at the top means nobody
+  // holds it. Defaults to true for callers that don't track ties.
+  soleLeader?: boolean
   // Context for badges not tied to the user's per-match points.
   finalMatch?: AchievementTrigger | null
   advancePensMatch?: AchievementTrigger | null
@@ -36,7 +39,7 @@ const CATALOG = {
   hot_streak: { emoji: '🔥', name: 'Hot Streak', description: 'Correct result in 5 matches in a row' },
   oracle: { emoji: '🧠', name: 'Oracle', description: 'Predicted the tournament winner' },
   perfect_round: { emoji: '💯', name: 'Perfect Round', description: 'Every match right in a single round' },
-  front_runner: { emoji: '🥇', name: 'Front Runner', description: 'Reached #1 on the leaderboard' },
+  front_runner: { emoji: '🥇', name: 'Front Runner', description: 'Currently #1 on the leaderboard — only one player holds this at a time' },
   golden_eye: { emoji: '⚽', name: 'Golden Eye', description: 'Correct knockout advance decided on pens/ET' },
   century: { emoji: '📈', name: 'Century', description: 'Reached 100 points' },
   first_blood: { emoji: '🎬', name: 'First Blood', description: 'Your first points on the board' },
@@ -91,7 +94,7 @@ export function evaluateAchievementsDetailed(input: AchievementInput): DetailedA
     earned.push({ achievement: badge('perfect_round'), trigger: asTrigger(perfectStages[0].last) })
   }
 
-  if (input.rank === 1 && input.totalPoints > 0) earned.push({ achievement: badge('front_runner') })
+  if (input.rank === 1 && input.totalPoints > 0 && (input.soleLeader ?? true)) earned.push({ achievement: badge('front_runner') })
   if (input.advancePensCorrect) earned.push({ achievement: badge('golden_eye'), trigger: asTrigger(input.advancePensMatch ?? undefined) })
 
   if (input.totalPoints >= 100) {
@@ -185,6 +188,8 @@ export async function getAchievementsByUser(
   for (const w of winnerPredictions) totalByUser.set(w.userId, (totalByUser.get(w.userId) ?? 0) + (w.pointsAwarded ?? 0))
   const sortedTotals = [...new Set(totalByUser.values())].sort((a, b) => b - a)
   const rankByUser = new Map(memberIds.map((id) => [id, sortedTotals.indexOf(totalByUser.get(id) ?? 0) + 1]))
+  const maxTotal = sortedTotals[0] ?? 0
+  const leadersAtMax = [...totalByUser.values()].filter((t) => t === maxTotal).length
 
   const detailedByUser = new Map<number, DetailedAchievement[]>()
   for (const userId of memberIds) {
@@ -195,6 +200,7 @@ export async function getAchievementsByUser(
       tournamentWinnerCorrect: winnerByUser.has(userId),
       totalPoints: totalByUser.get(userId) ?? 0,
       rank: rankByUser.get(userId) ?? memberIds.length,
+      soleLeader: leadersAtMax === 1,
       finalMatch,
       advancePensMatch: advancePensMatchByUser.get(userId) ?? null,
     })
@@ -219,6 +225,8 @@ async function persistNewAchievements(
   const rows: Array<{ userId: number; championshipId: number; badgeId: string; earnedAt: Date; matchId: number | null }> = []
   for (const [userId, detailed] of detailedByUser) {
     for (const d of detailed) {
+      // Front Runner is a transient status (sole current leader), never persisted.
+      if (d.achievement.id === 'front_runner') continue
       if (have.has(`${userId}:${d.achievement.id}`)) continue
       rows.push({
         userId,

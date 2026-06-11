@@ -18,24 +18,42 @@ export async function ProfileBadges({ userId, timezone }: { userId: number; time
     where: { userId },
     select: { championship: { select: { id: true, doubleChanceEnabled: true, competitionCode: true } } },
   })
+  // Front Runner is a transient status (sole current leader), not persisted —
+  // detect whether this user holds it right now in any of their championships.
+  let holdsFrontRunner = false
   for (const { championship } of memberships) {
     const memberIds = await getChampionshipMemberIds(championship.id)
-    await getAchievementsByUser(memberIds, championship)
+    const current = await getAchievementsByUser(memberIds, championship)
+    if (current.get(userId)?.some((a) => a.id === 'front_runner')) holdsFrontRunner = true
   }
 
   const earned = await getUserEarnedBadges(userId)
   const earnedIds = new Set(earned.map((b) => b.badgeId))
-  const locked = getCatalog().filter((a) => !earnedIds.has(a.id))
+  const frontRunner = getCatalog().find((a) => a.id === 'front_runner')!
+  const locked = getCatalog().filter((a) => !earnedIds.has(a.id) && !(a.id === 'front_runner' && holdsFrontRunner))
   const showChampionship = new Set(earned.map((b) => b.championshipName)).size > 1
 
   return (
     <div className="rounded-xl border border-white/10 bg-white/5 p-5">
       <h2 className="text-lg font-semibold text-white">Badges</h2>
       <p className="mt-0.5 text-sm text-white/50">
-        {earned.length > 0
-          ? `You have earned ${earned.length} of ${earned.length + locked.length} badges.`
+        {earned.length > 0 || holdsFrontRunner
+          ? `You have earned ${earned.length + (holdsFrontRunner ? 1 : 0)} of ${getCatalog().length} badges.`
           : 'No badges yet — they are earned through your predictions.'}
       </p>
+
+      {holdsFrontRunner && (
+        <ul className="mt-4 space-y-3">
+          <li className="flex items-start gap-3">
+            <span className="text-2xl leading-none">{frontRunner.emoji}</span>
+            <div>
+              <div className="text-sm font-semibold text-[#C9A84C]">{frontRunner.name}</div>
+              <div className="text-xs text-white/60">{frontRunner.description}</div>
+              <div className="mt-0.5 text-xs text-white/40">Currently held — lost if someone overtakes you</div>
+            </div>
+          </li>
+        </ul>
+      )}
 
       {earned.length > 0 && (
         <ul className="mt-4 space-y-3">
