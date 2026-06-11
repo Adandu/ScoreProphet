@@ -34,7 +34,7 @@ echo "[startup] Starting match statistics sync loop..."
 echo "[startup] Starting live score sync loop..."
 (
   while true; do
-    sleep 5
+    sleep 10
     node scripts/sync-scores.mjs || echo "[score-sync] Sync skipped"
   done
 ) &
