@@ -1,6 +1,5 @@
 import { prisma } from '@/lib/db'
 import { getChampionshipMemberIds } from '@/lib/championships'
-import { getRankedUsers } from '@/lib/leaderboard'
 import { getAchievementsByUser, getCatalog, getUserEarnedBadges } from '@/lib/achievements'
 
 function formatEarnedDate(date: Date, timezone: string): string {
@@ -21,8 +20,7 @@ export async function ProfileBadges({ userId, timezone }: { userId: number; time
   })
   for (const { championship } of memberships) {
     const memberIds = await getChampionshipMemberIds(championship.id)
-    const overall = await getRankedUsers(memberIds, championship, 'OVERALL')
-    await getAchievementsByUser(memberIds, championship, overall)
+    await getAchievementsByUser(memberIds, championship)
   }
 
   const earned = await getUserEarnedBadges(userId)

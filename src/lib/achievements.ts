@@ -117,24 +117,25 @@ export function evaluateAchievementsDetailed(input: AchievementInput): DetailedA
 // persists newly earned badges to UserAchievement (lazy award-on-read).
 // earnedAt is backdated to the triggering match's kickoff when derivable, so
 // the first run after deploy backfills history with sensible dates.
+//
+// Only FINISHED matches count: points are recalculated live while a match is
+// in play, and a permanently-persisted badge must not be awarded off a
+// provisional score. Totals and rank are likewise computed from finished
+// results only, not the live leaderboard.
 export async function getAchievementsByUser(
   memberIds: number[],
   championship: { id: number; doubleChanceEnabled: boolean; competitionCode?: string },
-  ranked: Array<{ id: number; total: number }>,
 ): Promise<Map<number, Achievement[]>> {
   const result = new Map<number, Achievement[]>()
   if (memberIds.length === 0) return result
 
-  const rankByUser = new Map(ranked.map((r, index) => [r.id, index + 1]))
-  const totalByUser = new Map(ranked.map((r) => [r.id, r.total]))
-
   const [predictions, advances, winnerPredictions, finalMatchRow] = await Promise.all([
     prisma.prediction.findMany({
-      where: { championshipId: championship.id, userId: { in: memberIds }, pointsAwarded: { not: null } },
+      where: { championshipId: championship.id, userId: { in: memberIds }, pointsAwarded: { not: null }, match: { status: 'FINISHED' } },
       select: { userId: true, type: true, pointsAwarded: true, matchId: true, match: { select: { stage: true, kickoff: true } } },
     }),
     prisma.knockoutAdvance.findMany({
-      where: { championshipId: championship.id, userId: { in: memberIds }, pointsAwarded: { not: null } },
+      where: { championshipId: championship.id, userId: { in: memberIds }, pointsAwarded: { not: null }, match: { status: 'FINISHED' } },
       select: { userId: true, pointsAwarded: true, matchId: true, match: { select: { kickoff: true } } },
     }),
     prisma.tournamentWinnerPrediction.findMany({
@@ -172,6 +173,18 @@ export async function getAchievementsByUser(
   const finalMatch: AchievementTrigger | null = finalMatchRow
     ? { matchId: finalMatchRow.id, kickoff: finalMatchRow.kickoff.getTime() }
     : null
+
+  // Totals and rank from finished results only (winner predictions are scored
+  // when the final finishes, advances are filtered to finished matches above).
+  const totalByUser = new Map<number, number>()
+  for (const userId of memberIds) {
+    const matchPoints = [...(perUserMatch.get(userId)?.values() ?? [])].reduce((sum, m) => sum + m.points, 0)
+    totalByUser.set(userId, matchPoints)
+  }
+  for (const a of advances) totalByUser.set(a.userId, (totalByUser.get(a.userId) ?? 0) + (a.pointsAwarded ?? 0))
+  for (const w of winnerPredictions) totalByUser.set(w.userId, (totalByUser.get(w.userId) ?? 0) + (w.pointsAwarded ?? 0))
+  const sortedTotals = [...new Set(totalByUser.values())].sort((a, b) => b - a)
+  const rankByUser = new Map(memberIds.map((id) => [id, sortedTotals.indexOf(totalByUser.get(id) ?? 0) + 1]))
 
   const detailedByUser = new Map<number, DetailedAchievement[]>()
   for (const userId of memberIds) {

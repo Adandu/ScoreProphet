@@ -20,7 +20,7 @@ export default async function ChampionshipLeaderboardPage({ params }: { params: 
     getRankedUsers(memberIds, championship, 'KNOCKOUT'),
   ])
 
-  const achievementsMap = await getAchievementsByUser(memberIds, championship, overall)
+  const achievementsMap = await getAchievementsByUser(memberIds, championship)
   const achievementsByUser: Record<number, Achievement[]> = Object.fromEntries(achievementsMap)
 
   return (
