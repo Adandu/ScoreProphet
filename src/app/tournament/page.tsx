@@ -1,6 +1,7 @@
 import { requireAuth } from '@/lib/auth'
 import { prisma } from '@/lib/db'
 import { fetchStandings } from '@/lib/football-api'
+import { computeFormByTeam } from '@/lib/team-form'
 import { GroupStageTab } from '@/components/group-stage-tab'
 import { KnockoutBracket } from '@/components/knockout-bracket'
 import { TournamentTabs } from '@/components/tournament-tabs'
@@ -22,15 +23,17 @@ export default async function TournamentPage() {
   const teamIdByName: Record<string, string> = {}
   for (const team of teams) teamIdByName[team.name] = team.externalId
 
-  // Pull the last-5 form for each team from the official standings (best-effort).
+  // The standings feed leaves `form` null for tournaments, so derive form from
+  // our own finished results; API form is only a fallback (best-effort).
   const formByTeam: Record<string, string> = {}
   try {
     for (const group of await fetchStandings()) {
-      for (const row of group.table) formByTeam[row.teamName] = row.form
+      for (const row of group.table) if (row.form) formByTeam[row.teamName] = row.form
     }
   } catch {
-    // Standings unavailable — the group tables simply render without form.
+    // Standings unavailable — local form below still populates.
   }
+  Object.assign(formByTeam, computeFormByTeam(matches))
 
   return (
     <div className="space-y-6">
