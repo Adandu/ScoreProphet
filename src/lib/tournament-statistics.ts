@@ -34,6 +34,7 @@ type SquadPerson = {
 }
 
 type FinishedMatchScore = {
+  externalId: string
   homeTeam: string
   awayTeam: string
   homeScore: number | null
@@ -55,15 +56,13 @@ export type TournamentStatistics = {
   fastestGoal: StatEvent | null
   mostGoalsTeam: { teamName: string; goalsFor: number } | null
   leastGoalsAgainstTeam: { teamName: string; goalsAgainst: number } | null
-  mostGoalsMatch: { homeTeam: string; awayTeam: string; homeScore: number; awayScore: number } | null
+  mostGoalsMatch: { externalId: string; homeTeam: string; awayTeam: string; homeScore: number; awayScore: number } | null
   yellowCount: number
   fastestYellow: StatEvent | null
   redCount: number
   fastestRed: StatEvent | null
   foulsTotal: number
-  fastestFoul: StatEvent | null
   cornersTotal: number
-  fastestCorner: StatEvent | null
   youngestPlayer: PlayerAge | null
   oldestPlayer: PlayerAge | null
   teams: TeamRef[]
@@ -112,16 +111,14 @@ export function computeTournamentStatistics({ matches, events, teamStats, teams 
     mostGoalsTeam: mostGoalsTeam ? { teamName: mostGoalsTeam.teamName, goalsFor: mostGoalsTeam.goalsFor } : null,
     leastGoalsAgainstTeam: leastGoalsAgainstTeam ? { teamName: leastGoalsAgainstTeam.teamName, goalsAgainst: leastGoalsAgainstTeam.goalsAgainst } : null,
     mostGoalsMatch: mostGoalsMatch && mostGoalsMatch.homeScore !== null && mostGoalsMatch.awayScore !== null
-      ? { homeTeam: mostGoalsMatch.homeTeam, awayTeam: mostGoalsMatch.awayTeam, homeScore: mostGoalsMatch.homeScore, awayScore: mostGoalsMatch.awayScore }
+      ? { externalId: mostGoalsMatch.externalId, homeTeam: mostGoalsMatch.homeTeam, awayTeam: mostGoalsMatch.awayTeam, homeScore: mostGoalsMatch.homeScore, awayScore: mostGoalsMatch.awayScore }
       : null,
     yellowCount: yellowCards.length,
     fastestYellow: fastestAny(yellowCards, ['YELLOW_CARD', 'YELLOW_RED_CARD']) ?? null,
     redCount: redCards.length,
     fastestRed: fastestAny(redCards, ['RED_CARD', 'YELLOW_RED_CARD']) ?? null,
     foulsTotal,
-    fastestFoul: fastest(events, 'FOUL') ?? null,
     cornersTotal,
-    fastestCorner: fastest(events, 'CORNER') ?? null,
     youngestPlayer: youngestPlayer ?? null,
     oldestPlayer: oldestPlayer ?? null,
     teams: teams.map((team) => ({ externalId: team.externalId, name: team.name, crest: team.crest })),
@@ -137,6 +134,7 @@ export const getTournamentStatistics = unstable_cache(
         where: { status: 'FINISHED' },
         orderBy: { kickoff: 'asc' },
         select: {
+          externalId: true,
           homeTeam: true,
           awayTeam: true,
           homeScore: true,
@@ -219,6 +217,7 @@ function getTeamTotals(matches: Array<{ homeTeam: string; awayTeam: string; home
 
 function toDisplayMatchScore(match: FinishedMatchScore) {
   return {
+    externalId: match.externalId,
     homeTeam: match.homeTeam,
     awayTeam: match.awayTeam,
     homeScore: match.fullTimeHomeScore ?? match.homeScore,

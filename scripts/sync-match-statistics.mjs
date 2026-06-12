@@ -62,7 +62,10 @@ async function replaceMatchStatistics(match, details) {
   }
 
   for (const booking of details.bookings ?? []) {
-    const card = booking.card === 'YELLOW_RED_CARD' ? 'YELLOW_RED_CARD' : booking.card === 'RED_CARD' ? 'RED_CARD' : 'YELLOW_CARD'
+    // The API sends YELLOW / RED / YELLOW_RED (some legacy responses used the
+    // *_CARD suffix) — handle both so reds never degrade to yellows.
+    const c = String(booking.card ?? '')
+    const card = c.startsWith('YELLOW_RED') ? 'YELLOW_RED_CARD' : c.startsWith('RED') ? 'RED_CARD' : 'YELLOW_CARD'
     events.push({
       matchId: match.id,
       type: card,

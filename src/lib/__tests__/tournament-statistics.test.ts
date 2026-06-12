@@ -18,8 +18,8 @@ const teams = [
 ]
 
 const matches = [
-  { homeTeam: 'Alpha', awayTeam: 'Beta', homeScore: 2, awayScore: 1, fullTimeHomeScore: 2, fullTimeAwayScore: 1 },
-  { homeTeam: 'Alpha', awayTeam: 'Beta', homeScore: 0, awayScore: 0, fullTimeHomeScore: 0, fullTimeAwayScore: 0 },
+  { externalId: 'm1', homeTeam: 'Alpha', awayTeam: 'Beta', homeScore: 2, awayScore: 1, fullTimeHomeScore: 2, fullTimeAwayScore: 1 },
+  { externalId: 'm2', homeTeam: 'Alpha', awayTeam: 'Beta', homeScore: 0, awayScore: 0, fullTimeHomeScore: 0, fullTimeAwayScore: 0 },
 ]
 
 const events = [

@@ -37,12 +37,20 @@ export async function TournamentStatisticsPanel() {
         </StatPanel>
         <StatPanel title="Most Goals in a Match">
           {stats.mostGoalsMatch ? (
-            <div className="space-y-1">
+            <Link href={`/matches/${stats.mostGoalsMatch.externalId}`} className="block space-y-1 group">
               <p className="text-2xl font-bold text-white">{stats.mostGoalsMatch.homeScore + stats.mostGoalsMatch.awayScore} goals</p>
-              <p className="text-sm text-white/60">
-                {stats.mostGoalsMatch.homeTeam} {stats.mostGoalsMatch.homeScore} - {stats.mostGoalsMatch.awayScore} {stats.mostGoalsMatch.awayTeam}
+              <p className="flex items-center gap-2 text-sm text-white/60 group-hover:text-white transition-colors">
+                {teamsByName.get(stats.mostGoalsMatch.homeTeam)?.crest && (
+                  <Image src={teamsByName.get(stats.mostGoalsMatch.homeTeam)!.crest} alt="" width={20} height={20} className="max-h-5 w-auto object-contain" />
+                )}
+                <span className="group-hover:underline decoration-[#C9A84C]/60 underline-offset-2">
+                  {stats.mostGoalsMatch.homeTeam} {stats.mostGoalsMatch.homeScore} - {stats.mostGoalsMatch.awayScore} {stats.mostGoalsMatch.awayTeam}
+                </span>
+                {teamsByName.get(stats.mostGoalsMatch.awayTeam)?.crest && (
+                  <Image src={teamsByName.get(stats.mostGoalsMatch.awayTeam)!.crest} alt="" width={20} height={20} className="max-h-5 w-auto object-contain" />
+                )}
               </p>
-            </div>
+            </Link>
           ) : <EmptyText>No finished matches yet.</EmptyText>}
         </StatPanel>
       </div>
@@ -56,13 +64,13 @@ export async function TournamentStatisticsPanel() {
           <p className="text-2xl font-bold text-white">{stats.redCount}</p>
           <EventLine event={stats.fastestRed} teamsByName={teamsByName} empty="No red card data synced yet." prefix="Fastest" compact />
         </StatPanel>
+        {/* The feed only provides aggregate foul/corner counts, never per-event
+            data, so these panels show totals without a "fastest" line. */}
         <StatPanel title="Fouls">
           <p className="text-2xl font-bold text-white">{stats.foulsTotal}</p>
-          <EventLine event={stats.fastestFoul} teamsByName={teamsByName} empty="No foul event data synced yet." prefix="Fastest" compact />
         </StatPanel>
         <StatPanel title="Corners">
           <p className="text-2xl font-bold text-white">{stats.cornersTotal}</p>
-          <EventLine event={stats.fastestCorner} teamsByName={teamsByName} empty="No corner event data synced yet." prefix="Fastest" compact />
         </StatPanel>
         <StatPanel title="Youngest Player">
           {stats.youngestPlayer ? <TeamValue teamName={stats.youngestPlayer.teamName} value={`${stats.youngestPlayer.name} · ${stats.youngestPlayer.dateOfBirth}`} teamsByName={teamsByName} /> : <EmptyText>No squad birthdate data synced yet.</EmptyText>}
