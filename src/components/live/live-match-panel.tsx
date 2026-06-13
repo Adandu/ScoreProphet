@@ -49,7 +49,7 @@ export async function LiveMatchPanel({ liveMatch, prefetchedDetails }: { liveMat
 
   const homeId = details.homeTeam.id
   const awayId = details.awayTeam.id
-  const isShootout = details.penaltyShootout.length > 0 || liveMatch.scoreDuration === 'PENALTY_SHOOTOUT'
+  const isShootout = liveMatch.scoreDuration === 'PENALTY_SHOOTOUT'
   const homePenalties = details.penaltyShootout.filter((p) => p.teamId === homeId)
   const awayPenalties = details.penaltyShootout.filter((p) => p.teamId === awayId)
 
