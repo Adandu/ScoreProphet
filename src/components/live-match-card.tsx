@@ -42,14 +42,20 @@ interface Props {
 
 export function LiveMatchCard({ match, timezone, countdown, headToHead = [], revealedPredictions }: Props) {
   const isLive = match.status === 'LIVE'
+  const isNearKickoff =
+    match.status === 'SCHEDULED' &&
+    new Date(match.kickoff).getTime() - Date.now() <= 15 * 60 * 1000
+  const showMatchCenter = isLive || isNearKickoff
 
   return (
     <div className="w-full max-w-xl rounded-xl border border-white/10 bg-white/5 p-4 sm:p-8">
-      {isLive && (
+      {showMatchCenter && (
         <div className="mb-4 flex items-center justify-center gap-3">
           <div className="flex items-center gap-2">
             <span className="h-2.5 w-2.5 animate-pulse rounded-full bg-red-500" />
-            <span className="text-sm font-semibold uppercase tracking-widest text-red-400">Live</span>
+            <span className="text-sm font-semibold uppercase tracking-widest text-red-400">
+              {isLive ? 'Live' : 'Starting soon'}
+            </span>
           </div>
           <Link
             href="/live"
@@ -59,7 +65,7 @@ export function LiveMatchCard({ match, timezone, countdown, headToHead = [], rev
           </Link>
         </div>
       )}
-      {!isLive && (
+      {!showMatchCenter && (
         <p className="mb-4 text-center text-sm text-white/50">
           {match.status === 'FINISHED' ? 'Final Score' : `Kickoff: ${formatMatchTime(match.kickoff, timezone)}`}
         </p>
