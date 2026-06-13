@@ -18,7 +18,18 @@ export async function Navbar() {
       ])
     : [[], null, []]
   const canManageChampionships = user?.isAdmin || managedChampionships.length > 0
-  const hasLiveMatch = await prisma.match.count({ where: { status: 'LIVE' } }).then((n) => n > 0)
+  const now = new Date()
+  const soonCutoff = new Date(now.getTime() + 15 * 60 * 1000)
+  const hasLiveMatch = await prisma.match
+    .count({
+      where: {
+        OR: [
+          { status: 'LIVE' },
+          { status: 'SCHEDULED', kickoff: { gte: now, lte: soonCutoff } },
+        ],
+      },
+    })
+    .then((n) => n > 0)
 
   return (
     <nav className="border-b border-white/10 bg-[#0A1628]/95 backdrop-blur sticky top-0 z-50 caret-transparent">
