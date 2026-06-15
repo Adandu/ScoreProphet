@@ -53,13 +53,15 @@ export async function LiveMatchPanel({ liveMatch, prefetchedDetails }: { liveMat
   const homePenalties = details.penaltyShootout.filter((p) => p.teamId === homeId)
   const awayPenalties = details.penaltyShootout.filter((p) => p.teamId === awayId)
 
-  // During shootout the API adds penalty goals into fullTime — use regularTime as the clean match score
+  // For FINISHED matches the DB score (liveMatch) is authoritative — the cached API detail
+  // may have been written mid-match and can show a stale score.
+  // During shootout the API folds penalty goals into fullTime, so use regularTime as the clean score.
   const homeScore = isShootout
     ? (liveMatch.regularTimeHomeScore ?? liveMatch.homeScore ?? details.homeScore ?? 0)
-    : (details.homeScore ?? 0)
+    : (liveMatch.status === 'FINISHED' ? (liveMatch.homeScore ?? details.homeScore ?? 0) : (details.homeScore ?? 0))
   const awayScore = isShootout
     ? (liveMatch.regularTimeAwayScore ?? liveMatch.awayScore ?? details.awayScore ?? 0)
-    : (details.awayScore ?? 0)
+    : (liveMatch.status === 'FINISHED' ? (liveMatch.awayScore ?? details.awayScore ?? 0) : (details.awayScore ?? 0))
   // Penalty tally: prefer liveMatch fields (populated when FINISHED), fall back to counting kicks
   const homePenScore = liveMatch.penaltiesHomeScore ?? homePenalties.filter((p) => p.scored).length
   const awayPenScore = liveMatch.penaltiesAwayScore ?? awayPenalties.filter((p) => p.scored).length

@@ -19,9 +19,18 @@ export default async function MatchDetailPage({ params }: { params: Promise<{ ma
   let prefetchedDetails: LiveMatchDetails | undefined
 
   // FINISHED match detail is only cached once it is complete (see guard below), so an
-  // existing detailJson is authoritative — serve it as a pure read with no API call / write.
+  // Use cached detailJson unless the score it recorded no longer matches the DB (stale mid-match cache).
   if (match.detailJson) {
-    try { prefetchedDetails = JSON.parse(match.detailJson) } catch { /* corrupted — refetch below */ }
+    try {
+      const cached: LiveMatchDetails = JSON.parse(match.detailJson)
+      const scoreStale =
+        cached.homeScore !== match.homeScore || cached.awayScore !== match.awayScore
+      if (scoreStale) {
+        await prisma.match.update({ where: { id: match.id }, data: { detailJson: '' } })
+      } else {
+        prefetchedDetails = cached
+      }
+    } catch { /* corrupted — refetch below */ }
   }
 
   // Only hit the API the first time (no/corrupted cache) and when under the rate-limit budget.
