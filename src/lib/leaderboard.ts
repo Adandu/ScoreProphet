@@ -5,6 +5,7 @@ export type LeaderboardScope = 'OVERALL' | 'GROUP' | 'KNOCKOUT'
 export interface RankedUser {
   id: number
   username: string
+  isBot: boolean
   total: number
   exact: number
   single: number
@@ -64,6 +65,7 @@ export async function getRankedUsers(
       const result: RankedUser = {
         id: u.id,
         username: u.username,
+        isBot: u.isBot,
         total: pred.exactPts + pred.singlePts + (championship.doubleChanceEnabled ? pred.doublePts : 0) + advancePts + winnerPts,
         exact: pred.exact,
         single: pred.single,

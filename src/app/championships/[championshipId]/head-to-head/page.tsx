@@ -1,9 +1,12 @@
+import Image from 'next/image'
 import { getCurrentUser } from '@/lib/auth'
 import { prisma } from '@/lib/db'
 import { requireChampionshipAccessLean } from '@/lib/championships'
 import { getHeadToHead } from '@/lib/user-comparison'
 import { ChampionshipPageNav } from '@/components/championship-page-nav'
 import { HeadToHeadPicker } from '@/components/head-to-head-picker'
+import { PlayerStatsPanel } from '@/components/player-stats-panel'
+import { computePlayerStats } from '@/lib/player-stats'
 
 export default async function HeadToHeadPage({
   params,
@@ -44,9 +47,30 @@ export default async function HeadToHeadPage({
     ? Number(sp.b)
     : ids.find((id) => id !== aId)!
 
-  const h2h = await getHeadToHead(championship, aId, bId)
   const aName = members.find((m) => m.id === aId)!.username
   const bName = members.find((m) => m.id === bId)!.username
+
+  // Fetch data for H2H comparison and stats for both players
+  const [h2h, aMatches, bMatches, aAdvances, bAdvances] = await Promise.all([
+    getHeadToHead(championship, aId, bId),
+    prisma.match.findMany({
+      where: { status: { in: ['FINISHED', 'LIVE'] } },
+      orderBy: { kickoff: 'asc' },
+      include: { predictions: { where: { userId: aId, championshipId } } },
+    }),
+    prisma.match.findMany({
+      where: { status: { in: ['FINISHED', 'LIVE'] } },
+      orderBy: { kickoff: 'asc' },
+      include: { predictions: { where: { userId: bId, championshipId } } },
+    }),
+    prisma.knockoutAdvance.findMany({ where: { userId: aId, championshipId } }),
+    prisma.knockoutAdvance.findMany({ where: { userId: bId, championshipId } }),
+  ])
+
+  const aAdvanceMap = new Map(aAdvances.map((a) => [a.matchId, a]))
+  const bAdvanceMap = new Map(bAdvances.map((b) => [b.matchId, b]))
+  const aStats = computePlayerStats(aMatches, aAdvanceMap, championship.doubleChanceEnabled)
+  const bStats = computePlayerStats(bMatches, bAdvanceMap, championship.doubleChanceEnabled)
 
   return (
     <div className="space-y-6">
@@ -54,6 +78,7 @@ export default async function HeadToHeadPage({
       <h2 className="text-xl font-bold text-white">Head-to-Head</h2>
       <HeadToHeadPicker members={members} aId={aId} bId={bId} />
 
+      {/* Win/Draw/Loss summary */}
       <div className="grid grid-cols-3 items-center rounded-xl border border-white/10 bg-white/5 p-5 text-center">
         <div>
           <p className="truncate text-sm font-semibold text-white">{aName}</p>
@@ -72,6 +97,7 @@ export default async function HeadToHeadPage({
         </div>
       </div>
 
+      {/* Per-match table with crests and scores */}
       <div className="overflow-x-auto rounded-xl border border-white/10 bg-white/5">
         <table className="w-full text-sm">
           <thead>
@@ -84,7 +110,23 @@ export default async function HeadToHeadPage({
           <tbody>
             {h2h.matches.map((m) => (
               <tr key={m.matchId} className="border-b border-white/5 last:border-0">
-                <td className="px-4 py-2.5 text-white/80">{m.label}</td>
+                <td className="px-4 py-2.5">
+                  <div className="flex items-center gap-2">
+                    {m.homeTeamCrest && (
+                      <Image src={m.homeTeamCrest} alt="" width={20} height={20} className="max-h-5 w-auto object-contain" />
+                    )}
+                    <span className="text-white/80">{m.homeTeam}</span>
+                    <span className="font-bold tabular-nums text-[#C9A84C]">
+                      {m.homeScore !== null && m.awayScore !== null
+                        ? `${m.homeScore} – ${m.awayScore}`
+                        : 'vs'}
+                    </span>
+                    <span className="text-white/80">{m.awayTeam}</span>
+                    {m.awayTeamCrest && (
+                      <Image src={m.awayTeamCrest} alt="" width={20} height={20} className="max-h-5 w-auto object-contain" />
+                    )}
+                  </div>
+                </td>
                 <td className={`px-4 py-2.5 text-center tabular-nums ${m.aPoints > m.bPoints ? 'font-bold text-green-400' : 'text-white/60'}`}>{m.aPoints}</td>
                 <td className={`px-4 py-2.5 text-center tabular-nums ${m.bPoints > m.aPoints ? 'font-bold text-blue-400' : 'text-white/60'}`}>{m.bPoints}</td>
               </tr>
@@ -99,6 +141,16 @@ export default async function HeadToHeadPage({
           </tbody>
         </table>
       </div>
+
+      {/* Stats comparison */}
+      {(aStats.matchesPlayed > 0 || bStats.matchesPlayed > 0) && (
+        <div className="space-y-3">
+          <h3 className="text-base font-semibold text-white">{aName} — Statistics</h3>
+          <PlayerStatsPanel stats={aStats} />
+          <h3 className="mt-2 text-base font-semibold text-white">{bName} — Statistics</h3>
+          <PlayerStatsPanel stats={bStats} />
+        </div>
+      )}
     </div>
   )
 }

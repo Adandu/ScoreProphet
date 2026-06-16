@@ -1,11 +1,16 @@
 import { describe, it, expect } from 'vitest'
 import { computeHeadToHead } from '@/lib/user-comparison'
 
+const m = (home: string, away: string, kickoff: number) => ({
+  homeTeam: home, awayTeam: away, homeTeamCrest: '', awayTeamCrest: '',
+  homeScore: null, awayScore: null, kickoff,
+})
+
 const meta = {
-  1: { label: 'A vs B', kickoff: 100 },
-  2: { label: 'C vs D', kickoff: 200 },
-  3: { label: 'E vs F', kickoff: 300 },
-  4: { label: 'G vs H', kickoff: 400 },
+  1: m('A', 'B', 100),
+  2: m('C', 'D', 200),
+  3: m('E', 'F', 300),
+  4: m('G', 'H', 400),
 }
 
 describe('computeHeadToHead', () => {
@@ -25,7 +30,7 @@ describe('computeHeadToHead', () => {
     expect(result.matches.map((m) => m.matchId)).toEqual([1, 2])
   })
 
-  it('returns each shared match with both point values and a label', () => {
-    expect(result.matches[0]).toEqual({ matchId: 1, label: 'A vs B', kickoff: 100, aPoints: 5, bPoints: 3 })
+  it('returns each shared match with both point values and match info', () => {
+    expect(result.matches[0]).toMatchObject({ matchId: 1, homeTeam: 'A', awayTeam: 'B', kickoff: 100, aPoints: 5, bPoints: 3 })
   })
 })

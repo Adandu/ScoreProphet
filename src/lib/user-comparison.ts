@@ -2,7 +2,12 @@ import { prisma } from '@/lib/db'
 
 export interface H2HMatchResult {
   matchId: number
-  label: string
+  homeTeam: string
+  awayTeam: string
+  homeTeamCrest: string
+  awayTeamCrest: string
+  homeScore: number | null
+  awayScore: number | null
   kickoff: number
   aPoints: number
   bPoints: number
@@ -15,10 +20,20 @@ export interface HeadToHead {
   matches: H2HMatchResult[]
 }
 
+type MatchMeta = {
+  homeTeam: string
+  awayTeam: string
+  homeTeamCrest: string
+  awayTeamCrest: string
+  homeScore: number | null
+  awayScore: number | null
+  kickoff: number
+}
+
 export function computeHeadToHead(
   a: Array<{ matchId: number; points: number }>,
   b: Array<{ matchId: number; points: number }>,
-  meta: Record<number, { label: string; kickoff: number }>,
+  meta: Record<number, MatchMeta>,
 ): HeadToHead {
   const aByMatch = new Map(a.map((m) => [m.matchId, m.points]))
   const bByMatch = new Map(b.map((m) => [m.matchId, m.points]))
@@ -34,8 +49,8 @@ export function computeHeadToHead(
     if (aPoints > bPoints) aWins++
     else if (bPoints > aPoints) bWins++
     else ties++
-    const info = meta[matchId] ?? { label: '', kickoff: 0 }
-    matches.push({ matchId, label: info.label, kickoff: info.kickoff, aPoints, bPoints })
+    const info = meta[matchId] ?? { homeTeam: '', awayTeam: '', homeTeamCrest: '', awayTeamCrest: '', homeScore: null, awayScore: null, kickoff: 0 }
+    matches.push({ matchId, ...info, aPoints, bPoints })
   }
 
   matches.sort((x, y) => x.kickoff - y.kickoff)
@@ -55,15 +70,23 @@ export async function getHeadToHead(
       userId: { in: [userAId, userBId] },
       pointsAwarded: { not: null },
     },
-    select: { userId: true, matchId: true, type: true, pointsAwarded: true, match: { select: { homeTeam: true, awayTeam: true, kickoff: true } } },
+    select: { userId: true, matchId: true, type: true, pointsAwarded: true, match: { select: { homeTeam: true, awayTeam: true, homeTeamCrest: true, awayTeamCrest: true, homeScore: true, awayScore: true, kickoff: true } } },
   })
 
-  const meta: Record<number, { label: string; kickoff: number }> = {}
+  const meta: Record<number, MatchMeta> = {}
   const points = new Map<number, Map<number, number>>([[userAId, new Map()], [userBId, new Map()]])
 
   for (const p of predictions) {
     if (!championship.doubleChanceEnabled && p.type === 'DOUBLE_CHANCE') continue
-    meta[p.matchId] = { label: `${p.match.homeTeam} vs ${p.match.awayTeam}`, kickoff: p.match.kickoff.getTime() }
+    meta[p.matchId] = {
+      homeTeam: p.match.homeTeam,
+      awayTeam: p.match.awayTeam,
+      homeTeamCrest: p.match.homeTeamCrest,
+      awayTeamCrest: p.match.awayTeamCrest,
+      homeScore: p.match.homeScore,
+      awayScore: p.match.awayScore,
+      kickoff: p.match.kickoff.getTime(),
+    }
     const byMatch = points.get(p.userId)
     if (byMatch) byMatch.set(p.matchId, (byMatch.get(p.matchId) ?? 0) + (p.pointsAwarded ?? 0))
   }

@@ -38,7 +38,7 @@ export default async function PlayerProfilePage({ params }: { params: Promise<{ 
   if (!Number.isInteger(playerId) || playerId <= 0) notFound()
   const membership = await prisma.championshipMember.findFirst({
     where: { championshipId, userId: playerId },
-    select: { user: { select: { id: true, username: true, createdAt: true } } },
+    include: { user: { select: { id: true, username: true, isBot: true, createdAt: true } } },
   })
   if (!membership) notFound()
   const player = membership.user
@@ -85,6 +85,9 @@ export default async function PlayerProfilePage({ params }: { params: Promise<{ 
       <div className="rounded-xl border border-white/10 bg-white/5 p-5">
         <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
           <h1 className="text-2xl font-bold text-white">{player.username}</h1>
+          {player.isBot && (
+            <span className="rounded bg-purple-900/60 px-2 py-0.5 text-xs font-bold uppercase tracking-wider text-purple-300">AI Bot</span>
+          )}
           {ranked && (
             <span className="text-sm text-white/50">
               #{rankIndex + 1} on the leaderboard · <span className="font-bold text-[#C9A84C]">{ranked.total} pts</span>
@@ -185,6 +188,11 @@ export default async function PlayerProfilePage({ params }: { params: Promise<{ 
                   <span className="text-white/30">No prediction</span>
                 )}
               </div>
+              {visiblePredictions.find((p) => p.type === 'SINGLE_OUTCOME')?.reasoning && (
+                <p className="mt-2 text-xs italic text-purple-300/70">
+                  🤖 {visiblePredictions.find((p) => p.type === 'SINGLE_OUTCOME')!.reasoning}
+                </p>
+              )}
             </div>
           )
         })}

@@ -85,6 +85,9 @@ export function LeaderboardTabs({
                       ) : (
                         <span>{u.username} {isCurrentUser && '(you)'}</span>
                       )}
+                      {u.isBot && (
+                        <span className="rounded bg-purple-900/60 px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-purple-300">AI</span>
+                      )}
                       {(achievementsByUser[u.id] ?? []).map((a) => (
                         <AchievementBadge key={a.id} achievement={a} />
                       ))}
