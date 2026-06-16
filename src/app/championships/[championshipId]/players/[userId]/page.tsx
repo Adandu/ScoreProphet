@@ -158,20 +158,20 @@ export default async function PlayerProfilePage({ params }: { params: Promise<{ 
           const advance = advanceByMatch.get(match.id)
           return (
             <div key={match.id} className="rounded-xl border border-white/10 bg-white/5 px-4 py-3">
-              <div className="flex flex-wrap items-center justify-between gap-2">
+              <div className="flex items-center justify-between gap-4">
                 <Link
                   href={match.status === 'LIVE' ? '/live' : `/matches/${match.externalId}`}
-                  className="flex items-center gap-2 font-semibold text-white hover:underline decoration-[#C9A84C]/60 underline-offset-2"
+                  className="flex min-w-0 flex-1 items-center gap-2 whitespace-nowrap font-semibold text-white hover:underline decoration-[#C9A84C]/60 underline-offset-2"
                 >
                   {match.homeTeamCrest && (
-                    <Image src={match.homeTeamCrest} alt="" width={20} height={20} className="max-h-5 w-auto object-contain" />
+                    <Image src={match.homeTeamCrest} alt="" width={20} height={20} className="max-h-5 w-auto shrink-0 object-contain" />
                   )}
                   {match.homeTeam} {formatDisplayScore(match)} {match.awayTeam}
                   {match.awayTeamCrest && (
-                    <Image src={match.awayTeamCrest} alt="" width={20} height={20} className="max-h-5 w-auto object-contain" />
+                    <Image src={match.awayTeamCrest} alt="" width={20} height={20} className="max-h-5 w-auto shrink-0 object-contain" />
                   )}
                 </Link>
-                <div className="flex items-center gap-3 text-xs text-white/40">
+                <div className="flex shrink-0 items-center gap-3 text-xs text-white/40">
                   {match.status === 'LIVE' && <span className="font-semibold uppercase tracking-wider text-red-400">● Live</span>}
                   <span>{formatMatchTime(match.kickoff, timezone)}</span>
                 </div>
