@@ -8,6 +8,8 @@ import { Badge } from '@/components/ui/badge'
 import { formatMatchTime } from '@/lib/format-date'
 import { formatDisplayScore } from '@/lib/format-score'
 import { ChampionshipPageNav } from '@/components/championship-page-nav'
+import { PlayerStatsPanel } from '@/components/player-stats-panel'
+import { computePlayerStats } from '@/lib/player-stats'
 
 const PREDICTION_LABEL: Record<string, string> = {
   EXACT_SCORE: 'Exact',
@@ -72,6 +74,7 @@ export default async function PlayerProfilePage({ params }: { params: Promise<{ 
   ])
   const advanceByMatch = new Map(advances.map((a) => [a.matchId, a]))
   const playedMatches = matches.filter((m) => m.predictions.length > 0 || advanceByMatch.has(m.id))
+  const stats = computePlayerStats(matches, advanceByMatch, championship.doubleChanceEnabled)
   // The tournament-winner pick is public only once picks are locked.
   const isWinnerLocked = Boolean(firstGroupMatch && firstGroupMatch.kickoff <= new Date())
 
@@ -97,6 +100,8 @@ export default async function PlayerProfilePage({ params }: { params: Promise<{ 
           </p>
         )}
       </div>
+
+      <PlayerStatsPanel stats={stats} />
 
       <div className="rounded-xl border border-white/10 bg-white/5 p-5">
         <h2 className="text-lg font-semibold text-white">Badges</h2>
