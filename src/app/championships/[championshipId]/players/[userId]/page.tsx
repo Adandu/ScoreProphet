@@ -1,3 +1,4 @@
+import Image from 'next/image'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { prisma } from '@/lib/db'
@@ -160,9 +161,15 @@ export default async function PlayerProfilePage({ params }: { params: Promise<{ 
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <Link
                   href={match.status === 'LIVE' ? '/live' : `/matches/${match.externalId}`}
-                  className="font-semibold text-white hover:underline decoration-[#C9A84C]/60 underline-offset-2"
+                  className="flex items-center gap-2 font-semibold text-white hover:underline decoration-[#C9A84C]/60 underline-offset-2"
                 >
+                  {match.homeTeamCrest && (
+                    <Image src={match.homeTeamCrest} alt="" width={20} height={20} className="max-h-5 w-auto object-contain" />
+                  )}
                   {match.homeTeam} {formatDisplayScore(match)} {match.awayTeam}
+                  {match.awayTeamCrest && (
+                    <Image src={match.awayTeamCrest} alt="" width={20} height={20} className="max-h-5 w-auto object-contain" />
+                  )}
                 </Link>
                 <div className="flex items-center gap-3 text-xs text-white/40">
                   {match.status === 'LIVE' && <span className="font-semibold uppercase tracking-wider text-red-400">● Live</span>}
