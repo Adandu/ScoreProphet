@@ -7,7 +7,7 @@
  */
 
 import Database from 'better-sqlite3'
-import { execSync } from 'child_process'
+import { spawnSync } from 'child_process'
 import { createHash } from 'crypto'
 import { existsSync } from 'fs'
 
@@ -175,11 +175,12 @@ Based on this data, provide your prediction as valid JSON only (no markdown, no 
 }`
 
   try {
-    const escaped = prompt.replace(/'/g, "'\\''")
-    const raw = execSync(`claude -p '${escaped}' --output-format text 2>/dev/null`, {
+    const result = spawnSync('claude', ['-p', prompt, '--output-format', 'text'], {
       timeout: 30000,
       encoding: 'utf8',
-    }).trim()
+    })
+    if (result.status !== 0) throw new Error(result.stderr?.trim() || 'non-zero exit')
+    const raw = (result.stdout ?? '').trim()
 
     // Extract JSON from response
     const jsonMatch = raw.match(/\{[\s\S]*\}/)

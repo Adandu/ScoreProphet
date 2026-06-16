@@ -95,7 +95,12 @@ export default async function ChampionshipResultsPage({
                   if (!single && !double_ && !exact && !advance) return null
                   return (
                     <tr key={user.id} className="border-b border-white/5 last:border-0">
-                      <td className="px-4 py-2 text-white font-medium">{user.username}</td>
+                      <td className="px-4 py-2 font-medium text-white">
+                        <span className="flex items-center gap-1.5">
+                          {user.username}
+                          {user.isBot && <span className="rounded bg-purple-900/60 px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-purple-300">AI</span>}
+                        </span>
+                      </td>
                       <td className="px-4 py-2">{single ? <>{single.value} {pointsBadge(single.pointsAwarded)}</> : <span className="text-white/20">-</span>}</td>
                       {championship.doubleChanceEnabled && <td className="px-4 py-2">{double_ ? <>{double_.value} {pointsBadge(double_.pointsAwarded)}</> : <span className="text-white/20">-</span>}</td>}
                       <td className="px-4 py-2">{exact ? <>{exact.value} {pointsBadge(exact.pointsAwarded)}</> : <span className="text-white/20">-</span>}</td>
