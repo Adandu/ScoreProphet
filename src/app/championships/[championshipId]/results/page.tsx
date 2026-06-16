@@ -96,10 +96,13 @@ export default async function ChampionshipResultsPage({
                   return (
                     <tr key={user.id} className="border-b border-white/5 last:border-0">
                       <td className="px-4 py-2 font-medium text-white">
-                        <span className="flex items-center gap-1.5">
+                        <Link
+                          href={`/championships/${championship.id}/players/${user.id}`}
+                          className="flex items-center gap-1.5 hover:underline decoration-[#C9A84C]/60 underline-offset-2"
+                        >
                           {user.username}
                           {user.isBot && <span className="rounded bg-purple-900/60 px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-purple-300">AI</span>}
-                        </span>
+                        </Link>
                       </td>
                       <td className="px-4 py-2">{single ? <>{single.value} {pointsBadge(single.pointsAwarded)}</> : <span className="text-white/20">-</span>}</td>
                       {championship.doubleChanceEnabled && <td className="px-4 py-2">{double_ ? <>{double_.value} {pointsBadge(double_.pointsAwarded)}</> : <span className="text-white/20">-</span>}</td>}
