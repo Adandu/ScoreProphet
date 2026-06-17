@@ -1,6 +1,19 @@
-import { Fragment } from 'react'
-
 export type TeamStat = { teamId: string; teamName: string; type: 'FOULS' | 'CORNERS' | 'OFFSIDES' | 'FREE_KICKS' | 'GOAL_KICKS' | 'SAVES' | 'THROW_INS' | 'SHOTS' | 'SHOTS_ON_GOAL' | 'SHOTS_OFF_GOAL' | 'YELLOW_CARDS' | 'RED_CARDS'; value: number }
+
+const HOME_COLOR = '#4ade80'
+const AWAY_COLOR = '#93bbff'
+
+function StatBar({ home, away }: { home: number; away: number }) {
+  const total = home + away
+  const homePct = total === 0 ? 50 : Math.round((home / total) * 100)
+  const awayPct = 100 - homePct
+  return (
+    <div className="flex h-1 overflow-hidden rounded-full">
+      <div style={{ background: HOME_COLOR, width: `${homePct}%` }} />
+      <div style={{ background: AWAY_COLOR, width: `${awayPct}%` }} />
+    </div>
+  )
+}
 
 export function MatchStatsRow({
   homeId,
@@ -34,16 +47,19 @@ export function MatchStatsRow({
       <div className="border-b border-white/5 px-4 py-2.5 text-xs font-bold uppercase tracking-widest text-white/40">
         Match Stats
       </div>
-      <div className="grid grid-cols-[1fr_auto_1fr] items-center gap-x-6 p-3 text-sm">
+      <div className="divide-y divide-white/5">
         {rows.map(({ label, type }) => {
           const h = get(homeId, type)
           const a = get(awayId, type)
           return (
-            <Fragment key={type}>
-              <span className="py-1 text-right font-bold text-white">{h}</span>
-              <span className="py-1 text-center text-xs text-white/50">{label}</span>
-              <span className="py-1 text-left font-bold text-white">{a}</span>
-            </Fragment>
+            <div key={type} className="px-4 py-2">
+              <div className="mb-1.5 grid grid-cols-[1fr_auto_1fr] items-center gap-x-4 text-sm">
+                <span className="text-right font-bold" style={{ color: HOME_COLOR }}>{h}</span>
+                <span className="text-center text-xs text-white/50">{label}</span>
+                <span className="text-left font-bold" style={{ color: AWAY_COLOR }}>{a}</span>
+              </div>
+              <StatBar home={h} away={a} />
+            </div>
           )
         })}
       </div>
