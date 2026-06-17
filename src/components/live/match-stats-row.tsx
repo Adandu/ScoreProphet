@@ -5,7 +5,7 @@ function StatBar({ home, away, homeColor, awayColor }: { home: number; away: num
   const homePct = total === 0 ? 50 : Math.round((home / total) * 100)
   const awayPct = 100 - homePct
   return (
-    <div className="flex h-0.5 w-24 overflow-hidden rounded-full">
+    <div className="flex h-1.5 w-40 overflow-hidden rounded-full">
       <div style={{ background: homeColor, width: `${homePct}%` }} />
       <div style={{ background: awayColor, width: `${awayPct}%` }} />
     </div>
@@ -56,7 +56,7 @@ export function MatchStatsRow({
             <div key={type} className="grid grid-cols-[1fr_auto_1fr] items-center px-4 py-1.5">
               <span className="text-right text-sm font-bold" style={{ color: homeColor }}>{h}</span>
               <div className="flex flex-col items-center gap-0.5 px-3">
-                <span className="text-[10px] text-white/40">{label}</span>
+                <span className="text-xs text-white/60">{label}</span>
                 <StatBar home={h} away={a} homeColor={homeColor} awayColor={awayColor} />
               </div>
               <span className="text-left text-sm font-bold" style={{ color: awayColor }}>{a}</span>
