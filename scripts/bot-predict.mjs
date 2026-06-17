@@ -175,11 +175,11 @@ Based on this data, provide your prediction as valid JSON only (no markdown, no 
 }`
 
   try {
-    const result = spawnSync('claude', ['-p', prompt, '--output-format', 'text'], {
+    const result = spawnSync('/root/.local/bin/claude', ['-p', prompt, '--output-format', 'text'], {
       timeout: 30000,
       encoding: 'utf8',
     })
-    if (result.status !== 0) throw new Error(result.stderr?.trim() || 'non-zero exit')
+    if (result.status !== 0) throw new Error(result.stderr?.trim() || result.error?.message || `non-zero exit (${result.status})`)
     const raw = (result.stdout ?? '').trim()
 
     // Extract JSON from response
