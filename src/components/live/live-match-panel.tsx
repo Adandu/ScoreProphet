@@ -1,5 +1,6 @@
 import { fetchLiveMatchDetails, type NormalizedMatch, type LiveMatchDetails } from '@/lib/football-api'
 import { PitchFormation } from '@/components/pitch-formation'
+import { resolveMatchColors } from '@/lib/match-visuals'
 import { TeamBlock } from './team-block'
 import { CardBadge } from './card-badge'
 import { MatchStatsRow } from './match-stats-row'
@@ -151,13 +152,18 @@ export async function LiveMatchPanel({ liveMatch, prefetchedDetails }: { liveMat
       </>
 
       {/* Match Stats */}
-      {details.teamStats.length > 0 ? (
-        <MatchStatsRow
-          homeId={String(details.homeTeam.id)}
-          awayId={String(details.awayTeam.id)}
-          teamStats={details.teamStats}
-        />
-      ) : (
+      {details.teamStats.length > 0 ? (() => {
+        const { homeColor, awayColor } = resolveMatchColors(details.homeTeam, details.awayTeam)
+        return (
+          <MatchStatsRow
+            homeId={String(details.homeTeam.id)}
+            awayId={String(details.awayTeam.id)}
+            teamStats={details.teamStats}
+            homeColor={homeColor}
+            awayColor={awayColor}
+          />
+        )
+      })() : (
         <div className="rounded-xl border border-white/10 bg-[#0a1628] px-4 py-3 text-center text-xs text-white/40">
           Match statistics not yet provided by the data feed
         </div>
