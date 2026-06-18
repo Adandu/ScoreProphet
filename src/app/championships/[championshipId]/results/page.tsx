@@ -56,13 +56,13 @@ export default async function ChampionshipResultsPage({
         const detailHref = match.status === 'LIVE' ? '/live' : `/matches/${match.externalId}`
         return (
         <div key={match.id} className="rounded-xl border border-white/10 bg-white/5 overflow-hidden">
-          <Link href={detailHref} className="flex items-center justify-between px-4 py-3 border-b border-white/10 hover:bg-white/5 transition-colors group">
-            <span className="flex items-center gap-2 font-semibold text-white">
+          <Link href={detailHref} className="flex items-center gap-4 px-4 py-3 border-b border-white/10 hover:bg-white/5 transition-colors group">
+            <span className="flex min-w-0 flex-1 items-center gap-2 font-semibold text-white">
               {match.homeTeamCrest && <Image src={match.homeTeamCrest} alt="" width={20} height={20} className="max-h-5 w-auto shrink-0 object-contain" />}
               {match.homeTeam} {formatDisplayScore(match)} {match.awayTeam}
               {match.awayTeamCrest && <Image src={match.awayTeamCrest} alt="" width={20} height={20} className="max-h-5 w-auto shrink-0 object-contain" />}
             </span>
-            <div className="flex items-center gap-3">
+            <div className="flex shrink-0 items-center gap-3">
               {match.status === 'LIVE' && (
                 <span className="text-xs font-semibold uppercase tracking-wider text-red-400">● Live</span>
               )}
