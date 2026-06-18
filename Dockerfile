@@ -10,6 +10,7 @@ FROM base AS builder
 WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
+ARG CACHE_BUST=1
 ENV NEXT_TELEMETRY_DISABLED=1
 ENV DATABASE_URL="file:/tmp/build.db"
 ENV SESSION_SECRET="build-time-placeholder-not-used-in-production"
