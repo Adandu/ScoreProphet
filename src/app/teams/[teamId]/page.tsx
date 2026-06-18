@@ -4,6 +4,7 @@ import { notFound } from 'next/navigation'
 import { prisma } from '@/lib/db'
 import { requireAuth } from '@/lib/auth'
 import { isCoachEntry } from '@/lib/tournament-statistics'
+import { formatDisplayScore } from '@/lib/format-score'
 
 interface Props {
   params: Promise<{ teamId: string }>
@@ -72,6 +73,20 @@ export default async function TeamDetailPage({ params }: Props) {
   const team: DisplayTeam | null = await prisma.team.findUnique({ where: { externalId: teamId } })
   if (!team) notFound()
 
+  const tournamentMatches = await prisma.match.findMany({
+    where: {
+      status: { in: ['FINISHED', 'LIVE'] },
+      OR: [{ homeTeam: team.name }, { awayTeam: team.name }],
+    },
+    orderBy: { kickoff: 'asc' },
+    select: {
+      id: true, externalId: true, status: true, kickoff: true, stage: true, group: true,
+      homeTeam: true, awayTeam: true, homeTeamCrest: true, awayTeamCrest: true,
+      homeScore: true, awayScore: true, scoreDuration: true,
+      regularTimeHomeScore: true, regularTimeAwayScore: true,
+    },
+  })
+
   const squadAndCoaches = parseJson<ApiPerson[]>(team.squadJson, [])
   // National-team squads from football-data.org include the coach as a squad
   // entry (position "Coach"); keep them out of the player list. The coach is
@@ -113,6 +128,45 @@ export default async function TeamDetailPage({ params }: Props) {
       </section>
 
       <WcStatsSection stats={wcStats} />
+
+      {tournamentMatches.length > 0 && (
+        <section className="rounded-xl border border-white/10 bg-white/5 p-5">
+          <h2 className="mb-4 text-lg font-semibold text-[#C9A84C]">Tournament Matches</h2>
+          <div className="space-y-2">
+            {tournamentMatches.map((match) => {
+              const isHome = match.homeTeam === team.name
+              const opponent = isHome ? match.awayTeam : match.homeTeam
+              const opponentCrest = isHome ? match.awayTeamCrest : match.homeTeamCrest
+              const teamScore = isHome ? match.homeScore : match.awayScore
+              const oppScore = isHome ? match.awayScore : match.homeScore
+              const won = teamScore != null && oppScore != null && teamScore > oppScore
+              const lost = teamScore != null && oppScore != null && teamScore < oppScore
+              const resultColor = won ? 'text-green-400' : lost ? 'text-red-400' : 'text-white/50'
+              const resultLabel = won ? 'W' : lost ? 'L' : 'D'
+              const href = match.status === 'LIVE' ? '/live' : `/matches/${match.externalId}`
+              const stageLabel = match.stage === 'GROUP' && match.group
+                ? `Group ${match.group.replace('GROUP_', '')}`
+                : match.stage.replace(/_/g, ' ')
+              return (
+                <Link key={match.id} href={href} className="flex items-center justify-between rounded-lg border border-white/5 bg-white/[0.03] px-4 py-2.5 hover:bg-white/[0.06] transition-colors">
+                  <div className="flex items-center gap-2 min-w-0">
+                    <span className={`w-5 shrink-0 text-center text-xs font-bold ${resultColor}`}>{teamScore != null ? resultLabel : '–'}</span>
+                    {opponentCrest && <Image src={opponentCrest} alt="" width={20} height={20} className="max-h-5 w-auto shrink-0 object-contain" />}
+                    <span className="truncate text-sm text-white">{isHome ? 'vs' : '@'} {opponent}</span>
+                  </div>
+                  <div className="flex items-center gap-3 shrink-0 ml-3">
+                    <span className="text-sm font-bold text-white tabular-nums">
+                      {teamScore != null && oppScore != null ? `${teamScore}–${oppScore}` : '–'}
+                    </span>
+                    <span className="text-xs text-white/30">{stageLabel}</span>
+                    {match.status === 'LIVE' && <span className="text-xs font-semibold uppercase tracking-wider text-red-400">● Live</span>}
+                  </div>
+                </Link>
+              )
+            })}
+          </div>
+        </section>
+      )}
 
       {competitions.length > 0 && (
         <section className="rounded-xl border border-white/10 bg-white/5 p-5">

@@ -1,3 +1,4 @@
+import Image from 'next/image'
 import Link from 'next/link'
 import { ArrowUpRight } from 'lucide-react'
 import { prisma } from '@/lib/db'
@@ -56,8 +57,10 @@ export default async function ChampionshipResultsPage({
         return (
         <div key={match.id} className="rounded-xl border border-white/10 bg-white/5 overflow-hidden">
           <Link href={detailHref} className="flex items-center justify-between px-4 py-3 border-b border-white/10 hover:bg-white/5 transition-colors group">
-            <span className="font-semibold text-white">
+            <span className="flex items-center gap-2 font-semibold text-white">
+              {match.homeTeamCrest && <Image src={match.homeTeamCrest} alt="" width={20} height={20} className="max-h-5 w-auto shrink-0 object-contain" />}
               {match.homeTeam} {formatDisplayScore(match)} {match.awayTeam}
+              {match.awayTeamCrest && <Image src={match.awayTeamCrest} alt="" width={20} height={20} className="max-h-5 w-auto shrink-0 object-contain" />}
             </span>
             <div className="flex items-center gap-3">
               {match.status === 'LIVE' && (
