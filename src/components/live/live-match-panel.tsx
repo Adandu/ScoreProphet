@@ -4,6 +4,7 @@ import { resolveMatchColors } from '@/lib/match-visuals'
 import { TeamBlock } from './team-block'
 import { CardBadge } from './card-badge'
 import { MatchStatsRow } from './match-stats-row'
+import { MatchTimeline } from './match-timeline'
 
 function fmtMin(minute: number, injuryTime?: number | null, scoreDuration?: string): string {
   if (injuryTime != null && injuryTime > 0) return `${minute}+${injuryTime}'`
@@ -310,6 +311,14 @@ export async function LiveMatchPanel({ liveMatch, prefetchedDetails }: { liveMat
           </div>
         </div>
       )}
+
+      {/* Timeline — always last */}
+      <MatchTimeline
+        homeId={String(homeId)}
+        goals={details.goals}
+        bookings={mergeBookings(details.bookings)}
+        substitutions={details.substitutions}
+      />
     </div>
   )
 }
