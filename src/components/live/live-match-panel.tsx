@@ -151,6 +151,26 @@ export async function LiveMatchPanel({ liveMatch, prefetchedDetails }: { liveMat
         </div>
       </>
 
+      {/* Possession bar — mobile only (pitch hidden on mobile) */}
+      {details.homePossession != null && (() => {
+        const { homeColor, awayColor } = resolveMatchColors(details.homeTeam, details.awayTeam)
+        const home = details.homePossession!
+        const away = 100 - home
+        return (
+          <div className="md:hidden rounded-xl border border-white/10 bg-[#0a1628] px-4 py-3">
+            <div className="mb-1.5 flex items-center justify-between">
+              <span className="text-sm font-bold" style={{ color: homeColor }}>{home}%</span>
+              <span className="text-xs uppercase tracking-wider text-white/40">Ball Possession</span>
+              <span className="text-sm font-bold" style={{ color: awayColor }}>{away}%</span>
+            </div>
+            <div className="flex h-2 overflow-hidden rounded-full">
+              <div style={{ background: homeColor, width: `${home}%` }} />
+              <div style={{ background: awayColor, flex: 1 }} />
+            </div>
+          </div>
+        )
+      })()}
+
       {/* Match Stats */}
       {(() => {
         const { homeColor, awayColor } = resolveMatchColors(details.homeTeam, details.awayTeam)
