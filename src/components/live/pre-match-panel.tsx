@@ -1,7 +1,12 @@
+import { fetchLiveMatchDetails } from '@/lib/football-api'
+import { resolveMatchColors } from '@/lib/match-visuals'
+import { PitchFormation } from '@/components/pitch-formation'
+import { MatchStatsRow } from './match-stats-row'
 import { TeamBlock } from './team-block'
 
 type PreMatchMatch = {
   id: number
+  externalId: string
   homeTeam: string
   awayTeam: string
   homeTeamCrest: string
@@ -9,9 +14,20 @@ type PreMatchMatch = {
   kickoff: Date
 }
 
-export function PreMatchPanel({ match, now }: { match: PreMatchMatch; now: Date }) {
+export async function PreMatchPanel({ match, now }: { match: PreMatchMatch; now: Date }) {
   const msUntil = match.kickoff.getTime() - now.getTime()
   const minsUntil = Math.max(0, Math.floor(msUntil / 60000))
+
+  let details = null
+  try {
+    details = await fetchLiveMatchDetails(match.externalId)
+  } catch {
+    // lineups not available yet
+  }
+
+  const hasLineups =
+    details != null &&
+    (details.homeTeam.lineup.length > 0 || details.awayTeam.lineup.length > 0)
 
   return (
     <div className="space-y-4">
@@ -37,6 +53,35 @@ export function PreMatchPanel({ match, now }: { match: PreMatchMatch; now: Date 
           <TeamBlock name={match.awayTeam} crest={match.awayTeamCrest} />
         </div>
       </div>
+
+      {hasLineups && details && (
+        <>
+          <style>{`#sp-prematch-pitch{display:none}@media(min-width:768px){#sp-prematch-pitch{display:block}}`}</style>
+          <div id="sp-prematch-pitch">
+            <PitchFormation
+              homeTeam={details.homeTeam}
+              awayTeam={details.awayTeam}
+              goals={[]}
+              bookings={[]}
+              substitutions={[]}
+              referee={details.referee}
+              homePossession={null}
+            />
+          </div>
+          {(() => {
+            const { homeColor, awayColor } = resolveMatchColors(details.homeTeam, details.awayTeam)
+            return (
+              <MatchStatsRow
+                homeId={String(details.homeTeam.id)}
+                awayId={String(details.awayTeam.id)}
+                teamStats={[]}
+                homeColor={homeColor}
+                awayColor={awayColor}
+              />
+            )
+          })()}
+        </>
+      )}
     </div>
   )
 }

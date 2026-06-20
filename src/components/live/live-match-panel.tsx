@@ -152,7 +152,7 @@ export async function LiveMatchPanel({ liveMatch, prefetchedDetails }: { liveMat
       </>
 
       {/* Match Stats */}
-      {details.teamStats.length > 0 ? (() => {
+      {(() => {
         const { homeColor, awayColor } = resolveMatchColors(details.homeTeam, details.awayTeam)
         return (
           <MatchStatsRow
@@ -163,11 +163,7 @@ export async function LiveMatchPanel({ liveMatch, prefetchedDetails }: { liveMat
             awayColor={awayColor}
           />
         )
-      })() : (
-        <div className="rounded-xl border border-white/10 bg-[#0a1628] px-4 py-3 text-center text-xs text-white/40">
-          Match statistics not yet provided by the data feed
-        </div>
-      )}
+      })()}
 
       {/* Goals */}
       {(homeGoals.length > 0 || awayGoals.length > 0) && (
