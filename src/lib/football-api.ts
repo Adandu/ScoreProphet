@@ -471,27 +471,24 @@ export async function fetchLiveMatchDetails(matchId: string | number): Promise<L
   })
 
   function sortLineup(players: LivePlayer[], formation: string): LivePlayer[] {
-    const backLineSize = parseInt(formation.split('-')[0] ?? '4', 10)
+    // The API uses generic position labels ("Defence", "Midfield", "Offence") that reflect
+    // squad roles, not match roles. A winger labelled "Midfield" in a 4-3-3 would overflow
+    // the mid bucket and shift all subsequent players to the wrong pitch line. Fix: use the
+    // formation string line counts as the authoritative bucket sizes, then slice outfield
+    // players (sorted coarsely by position group) into those exact-sized lines.
+    const lineCounts = formation.trim().split('-').map(Number).filter((n) => !isNaN(n) && n > 0)
     const gks = players.filter((p) => (POSITION_GROUP[p.position] ?? 2) === 0)
-    const defs = players.filter((p) => (POSITION_GROUP[p.position] ?? 2) === 1)
-    const mids = players.filter((p) => (POSITION_GROUP[p.position] ?? 2) === 2)
-    const fwds = players.filter((p) => (POSITION_GROUP[p.position] ?? 2) === 3)
-    // In 3-back formations, non-CB defenders are wing-backs playing in the mid line
-    const backLine =
-      backLineSize <= 3
-        ? defs.filter((p) => p.position === 'Centre-Back' || p.position === 'Defence')
-        : defs
-    const overflowDefs =
-      backLineSize <= 3
-        ? defs.filter((p) => p.position !== 'Centre-Back' && p.position !== 'Defence')
-        : []
-    return [
-      ...gks,
-      ...lateralSort(backLine),
-      ...lateralSort(overflowDefs),
-      ...lateralSort(mids),
-      ...lateralSort(fwds),
-    ]
+    const outfield = [...players.filter((p) => (POSITION_GROUP[p.position] ?? 2) !== 0)]
+      .sort((a, b) => (POSITION_GROUP[a.position] ?? 2) - (POSITION_GROUP[b.position] ?? 2))
+
+    const result: LivePlayer[] = [...gks]
+    let idx = 0
+    for (const count of lineCounts) {
+      result.push(...lateralSort(outfield.slice(idx, idx + count)))
+      idx += count
+    }
+    if (idx < outfield.length) result.push(...outfield.slice(idx))
+    return result
   }
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
