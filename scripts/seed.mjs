@@ -127,6 +127,13 @@ async function main() {
     matches = await fetchAllMatches()
   } catch (err) {
     console.warn('[seed] API unavailable, skipping match sync:', err)
+    try {
+      await prisma.jobStatus.upsert({
+        where: { jobName: 'fixture-sync' },
+        update: { lastRunAt: new Date(), lastResult: 'API unavailable', runCount: { increment: 1 } },
+        create: { jobName: 'fixture-sync', lastRunAt: new Date(), lastResult: 'API unavailable', runCount: 1 },
+      })
+    } catch {}
     return
   }
 

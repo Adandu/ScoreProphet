@@ -126,15 +126,13 @@ async function recalculateMatchPoints(match) {
 }
 async function main() {
   const now = /* @__PURE__ */ new Date();
-  const todayStart = new Date(now);
-  todayStart.setHours(0, 0, 0, 0);
-  const todayEnd = new Date(now);
-  todayEnd.setHours(23, 59, 59, 999);
-  const [dbLiveMatches, todayMatchCount] = await Promise.all([
+  const windowStart = new Date(now.getTime() - 3 * 60 * 60 * 1e3);
+  const windowEnd = new Date(now.getTime() + 15 * 60 * 1e3);
+  const [dbLiveMatches, nearKickoffCount] = await Promise.all([
     prisma.match.findMany({ where: { status: "LIVE" } }),
-    prisma.match.count({ where: { kickoff: { gte: todayStart, lte: todayEnd }, status: { in: ["SCHEDULED", "LIVE"] } } })
+    prisma.match.count({ where: { kickoff: { gte: windowStart, lte: windowEnd }, status: "SCHEDULED" } })
   ]);
-  if (dbLiveMatches.length === 0 && todayMatchCount === 0) return;
+  if (dbLiveMatches.length === 0 && nearKickoffCount === 0) return;
   const res = await fetch(`${BASE_URL}/competitions/${COMPETITION}/matches?status=IN_PLAY,PAUSED`, {
     headers: getHeaders()
   });
@@ -198,20 +196,24 @@ async function main() {
     }
   }
   if (updated > 0) console.log(`[score-sync] Recalculated points for ${updated} match(es)`);
-  await prisma.jobStatus.upsert({
-    where: { jobName: 'score-sync' },
-    update: { lastRunAt: new Date(), lastResult: 'ok', runCount: { increment: 1 } },
-    create: { jobName: 'score-sync', lastRunAt: new Date(), lastResult: 'ok', runCount: 1 },
-  });
+  try {
+    await prisma.jobStatus.upsert({
+      where: { jobName: "score-sync" },
+      update: { lastRunAt: /* @__PURE__ */ new Date(), lastResult: "ok", runCount: { increment: 1 } },
+      create: { jobName: "score-sync", lastRunAt: /* @__PURE__ */ new Date(), lastResult: "ok", runCount: 1 }
+    });
+  } catch {
+  }
 }
 main().catch(async (err) => {
   console.error("[score-sync] Fatal error:", err);
   try {
     await prisma.jobStatus.upsert({
-      where: { jobName: 'score-sync' },
-      update: { lastRunAt: new Date(), lastResult: String(err.message ?? err), runCount: { increment: 1 } },
-      create: { jobName: 'score-sync', lastRunAt: new Date(), lastResult: String(err.message ?? err), runCount: 1 },
+      where: { jobName: "score-sync" },
+      update: { lastRunAt: /* @__PURE__ */ new Date(), lastResult: String(err?.message ?? err), runCount: { increment: 1 } },
+      create: { jobName: "score-sync", lastRunAt: /* @__PURE__ */ new Date(), lastResult: String(err?.message ?? err), runCount: 1 }
     });
-  } catch {}
+  } catch {
+  }
   process.exitCode = 1;
 }).finally(() => prisma.$disconnect());

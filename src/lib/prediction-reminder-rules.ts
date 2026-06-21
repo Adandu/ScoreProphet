@@ -1,4 +1,4 @@
-const REMINDER_LEAD_MS = 12 * 60 * 60 * 1000
+const REMINDER_LEAD_MS = 24 * 60 * 60 * 1000
 
 type PredictionSummary = { type: 'SINGLE_OUTCOME' | 'DOUBLE_CHANCE' | 'EXACT_SCORE' }
 

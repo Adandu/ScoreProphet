@@ -19,6 +19,7 @@ export default async function ChampionshipPendingPage({ params }: { params: Prom
       where: {
         status: 'SCHEDULED',
         kickoff: { gt: now },
+        competitionCode: championship.competitionCode,
       },
       orderBy: { kickoff: 'asc' },
       select: {
