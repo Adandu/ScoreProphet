@@ -93,11 +93,23 @@ async function main() {
   }
 
   console.log(`[head-to-head-sync] Synced ${synced}/${matches.length} homepage matches.`)
+  await prisma.jobStatus.upsert({
+    where: { jobName: 'head-to-head-sync' },
+    update: { lastRunAt: new Date(), lastResult: 'ok', runCount: { increment: 1 } },
+    create: { jobName: 'head-to-head-sync', lastRunAt: new Date(), lastResult: 'ok', runCount: 1 },
+  })
 }
 
 main()
-  .catch((err) => {
+  .catch(async (err) => {
     console.error('[head-to-head-sync] Fatal error:', err)
+    try {
+      await prisma.jobStatus.upsert({
+        where: { jobName: 'head-to-head-sync' },
+        update: { lastRunAt: new Date(), lastResult: String(err.message ?? err), runCount: { increment: 1 } },
+        create: { jobName: 'head-to-head-sync', lastRunAt: new Date(), lastResult: String(err.message ?? err), runCount: 1 },
+      })
+    } catch {}
     process.exitCode = 1
   })
   .finally(async () => {

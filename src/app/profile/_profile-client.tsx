@@ -13,6 +13,7 @@ interface ProfileUser {
   theme: 'DARK' | 'LIGHT'
   isAdmin: boolean
   predictionReminderEnabled: boolean
+  predictionReminderHoursBefore: number
 }
 
 export function ProfileClient({ user }: { user: ProfileUser }) {
@@ -21,6 +22,7 @@ export function ProfileClient({ user }: { user: ProfileUser }) {
   const [deleteState, deleteAction, deletePending] = useActionState(deleteAccount, null)
   const [email, setEmail] = useState(user.email)
   const [predictionReminderEnabled, setPredictionReminderEnabled] = useState(user.predictionReminderEnabled)
+  const [reminderHours, setReminderHours] = useState(user.predictionReminderHoursBefore)
   const [notificationWarning, setNotificationWarning] = useState('')
   const [testPending, startTestTransition] = useTransition()
   const [testResult, setTestResult] = useState<{ error?: string; success?: boolean } | null>(null)
@@ -30,6 +32,7 @@ export function ProfileClient({ user }: { user: ProfileUser }) {
       <section className="rounded-xl border border-white/10 bg-white/5 p-5">
         <h2 className="text-lg font-semibold text-[#C9A84C]">Profile Settings</h2>
         <form action={profileAction} className="mt-4 grid gap-4">
+          <input type="hidden" name="predictionReminderHoursBefore" value={reminderHours} />
           <label className="grid gap-1 text-sm text-white/70">
             Username
             <Input name="username" defaultValue={user.username} minLength={2} maxLength={30} className="bg-white/10 text-white border-white/20" />
@@ -93,9 +96,20 @@ export function ProfileClient({ user }: { user: ProfileUser }) {
                 }}
                 className="mt-0.5"
               />
-              <span>
-                Email me 12 hours before kickoff when my predictions are not set.
-              </span>
+              <div className="flex items-center gap-2 text-sm text-white/70">
+                <span>Email me</span>
+                <select
+                  value={reminderHours}
+                  onChange={(e) => setReminderHours(Number(e.target.value))}
+                  className="rounded border border-white/20 bg-white/10 px-2 py-0.5 text-white"
+                >
+                  <option value={1}>1 hour</option>
+                  <option value={6}>6 hours</option>
+                  <option value={12}>12 hours</option>
+                  <option value={24}>24 hours</option>
+                </select>
+                <span>before kickoff when predictions are not set.</span>
+              </div>
             </label>
             {notificationWarning && <p className="text-sm text-orange-300">{notificationWarning}</p>}
             {predictionReminderEnabled && (

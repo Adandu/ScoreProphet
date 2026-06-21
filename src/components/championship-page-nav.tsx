@@ -3,6 +3,7 @@ import Link from 'next/link'
 export function ChampionshipPageNav({ championshipId, name }: { championshipId: number; name: string }) {
   const links = [
     { href: `/championships/${championshipId}/predictions`, label: 'Predictions' },
+    { href: `/championships/${championshipId}/pending`, label: 'Pending' },
     { href: `/championships/${championshipId}/results`, label: 'Results' },
     { href: `/championships/${championshipId}/leaderboard`, label: 'Leaderboard' },
   ]

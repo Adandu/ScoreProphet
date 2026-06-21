@@ -131,11 +131,23 @@ async function main() {
   }
 
   console.log(`[match-statistics] Synced statistics for ${synced}/${matches.length} matches.`)
+  await prisma.jobStatus.upsert({
+    where: { jobName: 'match-statistics-sync' },
+    update: { lastRunAt: new Date(), lastResult: 'ok', runCount: { increment: 1 } },
+    create: { jobName: 'match-statistics-sync', lastRunAt: new Date(), lastResult: 'ok', runCount: 1 },
+  })
 }
 
 main()
-  .catch((err) => {
+  .catch(async (err) => {
     console.error('[match-statistics] Fatal error:', err)
+    try {
+      await prisma.jobStatus.upsert({
+        where: { jobName: 'match-statistics-sync' },
+        update: { lastRunAt: new Date(), lastResult: String(err.message ?? err), runCount: { increment: 1 } },
+        create: { jobName: 'match-statistics-sync', lastRunAt: new Date(), lastResult: String(err.message ?? err), runCount: 1 },
+      })
+    } catch {}
     process.exitCode = 1
   })
   .finally(async () => {

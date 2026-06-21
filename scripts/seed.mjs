@@ -170,11 +170,23 @@ async function main() {
   } catch (err) {
     console.warn('[seed] Team sync failed (API may not have teams yet):', err)
   }
+  await prisma.jobStatus.upsert({
+    where: { jobName: 'fixture-sync' },
+    update: { lastRunAt: new Date(), lastResult: 'ok', runCount: { increment: 1 } },
+    create: { jobName: 'fixture-sync', lastRunAt: new Date(), lastResult: 'ok', runCount: 1 },
+  })
 }
 
 main()
-  .catch((err) => {
+  .catch(async (err) => {
     console.error('[seed] Fatal error:', err)
+    try {
+      await prisma.jobStatus.upsert({
+        where: { jobName: 'fixture-sync' },
+        update: { lastRunAt: new Date(), lastResult: String(err.message ?? err), runCount: { increment: 1 } },
+        create: { jobName: 'fixture-sync', lastRunAt: new Date(), lastResult: String(err.message ?? err), runCount: 1 },
+      })
+    } catch {}
     process.exitCode = 1
   })
   .finally(async () => {

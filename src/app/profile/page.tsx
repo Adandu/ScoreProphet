@@ -28,6 +28,7 @@ export default async function ProfilePage() {
           theme: user.theme,
           isAdmin: user.isAdmin,
           predictionReminderEnabled: user.predictionReminderEnabled,
+          predictionReminderHoursBefore: user.predictionReminderHoursBefore,
         }}
       />
       <ProfileBadges userId={user.id} timezone={user.timezone} />

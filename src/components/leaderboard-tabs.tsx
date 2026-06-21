@@ -111,6 +111,9 @@ export function LeaderboardTabs({
             )}
           </tbody>
         </table>
+        <p className="px-4 py-2 text-[11px] text-white/25">
+          Tiebreaker: exact scores · advance picks · alphabetical
+        </p>
       </div>
     </div>
   )

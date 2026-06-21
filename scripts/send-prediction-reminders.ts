@@ -2,7 +2,7 @@ import { PrismaClient } from '@prisma/client'
 import { PrismaBetterSqlite3 } from '@prisma/adapter-better-sqlite3'
 import { sendPredictionReminderEmail } from '../src/lib/email'
 
-const REMINDER_LEAD_MS = 12 * 60 * 60 * 1000
+const MAX_REMINDER_LEAD_MS = 24 * 60 * 60 * 1000
 const FALLBACK_TZ = 'Europe/Bucharest'
 const STAGE_LABELS: Record<string, string> = {
   GROUP: 'Group Stage',
@@ -52,7 +52,7 @@ function arePredictionsConfigured(
 async function main() {
   const appUrl = getRequiredEnv('APP_URL').replace(/\/$/, '')
   const now = new Date()
-  const dueBefore = new Date(now.getTime() + REMINDER_LEAD_MS)
+  const dueBefore = new Date(now.getTime() + MAX_REMINDER_LEAD_MS)
 
   const matches = await prisma.match.findMany({
     where: { status: 'SCHEDULED', kickoff: { gt: now, lte: dueBefore } },
@@ -80,7 +80,7 @@ async function main() {
           championshipId: championship.id,
           user: { predictionReminderEnabled: true, email: { not: null } },
         },
-        include: { user: { select: { id: true, email: true, timezone: true } } },
+        include: { user: { select: { id: true, email: true, timezone: true, predictionReminderHoursBefore: true } } },
       }),
       prisma.predictionReminder.findMany({
         where: { championshipId: championship.id, matchId: { in: matchIds } },
@@ -111,6 +111,9 @@ async function main() {
     for (const match of matches) {
       for (const member of members) {
         if (!member.user.email) continue
+
+        const userLeadMs = (member.user.predictionReminderHoursBefore ?? 12) * 60 * 60 * 1000
+        if (match.kickoff.getTime() - now.getTime() > userLeadMs) continue
 
         const key = `${member.user.id}:${match.id}`
         if (reminderSet.has(key)) continue
@@ -143,11 +146,25 @@ async function main() {
   }
 
   console.log(`[prediction-reminders] Sent ${sent} reminders for ${matches.length} due matches.`)
+  try {
+    await prisma.jobStatus.upsert({
+      where: { jobName: 'prediction-reminders' },
+      update: { lastRunAt: new Date(), lastResult: 'ok', runCount: { increment: 1 } },
+      create: { jobName: 'prediction-reminders', lastRunAt: new Date(), lastResult: 'ok', runCount: 1 },
+    })
+  } catch {}
 }
 
 main()
-  .catch((err) => {
+  .catch(async (err) => {
     console.error('[prediction-reminders] Fatal error:', err)
+    try {
+      await prisma.jobStatus.upsert({
+        where: { jobName: 'prediction-reminders' },
+        update: { lastRunAt: new Date(), lastResult: String(err?.message ?? err), runCount: { increment: 1 } },
+        create: { jobName: 'prediction-reminders', lastRunAt: new Date(), lastResult: String(err?.message ?? err), runCount: 1 },
+      })
+    } catch {}
     process.exitCode = 1
   })
   .finally(async () => {

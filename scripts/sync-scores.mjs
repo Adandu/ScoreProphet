@@ -198,8 +198,20 @@ async function main() {
     }
   }
   if (updated > 0) console.log(`[score-sync] Recalculated points for ${updated} match(es)`);
+  await prisma.jobStatus.upsert({
+    where: { jobName: 'score-sync' },
+    update: { lastRunAt: new Date(), lastResult: 'ok', runCount: { increment: 1 } },
+    create: { jobName: 'score-sync', lastRunAt: new Date(), lastResult: 'ok', runCount: 1 },
+  });
 }
-main().catch((err) => {
+main().catch(async (err) => {
   console.error("[score-sync] Fatal error:", err);
+  try {
+    await prisma.jobStatus.upsert({
+      where: { jobName: 'score-sync' },
+      update: { lastRunAt: new Date(), lastResult: String(err.message ?? err), runCount: { increment: 1 } },
+      create: { jobName: 'score-sync', lastRunAt: new Date(), lastResult: String(err.message ?? err), runCount: 1 },
+    });
+  } catch {}
   process.exitCode = 1;
 }).finally(() => prisma.$disconnect());

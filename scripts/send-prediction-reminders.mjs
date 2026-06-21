@@ -215,7 +215,7 @@ async function sendPredictionReminderEmail(to, match, predictionsUrl) {
 }
 
 // scripts/send-prediction-reminders.ts
-var REMINDER_LEAD_MS = 12 * 60 * 60 * 1e3;
+var MAX_REMINDER_LEAD_MS = 24 * 60 * 60 * 1e3;
 var FALLBACK_TZ = "Europe/Bucharest";
 var STAGE_LABELS = {
   GROUP: "Group Stage",
@@ -259,7 +259,7 @@ function arePredictionsConfigured(match, predictions, hasAdvancePrediction, doub
 async function main() {
   const appUrl = getRequiredEnv2("APP_URL").replace(/\/$/, "");
   const now = /* @__PURE__ */ new Date();
-  const dueBefore = new Date(now.getTime() + REMINDER_LEAD_MS);
+  const dueBefore = new Date(now.getTime() + MAX_REMINDER_LEAD_MS);
   const matches = await prisma.match.findMany({
     where: { status: "SCHEDULED", kickoff: { gt: now, lte: dueBefore } },
     orderBy: { kickoff: "asc" }
@@ -281,7 +281,7 @@ async function main() {
           championshipId: championship.id,
           user: { predictionReminderEnabled: true, email: { not: null } }
         },
-        include: { user: { select: { id: true, email: true, timezone: true } } }
+        include: { user: { select: { id: true, email: true, timezone: true, predictionReminderHoursBefore: true } } }
       }),
       prisma.predictionReminder.findMany({
         where: { championshipId: championship.id, matchId: { in: matchIds } },
@@ -309,6 +309,8 @@ async function main() {
     for (const match of matches) {
       for (const member of members) {
         if (!member.user.email) continue;
+        const userLeadMs = (member.user.predictionReminderHoursBefore ?? 12) * 60 * 60 * 1e3;
+        if (match.kickoff.getTime() - now.getTime() > userLeadMs) continue;
         const key = `${member.user.id}:${match.id}`;
         if (reminderSet.has(key)) continue;
         const predictions = predictionsByKey.get(key) ?? [];
@@ -336,9 +338,25 @@ async function main() {
     }
   }
   console.log(`[prediction-reminders] Sent ${sent} reminders for ${matches.length} due matches.`);
+  try {
+    await prisma.jobStatus.upsert({
+      where: { jobName: "prediction-reminders" },
+      update: { lastRunAt: /* @__PURE__ */ new Date(), lastResult: "ok", runCount: { increment: 1 } },
+      create: { jobName: "prediction-reminders", lastRunAt: /* @__PURE__ */ new Date(), lastResult: "ok", runCount: 1 }
+    });
+  } catch {
+  }
 }
-main().catch((err) => {
+main().catch(async (err) => {
   console.error("[prediction-reminders] Fatal error:", err);
+  try {
+    await prisma.jobStatus.upsert({
+      where: { jobName: "prediction-reminders" },
+      update: { lastRunAt: /* @__PURE__ */ new Date(), lastResult: String(err?.message ?? err), runCount: { increment: 1 } },
+      create: { jobName: "prediction-reminders", lastRunAt: /* @__PURE__ */ new Date(), lastResult: String(err?.message ?? err), runCount: 1 }
+    });
+  } catch {
+  }
   process.exitCode = 1;
 }).finally(async () => {
   await prisma.$disconnect();

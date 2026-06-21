@@ -6,7 +6,7 @@ export default async function AdminPage() {
   const session = await requireAdmin()
   const timezone = session.timezone ?? 'Europe/Bucharest'
 
-  const [matches, users, championships, auditLogs] = await Promise.all([
+  const [matches, users, championships, auditLogs, jobStatuses] = await Promise.all([
     prisma.match.findMany({
       orderBy: { kickoff: 'asc' },
       select: {
@@ -35,6 +35,7 @@ export default async function AdminPage() {
         entityId: true, details: true, createdAt: true,
       },
     }),
+    prisma.jobStatus.findMany({ orderBy: { lastRunAt: 'desc' } }),
   ])
 
   return (
@@ -71,6 +72,12 @@ export default async function AdminPage() {
         entityId: log.entityId,
         details: log.details,
         createdAt: log.createdAt.toISOString(),
+      }))}
+      jobStatuses={jobStatuses.map((j) => ({
+        jobName: j.jobName,
+        lastRunAt: j.lastRunAt.toISOString(),
+        lastResult: j.lastResult,
+        runCount: j.runCount,
       }))}
     />
   )

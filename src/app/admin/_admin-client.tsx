@@ -49,17 +49,36 @@ interface AuditLog {
   createdAt: string
 }
 
+interface JobStatusEntry {
+  jobName: string
+  lastRunAt: string
+  lastResult: string
+  runCount: number
+}
+
+function relativeTime(date: string): string {
+  const diff = Date.now() - new Date(date).getTime()
+  const mins = Math.floor(diff / 60000)
+  if (mins < 1) return 'just now'
+  if (mins < 60) return `${mins}m ago`
+  const hrs = Math.floor(mins / 60)
+  if (hrs < 24) return `${hrs}h ago`
+  return `${Math.floor(hrs / 24)}d ago`
+}
+
 export function AdminClient({
   matches,
   users,
   championships,
   auditLogs,
+  jobStatuses,
   timezone,
 }: {
   matches: Match[]
   users: User[]
   championships: Championship[]
   auditLogs: AuditLog[]
+  jobStatuses: JobStatusEntry[]
   timezone: string
 }) {
   const [syncState, syncAction, syncPending] = useActionState(syncMatchesFromApi, null)
@@ -170,6 +189,40 @@ export function AdminClient({
           {matches.map((match) => (
             <MatchOverrideRow key={match.id} match={match} timezone={timezone} />
           ))}
+        </div>
+      </section>
+
+      <section>
+        <h2 className="mb-3 text-lg font-semibold text-[#C9A84C]">Job Status</h2>
+        <div className="overflow-x-auto rounded-xl border border-white/10 bg-white/5">
+          {jobStatuses.length === 0 ? (
+            <p className="px-4 py-6 text-center text-sm text-white/40">No job runs recorded yet.</p>
+          ) : (
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-white/10">
+                  <th className="px-4 py-2 text-left font-normal text-white/40">Job</th>
+                  <th className="px-4 py-2 text-left font-normal text-white/40">Last Run</th>
+                  <th className="px-4 py-2 text-left font-normal text-white/40">Status</th>
+                  <th className="px-4 py-2 text-left font-normal text-white/40">Count</th>
+                </tr>
+              </thead>
+              <tbody>
+                {jobStatuses.map((job) => (
+                  <tr key={job.jobName} className="border-b border-white/5 last:border-0">
+                    <td className="px-4 py-2 font-mono text-white">{job.jobName}</td>
+                    <td className="whitespace-nowrap px-4 py-2 text-white/60">{relativeTime(job.lastRunAt)}</td>
+                    <td className="px-4 py-2">
+                      <span className={job.lastResult === 'ok' ? 'text-green-400' : 'text-red-400'}>
+                        {job.lastResult}
+                      </span>
+                    </td>
+                    <td className="px-4 py-2 text-white/60">{job.runCount}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
         </div>
       </section>
 

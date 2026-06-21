@@ -15,7 +15,8 @@ model User {
   isBot        Boolean           @default(false)
   timezone     String            @default("Europe/Bucharest")
   theme        Theme             @default(DARK)
-  predictionReminderEnabled Boolean               @default(false)
+  predictionReminderEnabled     Boolean  @default(false)
+  predictionReminderHoursBefore Int      @default(12)
   createdAt    DateTime          @default(now())
   predictions  Prediction[]
   advances     KnockoutAdvance[]
@@ -256,6 +257,13 @@ model MatchTeamStat {
 
   @@unique([matchId, teamName, type])
   @@index([type])
+}
+
+model JobStatus {
+  jobName    String   @id
+  lastRunAt  DateTime
+  lastResult String   @default("ok")
+  runCount   Int      @default(0)
 }
 
 model AdminAuditLog {

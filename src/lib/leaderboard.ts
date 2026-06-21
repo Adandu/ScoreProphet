@@ -77,5 +77,5 @@ export async function getRankedUsers(
 
       return result
     })
-    .sort((a, b) => b.total - a.total || a.username.localeCompare(b.username))
+    .sort((a, b) => b.total - a.total || b.exact - a.exact || b.advance - a.advance || a.username.localeCompare(b.username))
 }
