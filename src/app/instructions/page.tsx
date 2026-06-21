@@ -103,6 +103,10 @@ export default async function InstructionsPage() {
             across all finished matches. It is specific to each championship — members of different
             championships do not compete against each other.
           </Rule>
+          <Rule title="Leaderboard tiebreaker">
+            When two or more players share the same total points, the ranking is decided in order by:
+            most exact-score hits → most correct results → most correct advance picks → alphabetical username.
+          </Rule>
         </div>
       </section>
 
@@ -138,8 +142,8 @@ export default async function InstructionsPage() {
             The live page shows real-time lineups, goals, cards, and substitutions for all concurrent live matches.
           </Rule>
           <Rule title="Email reminders">
-            Enable prediction reminders in your profile settings. You&apos;ll receive an email up to 12 hours
-            before kickoff for any match where your predictions are incomplete in the selected championship.
+            Enable prediction reminders in your profile settings. You&apos;ll receive an email before kickoff
+            for any match where your predictions are incomplete. The lead time (1–24 hours) is configurable in your profile.
           </Rule>
           <Rule title="Reminder conditions">
             A reminder is sent only once per match per championship. If you complete your predictions after
