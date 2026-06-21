@@ -66,11 +66,11 @@ describe('prediction reminders', () => {
     ).toBe(false)
   })
 
-  it('checks matches due within 12 hours and not already started', () => {
+  it('checks matches due within 24 hours and not already started', () => {
     const now = new Date('2026-06-01T00:00:00.000Z')
     expect(predictionReminderWindow(now)).toEqual({
       gt: now,
-      lte: new Date('2026-06-01T12:00:00.000Z'),
+      lte: new Date('2026-06-02T00:00:00.000Z'),
     })
   })
 })
