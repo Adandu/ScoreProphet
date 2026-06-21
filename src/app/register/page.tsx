@@ -53,9 +53,9 @@ export default function RegisterPage() {
                 type="password"
                 autoComplete="new-password"
                 required
-                minLength={6}
+                minLength={8}
                 className="bg-white/10 border-white/20 text-white placeholder:text-white/30 focus:border-[#C9A84C] focus:ring-[#C9A84C]"
-                placeholder="Choose a password (min. 6 characters)"
+                placeholder="Choose a password (min. 8 characters)"
               />
             </div>
 
