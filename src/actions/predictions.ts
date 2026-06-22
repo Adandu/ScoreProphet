@@ -74,15 +74,25 @@ export async function savePrediction(prevState: unknown, formData: FormData) {
     }),
   ]
 
+  // Determine the effective result outcome after this save
+  let effectiveOutcome: string | null = null
+  if (type === 'SINGLE_OUTCOME') effectiveOutcome = value
   if (type === 'EXACT_SCORE' && !membership.championship.doubleChanceEnabled) {
     const parsed = parseExactScore(value)!
-    const outcome = getScoreOutcome(parsed.home, parsed.away)
+    effectiveOutcome = getScoreOutcome(parsed.home, parsed.away)
     operations.push(
       prisma.prediction.upsert({
         where: { userId_matchId_type_championshipId: { userId: session.userId!, matchId, type: 'SINGLE_OUTCOME', championshipId } },
-        update: { value: outcome },
-        create: { userId: session.userId!, matchId, type: 'SINGLE_OUTCOME', value: outcome, championshipId },
+        update: { value: effectiveOutcome },
+        create: { userId: session.userId!, matchId, type: 'SINGLE_OUTCOME', value: effectiveOutcome, championshipId },
       })
+    )
+  }
+
+  // Clear advance pick when result is confirmed non-draw
+  if (effectiveOutcome !== null && effectiveOutcome !== 'X' && match.stage !== 'GROUP') {
+    operations.push(
+      prisma.knockoutAdvance.deleteMany({ where: { userId: session.userId!, matchId, championshipId } }) as never
     )
   }
 

@@ -32,9 +32,10 @@ export default async function InstructionsPage() {
             A lower-risk pick that earns fewer points.
           </ScoreCard>
           <ScoreCard title="Advancing team" points="1 pt" icon="➡️">
-            Knockout rounds only. Once both teams in a tie are confirmed, predict which team will advance
-            if the match reaches extra time or penalties. Earns 1 point only when the match actually goes
-            beyond 90 minutes — ignored and worth 0 if the match is settled in regular time.
+            Knockout rounds only. Available only when you predict a draw (<strong>X</strong>) in the
+            match result. Pick which team will advance if the match goes to extra time or penalties.
+            Earns 1 point only when the match actually goes beyond 90 minutes — ignored and worth 0
+            if the match is settled in regular time.
           </ScoreCard>
           <ScoreCard title="Tournament winner" points="50 pts" icon="🏅">
             Pick the team you think will win the entire tournament. This prediction is made once per

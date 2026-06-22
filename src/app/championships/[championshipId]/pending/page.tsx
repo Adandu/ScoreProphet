@@ -57,7 +57,8 @@ export default async function ChampionshipPendingPage({ params }: { params: Prom
       : hasSingleOutcome
     const hasExactScore = existing.some((p) => p.type === 'EXACT_SCORE')
     const isKnockout = match.stage !== 'GROUP'
-    const hasAdvance = !isKnockout || Boolean(advanceByMatch[match.id])
+    const predictedDraw = existing.some((p) => p.type === 'SINGLE_OUTCOME' && p.value === 'X')
+    const hasAdvance = !isKnockout || !predictedDraw || Boolean(advanceByMatch[match.id])
 
     return !(hasResultPrediction && hasExactScore && hasAdvance)
   })

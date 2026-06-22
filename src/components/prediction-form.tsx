@@ -159,8 +159,10 @@ export function PredictionForm({
         />
       </div>
 
-      {/* Knockout Advance */}
-      {isKnockout && isKnownTeam(homeTeam) && isKnownTeam(awayTeam) && (
+      {/* Knockout Advance — only when user has saved a draw (X) result */}
+      {isKnockout && !isKnownTeam(homeTeam) || isKnockout && !isKnownTeam(awayTeam) ? (
+        <p className="text-xs text-white/40">Advancing team selection opens after both teams are decided.</p>
+      ) : isKnockout && resultSelection?.type === 'SINGLE_OUTCOME' && resultSelection.value === 'X' ? (
         <KnockoutAdvanceForm
           matchId={matchId}
           homeTeam={homeTeam}
@@ -168,10 +170,9 @@ export function PredictionForm({
           existingTeam={existingAdvanceTeam}
           championshipId={championshipId}
         />
-      )}
-      {isKnockout && (!isKnownTeam(homeTeam) || !isKnownTeam(awayTeam)) && (
-        <p className="text-xs text-white/40">Advancing team selection opens after both teams are decided.</p>
-      )}
+      ) : isKnockout ? (
+        <p className="text-xs text-white/40">Predict a draw (X) to pick the advancing team.</p>
+      ) : null}
     </div>
   )
 }
