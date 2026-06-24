@@ -154,7 +154,7 @@ function askClaude(match, ctx, doubleChanceEnabled) {
     ? '\n- "doubleChance": one of "1X", "X2", or "12" (pick the two outcomes you think are most likely)'
     : ''
 
-  const prompt = `You are ProphetBot, an AI football analyst making predictions for a prediction game.
+  const prompt = `Analyse this World Cup 2026 match and predict the outcome for a prediction game.
 
 Match: ${match.homeTeam} vs ${match.awayTeam}
 Stage: ${match.stage}${match.group ? ` (Group ${match.group})` : ''}
@@ -167,9 +167,9 @@ Head-to-head:
 ${ctx.h2hSummary}
 ${ctx.standingsSummary}
 
-Based on this data, provide your prediction as valid JSON only (no markdown, no explanation outside JSON):
+Respond with valid JSON only:
 {
-  "outcome": "1" | "X" | "2",  (1=home win, X=draw, 2=away win)
+  "outcome": "1" or "X" or "2",
   "exactScore": "N-N",${doubleInstruction}
   "reasoning": "1-2 sentence explanation of the key factor driving your prediction"
 }`
@@ -180,7 +180,8 @@ Based on this data, provide your prediction as valid JSON only (no markdown, no 
       encoding: 'utf8',
     })
     if (result.status !== 0) throw new Error(result.stderr?.trim() || result.error?.message || `non-zero exit (${result.status})`)
-    const raw = (result.stdout ?? '').trim()
+    // Strip markdown code fences if Claude wraps the JSON
+    const raw = (result.stdout ?? '').trim().replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/, '')
 
     // Extract JSON from response
     const jsonMatch = raw.match(/\{[\s\S]*\}/)
