@@ -35,7 +35,7 @@ export default async function ChampionshipResultsPage({
   const memberIds = memberRows.map((m) => m.userId)
   const members = memberRows.map((m) => m.user)
 
-  const [totalMatches, matches] = await Promise.all([
+  const [totalMatches, matches, dbTeams] = await Promise.all([
     prisma.match.count({ where: { status: { in: ['FINISHED', 'LIVE'] } } }),
     prisma.match.findMany({
       where: { status: { in: ['FINISHED', 'LIVE'] } },
@@ -47,7 +47,11 @@ export default async function ChampionshipResultsPage({
         advances: { where: { userId: { in: memberIds } }, include: { user: true } },
       },
     }),
+    prisma.team.findMany({ select: { externalId: true, name: true } }).catch(() => []),
   ])
+
+  const teamUrlByName: Record<string, string> = {}
+  for (const t of dbTeams) if (t.externalId) teamUrlByName[t.name] = t.externalId
 
   const totalPages = Math.max(1, Math.ceil(totalMatches / PAGE_SIZE))
 
@@ -59,20 +63,43 @@ export default async function ChampionshipResultsPage({
         const detailHref = match.status === 'LIVE' ? '/live' : `/matches/${match.externalId}`
         return (
         <div key={match.id} className="rounded-xl border border-white/10 bg-white/5 overflow-hidden">
-          <Link href={detailHref} className="flex items-center gap-4 px-4 py-3 border-b border-white/10 hover:bg-white/5 transition-colors group">
-            <span className="flex min-w-0 flex-1 items-center gap-2 font-semibold text-white">
-              {match.homeTeamCrest && <Image src={match.homeTeamCrest} alt="" width={20} height={20} className="max-h-5 w-auto shrink-0 object-contain" />}
-              {match.homeTeam} {formatDisplayScore(match)} {match.awayTeam}
-              {match.awayTeamCrest && <Image src={match.awayTeamCrest} alt="" width={20} height={20} className="max-h-5 w-auto shrink-0 object-contain" />}
-            </span>
-            <div className="flex shrink-0 items-center gap-3">
+          <div className="grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-2 px-4 py-3 border-b border-white/10">
+            {/* Home team */}
+            {teamUrlByName[match.homeTeam] ? (
+              <Link href={`/teams/${teamUrlByName[match.homeTeam]}`} className="flex min-w-0 items-center justify-end gap-2 font-semibold text-white hover:opacity-80 transition-opacity">
+                <span className="min-w-0 truncate text-right">{match.homeTeam}</span>
+                {match.homeTeamCrest && <Image src={match.homeTeamCrest} alt="" width={20} height={20} className="max-h-5 w-auto shrink-0 object-contain" />}
+              </Link>
+            ) : (
+              <span className="flex min-w-0 items-center justify-end gap-2 font-semibold text-white">
+                <span className="min-w-0 truncate text-right">{match.homeTeam}</span>
+                {match.homeTeamCrest && <Image src={match.homeTeamCrest} alt="" width={20} height={20} className="max-h-5 w-auto shrink-0 object-contain" />}
+              </span>
+            )}
+            {/* Score / match detail link */}
+            <Link href={detailHref} className="group flex flex-col items-center gap-0.5 shrink-0">
               {match.status === 'LIVE' && (
                 <span className="text-xs font-semibold uppercase tracking-wider text-red-400">● Live</span>
               )}
+              <span className="flex items-center gap-1 text-sm font-bold text-white">
+                {formatDisplayScore(match)}
+                <ArrowUpRight className="h-3.5 w-3.5 text-white/20 group-hover:text-white/50 transition-colors" />
+              </span>
               <span className="text-xs text-white/40">{formatMatchTime(match.kickoff, timezone)}</span>
-              <ArrowUpRight className="h-3.5 w-3.5 text-white/20 group-hover:text-white/50 transition-colors" />
-            </div>
-          </Link>
+            </Link>
+            {/* Away team */}
+            {teamUrlByName[match.awayTeam] ? (
+              <Link href={`/teams/${teamUrlByName[match.awayTeam]}`} className="flex min-w-0 items-center justify-start gap-2 font-semibold text-white hover:opacity-80 transition-opacity">
+                {match.awayTeamCrest && <Image src={match.awayTeamCrest} alt="" width={20} height={20} className="max-h-5 w-auto shrink-0 object-contain" />}
+                <span className="min-w-0 truncate">{match.awayTeam}</span>
+              </Link>
+            ) : (
+              <span className="flex min-w-0 items-center justify-start gap-2 font-semibold text-white">
+                {match.awayTeamCrest && <Image src={match.awayTeamCrest} alt="" width={20} height={20} className="max-h-5 w-auto shrink-0 object-contain" />}
+                <span className="min-w-0 truncate">{match.awayTeam}</span>
+              </span>
+            )}
+          </div>
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>

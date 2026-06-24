@@ -7,6 +7,7 @@ import { PendingFilterToggle } from '@/components/pending-filter-toggle'
 import { Badge } from '@/components/ui/badge'
 import { formatMatchTime } from '@/lib/format-date'
 import Image from 'next/image'
+import Link from 'next/link'
 import { CalendarClock, Trophy } from 'lucide-react'
 import { stageLabel } from '@/lib/prediction-reminder-rules'
 import type { Stage } from '@/lib/types'
@@ -40,7 +41,7 @@ export default async function ChampionshipPredictionsPage({
     }),
     prisma.prediction.findMany({ where: { userId: session.userId, championshipId } }),
     prisma.knockoutAdvance.findMany({ where: { userId: session.userId, championshipId } }),
-    prisma.team.findMany({ orderBy: { name: 'asc' }, select: { name: true, shortName: true, crest: true } }),
+    prisma.team.findMany({ orderBy: { name: 'asc' }, select: { name: true, shortName: true, crest: true, externalId: true } }),
     prisma.match.findFirst({ where: { stage: 'GROUP', competitionCode: championship.competitionCode }, orderBy: { kickoff: 'asc' }, select: { kickoff: true } }),
     prisma.tournamentWinnerPrediction.findFirst({ where: { userId: session.userId, championshipId } }),
   ])
@@ -51,13 +52,16 @@ export default async function ChampionshipPredictionsPage({
     const allMatches = await prisma.match.findMany({
       select: { homeTeam: true, homeTeamCrest: true, awayTeam: true, awayTeamCrest: true },
     })
-    const teamMap = new Map<string, { name: string; shortName: string; crest: string }>()
+    const teamMap = new Map<string, { name: string; shortName: string; crest: string; externalId: string }>()
     for (const m of allMatches) {
-      if (!teamMap.has(m.homeTeam)) teamMap.set(m.homeTeam, { name: m.homeTeam, shortName: m.homeTeam, crest: m.homeTeamCrest })
-      if (!teamMap.has(m.awayTeam)) teamMap.set(m.awayTeam, { name: m.awayTeam, shortName: m.awayTeam, crest: m.awayTeamCrest })
+      if (!teamMap.has(m.homeTeam)) teamMap.set(m.homeTeam, { name: m.homeTeam, shortName: m.homeTeam, crest: m.homeTeamCrest, externalId: '' })
+      if (!teamMap.has(m.awayTeam)) teamMap.set(m.awayTeam, { name: m.awayTeam, shortName: m.awayTeam, crest: m.awayTeamCrest, externalId: '' })
     }
     teams = [...teamMap.values()].sort((a, b) => a.name.localeCompare(b.name))
   }
+
+  const teamUrlByName: Record<string, string> = {}
+  for (const t of teams) if (t.externalId) teamUrlByName[t.name] = t.externalId
 
   const isWinnerLocked = Boolean(firstGroupMatch && firstGroupMatch.kickoff <= new Date())
 
@@ -170,9 +174,9 @@ export default async function ChampionshipPredictionsPage({
                       </div>
                     </div>
                     <div className="grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-3 font-semibold text-white">
-                      <TeamLabel name={match.homeTeam} crest={match.homeTeamCrest} align="right" />
+                      <TeamLabel name={match.homeTeam} crest={match.homeTeamCrest} align="right" href={teamUrlByName[match.homeTeam] ? `/teams/${teamUrlByName[match.homeTeam]}` : undefined} />
                       <span className="w-8 text-center text-xs uppercase tracking-widest text-white/30">vs</span>
-                      <TeamLabel name={match.awayTeam} crest={match.awayTeamCrest} align="left" />
+                      <TeamLabel name={match.awayTeam} crest={match.awayTeamCrest} align="left" href={teamUrlByName[match.awayTeam] ? `/teams/${teamUrlByName[match.awayTeam]}` : undefined} />
                     </div>
                     <H2HStrip json={match.headToHeadJson} homeTeam={match.homeTeam} />
                     {!locked && (
@@ -256,18 +260,32 @@ function H2HStrip({ json, homeTeam }: { json: string; homeTeam: string }) {
   )
 }
 
-function TeamLabel({ name, crest, align }: { name: string; crest: string; align: 'left' | 'right' }) {
+function TeamLabel({ name, crest, align, href }: { name: string; crest: string; align: 'left' | 'right'; href?: string }) {
   const crestNode = (
     <span className="flex h-8 w-8 shrink-0 items-center justify-center">
       {crest ? <Image src={crest} alt="" width={32} height={32} className="max-h-8 w-auto object-contain" /> : <span className="h-5 w-5 rounded bg-white/10" />}
     </span>
   )
 
-  return (
-    <div className={`flex min-w-0 items-center gap-2 ${align === 'right' ? 'justify-end text-right' : 'justify-start text-left'}`}>
+  const inner = (
+    <>
       {align === 'right' && crestNode}
       <span className="min-w-0 truncate">{name}</span>
       {align === 'left' && crestNode}
+    </>
+  )
+
+  if (href) {
+    return (
+      <Link href={href} className={`flex min-w-0 items-center gap-2 hover:opacity-80 transition-opacity ${align === 'right' ? 'justify-end text-right' : 'justify-start text-left'}`}>
+        {inner}
+      </Link>
+    )
+  }
+
+  return (
+    <div className={`flex min-w-0 items-center gap-2 ${align === 'right' ? 'justify-end text-right' : 'justify-start text-left'}`}>
+      {inner}
     </div>
   )
 }

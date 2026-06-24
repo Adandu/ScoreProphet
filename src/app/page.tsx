@@ -108,11 +108,15 @@ async function getRevealedPredictionsByMatch(
 
 export default async function HomePage() {
   const session = await requireAuth()
-  const [matches, selectedChampionship, liveApiMatches] = await Promise.all([
+  const [matches, selectedChampionship, liveApiMatches, dbTeams] = await Promise.all([
     getFeaturedMatches(),
     getSelectedChampionship(session.userId!),
     fetchLiveMatches().catch(() => []),
+    prisma.team.findMany({ select: { externalId: true, name: true } }).catch(() => []),
   ])
+
+  const teamUrlByName: Record<string, string> = {}
+  for (const t of dbTeams) if (t.externalId) teamUrlByName[t.name] = t.externalId
 
   const liveScoreByExternalId = new Map(
     liveApiMatches.map((m) => [m.externalId, { homeScore: m.homeScore, awayScore: m.awayScore }])
@@ -145,8 +149,8 @@ export default async function HomePage() {
                     awayTeam: match.awayTeam,
                     homeTeamCrest: match.homeTeamCrest,
                     awayTeamCrest: match.awayTeamCrest,
-                    homeTeamUrl: match.headToHeadHomeTeamId ? `/teams/${match.headToHeadHomeTeamId}` : undefined,
-                    awayTeamUrl: match.headToHeadAwayTeamId ? `/teams/${match.headToHeadAwayTeamId}` : undefined,
+                    homeTeamUrl: teamUrlByName[match.homeTeam] ? `/teams/${teamUrlByName[match.homeTeam]}` : match.headToHeadHomeTeamId ? `/teams/${match.headToHeadHomeTeamId}` : undefined,
+                    awayTeamUrl: teamUrlByName[match.awayTeam] ? `/teams/${teamUrlByName[match.awayTeam]}` : match.headToHeadAwayTeamId ? `/teams/${match.headToHeadAwayTeamId}` : undefined,
                     homeScore: match.fullTimeHomeScore ?? liveScoreByExternalId.get(match.externalId)?.homeScore ?? match.homeScore,
                     awayScore: match.fullTimeAwayScore ?? liveScoreByExternalId.get(match.externalId)?.awayScore ?? match.awayScore,
                     status: match.status,
