@@ -3,6 +3,7 @@ import { requireChampionshipAccessLean } from '@/lib/championships'
 import { PredictionForm } from '@/components/prediction-form'
 import { ResetButton } from '@/components/reset-button'
 import { TournamentWinnerSelector } from '@/components/tournament-winner-selector'
+import { PendingFilterToggle } from '@/components/pending-filter-toggle'
 import { Badge } from '@/components/ui/badge'
 import { formatMatchTime } from '@/lib/format-date'
 import Image from 'next/image'
@@ -14,8 +15,15 @@ const COMPETITION_LABEL: Record<string, string> = {
   WC: 'World Cup', CL: 'Champions League', PL: 'Premier League',
 }
 
-export default async function ChampionshipPredictionsPage({ params }: { params: Promise<{ championshipId: string }> }) {
+export default async function ChampionshipPredictionsPage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ championshipId: string }>
+  searchParams: Promise<Record<string, string>>
+}) {
   const { championshipId: rawId } = await params
+  const showPendingOnly = (await searchParams)?.pending === '1'
   const championshipId = parseInt(rawId, 10)
   const { session, championship } = await requireChampionshipAccessLean(championshipId)
   const timezone = session.timezone ?? 'Europe/Bucharest'
@@ -76,6 +84,27 @@ export default async function ChampionshipPredictionsPage({ params }: { params: 
   const sections = [...sectionMap.entries()]
     .sort(([, a], [, b]) => (a[0]?.kickoff?.getTime() ?? 0) - (b[0]?.kickoff?.getTime() ?? 0))
 
+  const filteredSections = showPendingOnly
+    ? sections
+        .map(([key, sectionMatches]) => [
+          key,
+          sectionMatches.filter((match) => {
+            const existing = predByMatch[match.id] ?? []
+            const hasSingleOutcome = existing.some((p) => p.type === 'SINGLE_OUTCOME')
+            const hasDoubleChance = existing.some((p) => p.type === 'DOUBLE_CHANCE')
+            const hasResultPrediction = championship.doubleChanceEnabled
+              ? hasSingleOutcome || hasDoubleChance
+              : hasSingleOutcome
+            const hasExactScore = existing.some((p) => p.type === 'EXACT_SCORE')
+            const isKnockout = match.stage !== 'GROUP'
+            const predictedDraw = existing.some((p) => p.type === 'SINGLE_OUTCOME' && p.value === 'X')
+            const hasAdvance = !isKnockout || !predictedDraw || Boolean(advanceByMatch[match.id])
+            return !(hasResultPrediction && hasExactScore && hasAdvance)
+          }),
+        ] as [string, typeof sectionMatches])
+        .filter(([, sectionMatches]) => sectionMatches.length > 0)
+    : sections
+
   const now = new Date()
 
   return (
@@ -99,7 +128,15 @@ export default async function ChampionshipPredictionsPage({ params }: { params: 
         />
       </section>
 
-      {sections.map(([key, stageMatches]) => {
+      <div className="flex items-center justify-between">
+        <p className="text-sm text-white/40">
+          {filteredSections.reduce((n, [, s]) => n + s.length, 0)} match{filteredSections.reduce((n, [, s]) => n + s.length, 0) !== 1 ? 'es' : ''}
+          {showPendingOnly ? ' with pending predictions' : ' upcoming'}
+        </p>
+        <PendingFilterToggle showPendingOnly={showPendingOnly} />
+      </div>
+
+      {filteredSections.map(([key, stageMatches]) => {
         const [competitionCode, stage] = key.split('__') as [string, Stage]
         const heading = multiCompetition
           ? `${COMPETITION_LABEL[competitionCode] ?? competitionCode} · ${stageLabel(stage)}`
