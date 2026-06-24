@@ -1,10 +1,9 @@
 import Link from 'next/link'
-import { logout } from '@/actions/auth'
 import { getCurrentUser } from '@/lib/auth'
 import { getManagedChampionships, getSelectedChampionship, getUserChampionships } from '@/lib/championships'
-import { Button } from '@/components/ui/button'
 import { TimezoneSelector } from '@/components/timezone-selector'
 import { ChampionshipSelector } from '@/components/championship-selector'
+import { UsernameDropdown } from '@/components/username-dropdown'
 import { MobileMenu } from '@/components/mobile-menu'
 import { prisma } from '@/lib/db'
 
@@ -37,66 +36,74 @@ export async function Navbar() {
         <Link href="/" className="text-xl font-bold text-[#C9A84C] tracking-tight">
           ScoreProphet
         </Link>
+
         {user ? (
-          <div className="hidden items-center gap-4 text-sm text-white/70 lg:flex">
-            <Link href="/" className="hover:text-white transition-colors">Home</Link>
-            {hasLiveMatch && (
-              <Link href="/live" className="flex items-center gap-1.5 font-semibold text-red-400 hover:text-red-300 transition-colors">
-                <span className="h-2 w-2 animate-pulse rounded-full bg-red-500" />
-                Live
-              </Link>
-            )}
-            {selectedChampionship && (
-              <>
-                <Link href={`/championships/${selectedChampionship.id}/predictions`} className="hover:text-white transition-colors">Predictions</Link>
-                <Link href={`/championships/${selectedChampionship.id}/results`} className="hover:text-white transition-colors">Results</Link>
-                <Link href={`/championships/${selectedChampionship.id}/leaderboard`} className="hover:text-white transition-colors">Leaderboard</Link>
-              </>
-            )}
-            <Link href="/tournament" className="hover:text-white transition-colors">Tournament</Link>
-            <Link href="/teams" className="hover:text-white transition-colors">Teams</Link>
-            <Link href="/instructions" className="hover:text-white transition-colors">How to Play</Link>
-            <Link href="/profile" className="hover:text-white transition-colors">Profile</Link>
-            {canManageChampionships && (
-              <Link href="/manage" className="text-[#C9A84C] hover:text-[#C9A84C]/80 transition-colors">Manage</Link>
-            )}
-            {user.isAdmin && (
-              <Link href="/admin" className="text-[#C9A84C] hover:text-[#C9A84C]/80 transition-colors">Admin</Link>
-            )}
-          </div>
-        ) : (
-          <div className="hidden lg:block" />
-        )}
-        <div className={user ? 'hidden items-center gap-3 lg:flex' : 'flex items-center gap-2 sm:gap-3'}>
-          {user ? (
-            <>
-              <Link href="/profile" className="text-sm text-white/50 hover:text-white">{user.username}</Link>
-              {championships.length > 0 && selectedChampionship && (
-                <ChampionshipSelector championships={championships} selectedId={selectedChampionship.id} />
+          <>
+            {/* Desktop nav links */}
+            <div className="hidden items-center gap-5 text-sm text-white/70 lg:flex">
+              <Link href="/" className="hover:text-white transition-colors">Home</Link>
+              {hasLiveMatch && (
+                <Link
+                  href="/live"
+                  className="flex items-center gap-1.5 font-semibold text-red-400 hover:text-red-300 transition-colors"
+                >
+                  <span className="h-2 w-2 animate-pulse rounded-full bg-red-500" />
+                  Live
+                </Link>
+              )}
+              {selectedChampionship && (
+                <Link
+                  href={`/championships/${selectedChampionship.id}/predictions`}
+                  className="font-semibold text-white/90 hover:text-white transition-colors"
+                >
+                  {selectedChampionship.name}
+                </Link>
+              )}
+              <Link href="/tournament" className="hover:text-white transition-colors">Tournament</Link>
+              <Link href="/instructions" className="hover:text-white transition-colors">How to Play</Link>
+            </div>
+
+            {/* Desktop right-side controls */}
+            <div className="hidden items-center gap-3 lg:flex">
+              {championships.length > 1 && selectedChampionship && (
+                <ChampionshipSelector
+                  championships={championships.map((c) => ({ id: c.id, name: c.name }))}
+                  selectedId={selectedChampionship.id}
+                />
               )}
               <TimezoneSelector timezone={user.timezone} />
-              <form action={logout}>
-                <Button type="submit" variant="outline" size="sm" className="border-white/20 text-white/70 hover:text-white bg-transparent">
-                  Logout
-                </Button>
-              </form>
-            </>
-          ) : (
-            <>
+              <UsernameDropdown
+                username={user.username}
+                isAdmin={user.isAdmin}
+                canManage={canManageChampionships}
+              />
+            </div>
+          </>
+        ) : (
+          <>
+            <div className="hidden lg:block" />
+            <div className="hidden items-center gap-2 lg:flex sm:gap-3">
               <Link href="/login">
-                <Button variant="outline" size="sm" className="border-white/20 text-white/70 hover:text-white bg-transparent">
+                <button type="button" className="rounded-md border border-white/20 px-3 py-1.5 text-sm text-white/70 hover:text-white bg-transparent transition-colors">
                   Login
-                </Button>
+                </button>
               </Link>
               <Link href="/register">
-                <Button size="sm" className="bg-[#C9A84C] text-[#0A1628] hover:bg-[#C9A84C]/90 font-semibold">
+                <button type="button" className="rounded-md bg-[#C9A84C] px-3 py-1.5 text-sm font-semibold text-[#0A1628] hover:bg-[#C9A84C]/90 transition-colors">
                   Register
-                </Button>
+                </button>
               </Link>
-            </>
-          )}
-        </div>
-        <MobileMenu user={user} championships={championships} selectedChampionship={selectedChampionship} hasLiveMatch={Boolean(user && hasLiveMatch)} canManageChampionships={canManageChampionships} />
+            </div>
+          </>
+        )}
+
+        <MobileMenu
+          user={user}
+          championships={championships.map((c) => ({ id: c.id, name: c.name }))}
+          selectedChampionship={selectedChampionship}
+          hasLiveMatch={Boolean(user && hasLiveMatch)}
+          canManageChampionships={canManageChampionships}
+        />
       </div>
     </nav>
   )
