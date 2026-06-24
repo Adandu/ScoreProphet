@@ -1,3 +1,4 @@
+import { cache } from 'react'
 import { redirect } from 'next/navigation'
 import { prisma } from '@/lib/db'
 import { getSession } from '@/lib/session'
@@ -12,7 +13,7 @@ export interface ChampionshipSummary {
   isManager?: boolean
 }
 
-export async function getUserChampionships(userId: number): Promise<ChampionshipSummary[]> {
+export const getUserChampionships = cache(async (userId: number): Promise<ChampionshipSummary[]> => {
   const [memberships, managerAssignments] = await Promise.all([
     prisma.championshipMember.findMany({
       where: {
@@ -38,16 +39,16 @@ export async function getUserChampionships(userId: number): Promise<Championship
       doubleChanceEnabled: championship.doubleChanceEnabled,
       isManager: managerIds.has(championship.id),
   }))
-}
+})
 
-export async function getSelectedChampionship(userId: number): Promise<ChampionshipSummary | null> {
+export const getSelectedChampionship = cache(async (userId: number): Promise<ChampionshipSummary | null> => {
   const session = await getSession()
   const championships = await getUserChampionships(userId)
   if (championships.length === 0) return null
 
   const selected = championships.find((championship) => championship.id === session.selectedChampionshipId)
   return selected ?? championships[0]
-}
+})
 
 export async function requireChampionshipAccess(championshipId: number) {
   const session = await requireAuth()
@@ -64,7 +65,7 @@ export async function requireChampionshipAccess(championshipId: number) {
   return { session, championship }
 }
 
-export async function requireChampionshipAccessLean(championshipId: number) {
+export const requireChampionshipAccessLean = cache(async (championshipId: number) => {
   const session = await requireAuth()
   if (!Number.isInteger(championshipId) || championshipId <= 0) redirect('/')
   const championship = await prisma.championship.findUnique({
@@ -82,7 +83,7 @@ export async function requireChampionshipAccessLean(championshipId: number) {
   }
 
   return { session, championship }
-}
+})
 
 export async function getChampionshipMemberIds(championshipId: number): Promise<number[]> {
   const members = await prisma.championshipMember.findMany({

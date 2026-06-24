@@ -100,7 +100,7 @@ export default async function TeamDetailPage({ params }: Props) {
 
   return (
     <div className="space-y-6">
-      <Link href="/teams" className="text-sm text-white/40 hover:text-white">← All Teams</Link>
+      <Link href="/tournament?tab=teams" className="text-sm text-white/40 hover:text-white">← All Teams</Link>
       <div className="flex items-center gap-4">
         {team.crest && (
           <Image src={team.crest} alt={team.name} width={72} height={72} className="object-contain" />

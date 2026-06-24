@@ -1,4 +1,5 @@
 import bcrypt from 'bcryptjs'
+import { cache } from 'react'
 import { redirect } from 'next/navigation'
 import { getSession } from '@/lib/session'
 import { prisma } from '@/lib/db'
@@ -36,7 +37,7 @@ export async function requireAdmin() {
   return session
 }
 
-export async function getCurrentUser() {
+export const getCurrentUser = cache(async () => {
   const session = await getSession()
   if (!session.userId) return null
   return {
@@ -46,4 +47,4 @@ export async function getCurrentUser() {
     timezone: session.timezone ?? 'Europe/Bucharest',
     theme: session.theme ?? 'DARK',
   }
-}
+})

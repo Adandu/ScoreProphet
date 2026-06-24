@@ -484,7 +484,6 @@ export async function syncMatchesFromApi(prevState: unknown) {
     revalidatePath('/results')
     revalidatePath('/tournament')
     revalidatePath('/leaderboard')
-    revalidatePath('/teams')
     await logAdminAction({
       adminId: session.userId!,
       adminUsername: session.username ?? String(session.userId),

@@ -2,7 +2,7 @@ import Image from 'next/image'
 import Link from 'next/link'
 import { ArrowUpRight } from 'lucide-react'
 import { prisma } from '@/lib/db'
-import { requireChampionshipAccess } from '@/lib/championships'
+import { requireChampionshipAccessLean } from '@/lib/championships'
 import { Badge } from '@/components/ui/badge'
 import { formatMatchTime } from '@/lib/format-date'
 import { formatDisplayScore } from '@/lib/format-score'
@@ -25,10 +25,15 @@ export default async function ChampionshipResultsPage({
   const { championshipId: rawId } = await params
   const championshipId = parseInt(rawId, 10)
   const page = Math.max(1, parseInt((await searchParams).page ?? '1', 10))
-  const { session, championship } = await requireChampionshipAccess(championshipId)
+  const { session, championship } = await requireChampionshipAccessLean(championshipId)
   const timezone = session.timezone ?? 'Europe/Bucharest'
-  const memberIds = championship.members.map((member) => member.userId)
-  const members = championship.members.map((member) => member.user)
+  const memberRows = await prisma.championshipMember.findMany({
+    where: { championshipId },
+    include: { user: true },
+    orderBy: { user: { username: 'asc' } },
+  })
+  const memberIds = memberRows.map((m) => m.userId)
+  const members = memberRows.map((m) => m.user)
 
   const [totalMatches, matches] = await Promise.all([
     prisma.match.count({ where: { status: { in: ['FINISHED', 'LIVE'] } } }),
