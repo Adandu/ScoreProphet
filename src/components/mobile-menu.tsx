@@ -86,7 +86,7 @@ export function MobileMenu({
                     'gold' in link && link.gold
                       ? 'font-semibold text-[#C9A84C]'
                       : 'highlight' in link && link.highlight
-                      ? 'font-semibold text-white'
+                      ? 'font-semibold text-[#C9A84C]'
                       : 'text-white/75'
                   }`}
                 >

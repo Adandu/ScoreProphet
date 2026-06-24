@@ -54,7 +54,7 @@ export async function Navbar() {
               {selectedChampionship && (
                 <Link
                   href={`/championships/${selectedChampionship.id}/predictions`}
-                  className="font-semibold text-white/90 hover:text-white transition-colors"
+                  className="font-semibold text-[#C9A84C] hover:text-[#F2D27A] transition-colors"
                 >
                   {selectedChampionship.name}
                 </Link>

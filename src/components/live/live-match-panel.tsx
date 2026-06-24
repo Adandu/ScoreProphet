@@ -31,7 +31,7 @@ function finishedLabel(scoreDuration: string): string {
   return 'Full Time'
 }
 
-export async function LiveMatchPanel({ liveMatch, prefetchedDetails }: { liveMatch: NormalizedMatch; prefetchedDetails?: LiveMatchDetails }) {
+export async function LiveMatchPanel({ liveMatch, prefetchedDetails, homeTeamUrl, awayTeamUrl }: { liveMatch: NormalizedMatch; prefetchedDetails?: LiveMatchDetails; homeTeamUrl?: string; awayTeamUrl?: string }) {
   let details: LiveMatchDetails
   if (prefetchedDetails) {
     details = prefetchedDetails
@@ -86,7 +86,7 @@ export async function LiveMatchPanel({ liveMatch, prefetchedDetails }: { liveMat
       {/* Score header */}
       <div className="flex items-center rounded-xl border border-white/10 bg-[#0a1628] px-8 py-5">
         <div className="flex flex-1 justify-center">
-          <TeamBlock name={details.homeTeam.name} crest={details.homeTeam.crest} />
+          <TeamBlock name={details.homeTeam.name} crest={details.homeTeam.crest} href={homeTeamUrl} />
         </div>
 
         <div className="flex shrink-0 flex-col items-center gap-1.5">
@@ -132,7 +132,7 @@ export async function LiveMatchPanel({ liveMatch, prefetchedDetails }: { liveMat
         </div>
 
         <div className="flex flex-1 justify-center">
-          <TeamBlock name={details.awayTeam.name} crest={details.awayTeam.crest} />
+          <TeamBlock name={details.awayTeam.name} crest={details.awayTeam.crest} href={awayTeamUrl} />
         </div>
       </div>
 

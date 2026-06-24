@@ -13,8 +13,14 @@ export default async function MatchDetailPage({ params }: { params: Promise<{ ma
   await requireAuth()
   const { matchId } = await params
 
-  const match = await prisma.match.findUnique({ where: { externalId: matchId } })
+  const [match, dbTeams] = await Promise.all([
+    prisma.match.findUnique({ where: { externalId: matchId } }),
+    prisma.team.findMany({ select: { externalId: true, name: true } }).catch(() => []),
+  ])
   if (!match || match.status !== 'FINISHED') notFound()
+
+  const teamUrlByName: Record<string, string> = {}
+  for (const t of dbTeams) if (t.externalId) teamUrlByName[t.name] = t.externalId
 
   let prefetchedDetails: LiveMatchDetails | undefined
 
@@ -79,7 +85,12 @@ export default async function MatchDetailPage({ params }: { params: Promise<{ ma
   return (
     <div className="space-y-6">
       <BackButton className="text-sm text-white/40 hover:text-white/70 transition-colors" />
-      <LiveMatchPanel liveMatch={liveMatch} prefetchedDetails={prefetchedDetails} />
+      <LiveMatchPanel
+        liveMatch={liveMatch}
+        prefetchedDetails={prefetchedDetails}
+        homeTeamUrl={teamUrlByName[match.homeTeam] ? `/teams/${teamUrlByName[match.homeTeam]}` : undefined}
+        awayTeamUrl={teamUrlByName[match.awayTeam] ? `/teams/${teamUrlByName[match.awayTeam]}` : undefined}
+      />
     </div>
   )
 }
