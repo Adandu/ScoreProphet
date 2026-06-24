@@ -59,7 +59,9 @@ npm run build
 
 Predictions lock at kickoff. Users may reset predictions for a match until kickoff.
 
-Prediction, Results, and Leaderboard pages are championship-scoped. Users without an active championship membership only see Home, Tournament, and Teams.
+The championship hub (Predictions, Results, Leaderboard tabs) is championship-scoped. Users without an active championship membership only see Home and Tournament.
+
+The top navigation shows: Home | Championship Name | Tournament | How to Play | Username. Clicking the championship name opens the championship hub. The username dropdown provides access to Profile, Manage (championship managers only), and Admin (admins only). Tournament has URL-persistent tabs: Group Stage, Knockout Bracket, Teams, Top Scorers, and Statistics.
 
 ## Admin Flow
 
