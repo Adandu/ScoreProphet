@@ -24,11 +24,20 @@ ADMIN_USERNAME="admin"
 ADMIN_PASSWORD="at_least_6_chars"
 SESSION_SECRET="at_least_32_characters_random_string"
 APP_URL="http://localhost:3000"
+
+# Email reminders (optional — feature is disabled if omitted)
+SMTP_HOST="smtp.example.com"
+SMTP_PORT="465"
+SMTP_USER="noreply@example.com"
+SMTP_PASSWORD="..."
+SMTP_FROM="ScoreProphet <noreply@example.com>"
 ```
 
 `ADMIN_USERNAME` and `ADMIN_PASSWORD` are used only when registering the initial admin account. A matching username/password pair creates an admin user; later logins do not promote users based on the shared password.
 
 `APP_URL` is used when generating absolute invitation and password-reset links. If omitted, ScoreProphet falls back to the current request host.
+
+Email reminders notify users before kickoff for matches with incomplete predictions. Users enable reminders and set their preferred lead time (1–24 hours) in their profile. The feature is silently disabled when SMTP vars are absent.
 
 ## Local Development
 
@@ -53,15 +62,40 @@ npm run build
 ## Scoring
 
 - Exact score: 5 points
-- Single result: 3 points
-- Double chance: 1 point
-- Correct knockout advancing team: 1 point
+- Match result (1/X/2): 3 points
+- Double chance (1X/X2/12, if enabled): 1 point
+- Correct knockout advancing team: 1 point (only available when predicting a draw; only awarded if the match goes to extra time or penalties)
+- Tournament winner: 50 points (one-time; pick locks when the first group-stage match kicks off)
+
+Maximum per match: 9 points for a perfect knockout prediction (3 + 5 + 1), 8 for group stage (no advancing-team pick).
 
 Predictions lock at kickoff. Users may reset predictions for a match until kickoff.
 
-The championship hub (Predictions, Results, Leaderboard tabs) is championship-scoped. Users without an active championship membership only see Home and Tournament.
+Leaderboard tiebreaker order: most exact-score hits → most correct results → most correct advance picks → alphabetical username.
 
-The top navigation shows: Home | Championship Name | Tournament | How to Play | Username. Clicking the championship name opens the championship hub. The username dropdown provides access to Profile, Manage (championship managers only), and Admin (admins only). Tournament has URL-persistent tabs: Group Stage, Knockout Bracket, Teams, Top Scorers, and Statistics.
+## Navigation
+
+The top navigation shows: **Home | Championship Name | Tournament | How to Play | Username**. Clicking the championship name opens the championship hub (Predictions, Results, Leaderboard tabs). The username dropdown provides access to Profile, Manage (championship managers only), and Admin (admins only). A championship selector appears in the navbar when the user belongs to more than one championship.
+
+Tournament has URL-persistent tabs: Group Stage, Knockout Bracket, Teams, Top Scorers, and Statistics. The championship hub tabs are also URL-persistent (F5-safe).
+
+The championship hub is championship-scoped. Users without an active championship membership only see Home and Tournament.
+
+## Key Features
+
+**Live match center** — when a match is in play or starting within 15 minutes, a Live link appears in the navbar. The live page shows real-time lineups, formations, possession, match stats with jersey-colour bars, a goal/card/substitution timeline, and live scores synced every 10 seconds. Pre-match panels show expected lineups when available.
+
+**Player profiles** — each championship member has a profile page showing their prediction history per match, points breakdown, and per-championship statistics. Profiles are accessible from the leaderboard.
+
+**Badges and achievements** — players earn badges for notable performances (exact scores, streaks, specific milestones). Badges appear on the leaderboard with popovers showing the date and match they were earned.
+
+**Per-stage leaderboards** — the leaderboard can be filtered by stage (group stage, knockout) in addition to the overall ranking.
+
+**Head-to-head** — each match card on the home page shows a head-to-head section with all championship members' predictions once the match is live or finished.
+
+**ProphetBot** — an AI bot user that submits predictions for all matches. Its predictions appear alongside human players on the results and leaderboard pages, marked with an AI badge.
+
+**Team and player pages** — team detail pages show squad by position, WC match history, and form. Clicking a team name or crest anywhere in the app navigates to that team's page. Player names on the results page link to their profiles.
 
 ## Admin Flow
 
@@ -76,6 +110,7 @@ Admins can:
 - Select the advancing team for knockout matches
 - Recalculate all finished-match points
 - Remove non-admin users
+- View job status for background sync and point-recalculation tasks
 
 Sync updates mutable fixture fields such as team names, crests, stage, group, kickoff, status, and scores.
 
