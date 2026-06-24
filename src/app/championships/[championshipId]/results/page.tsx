@@ -6,7 +6,6 @@ import { requireChampionshipAccess } from '@/lib/championships'
 import { Badge } from '@/components/ui/badge'
 import { formatMatchTime } from '@/lib/format-date'
 import { formatDisplayScore } from '@/lib/format-score'
-import { ChampionshipPageNav } from '@/components/championship-page-nav'
 
 const PAGE_SIZE = 10
 
@@ -49,7 +48,6 @@ export default async function ChampionshipResultsPage({
 
   return (
     <div className="space-y-8">
-      <ChampionshipPageNav championshipId={championship.id} name={championship.name} />
       <h2 className="text-xl font-bold text-white">Results</h2>
       {totalMatches === 0 && <p className="text-white/40">No completed or live matches yet.</p>}
       {matches.map((match) => {

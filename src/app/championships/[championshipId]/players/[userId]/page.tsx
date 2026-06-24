@@ -8,7 +8,6 @@ import { getAchievementsByUser, getCatalog, getUserEarnedBadges } from '@/lib/ac
 import { Badge } from '@/components/ui/badge'
 import { formatMatchTime } from '@/lib/format-date'
 import { formatDisplayScore } from '@/lib/format-score'
-import { ChampionshipPageNav } from '@/components/championship-page-nav'
 import { PlayerStatsPanel } from '@/components/player-stats-panel'
 import { computePlayerStats } from '@/lib/player-stats'
 
@@ -81,8 +80,6 @@ export default async function PlayerProfilePage({ params }: { params: Promise<{ 
 
   return (
     <div className="space-y-6">
-      <ChampionshipPageNav championshipId={championship.id} name={championship.name} />
-
       <div className="rounded-xl border border-white/10 bg-white/5 p-5">
         <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
           <h1 className="text-2xl font-bold text-white">{player.username}</h1>

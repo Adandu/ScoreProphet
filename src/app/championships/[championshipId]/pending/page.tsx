@@ -1,7 +1,6 @@
 import { prisma } from '@/lib/db'
 import { requireChampionshipAccessLean } from '@/lib/championships'
 import { formatMatchTime } from '@/lib/format-date'
-import { ChampionshipPageNav } from '@/components/championship-page-nav'
 import Image from 'next/image'
 import Link from 'next/link'
 import { CalendarClock, CheckCircle2 } from 'lucide-react'
@@ -65,7 +64,6 @@ export default async function ChampionshipPendingPage({ params }: { params: Prom
 
   return (
     <div className="space-y-8">
-      <ChampionshipPageNav championshipId={championship.id} name={championship.name} />
       <h2 className="text-xl font-bold text-white">Pending Predictions</h2>
 
       {pendingMatches.length === 0 ? (

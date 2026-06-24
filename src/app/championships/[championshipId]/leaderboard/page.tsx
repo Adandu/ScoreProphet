@@ -2,7 +2,6 @@ import { getCurrentUser } from '@/lib/auth'
 import { requireChampionshipAccessLean, getChampionshipMemberIds } from '@/lib/championships'
 import { getRankedUsers } from '@/lib/leaderboard'
 import { getAchievementsByUser, type Achievement } from '@/lib/achievements'
-import { ChampionshipPageNav } from '@/components/championship-page-nav'
 import { LeaderboardTabs } from '@/components/leaderboard-tabs'
 
 export default async function ChampionshipLeaderboardPage({ params }: { params: Promise<{ championshipId: string }> }) {
@@ -25,7 +24,6 @@ export default async function ChampionshipLeaderboardPage({ params }: { params: 
 
   return (
     <div className="space-y-6">
-      <ChampionshipPageNav championshipId={championship.id} name={championship.name} />
       <div className="flex items-center justify-between">
         <h2 className="text-xl font-bold text-white">Leaderboard</h2>
         <a href={`/championships/${championship.id}/head-to-head`} className="text-sm font-semibold text-[#C9A84C] hover:underline">

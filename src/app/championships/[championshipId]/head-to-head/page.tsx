@@ -3,7 +3,6 @@ import { getCurrentUser } from '@/lib/auth'
 import { prisma } from '@/lib/db'
 import { requireChampionshipAccessLean } from '@/lib/championships'
 import { getHeadToHead } from '@/lib/user-comparison'
-import { ChampionshipPageNav } from '@/components/championship-page-nav'
 import { HeadToHeadPicker } from '@/components/head-to-head-picker'
 import { PlayerStatsPanel } from '@/components/player-stats-panel'
 import { computePlayerStats } from '@/lib/player-stats'
@@ -32,7 +31,6 @@ export default async function HeadToHeadPage({
   if (members.length < 2) {
     return (
       <div className="space-y-6">
-        <ChampionshipPageNav championshipId={championship.id} name={championship.name} />
         <h2 className="text-xl font-bold text-white">Head-to-Head</h2>
         <p className="text-sm text-white/40">A head-to-head needs at least two members in this championship.</p>
       </div>
@@ -74,7 +72,6 @@ export default async function HeadToHeadPage({
 
   return (
     <div className="space-y-6">
-      <ChampionshipPageNav championshipId={championship.id} name={championship.name} />
       <h2 className="text-xl font-bold text-white">Head-to-Head</h2>
       <HeadToHeadPicker members={members} aId={aId} bId={bId} />
 

@@ -5,7 +5,6 @@ import { ResetButton } from '@/components/reset-button'
 import { TournamentWinnerSelector } from '@/components/tournament-winner-selector'
 import { Badge } from '@/components/ui/badge'
 import { formatMatchTime } from '@/lib/format-date'
-import { ChampionshipPageNav } from '@/components/championship-page-nav'
 import Image from 'next/image'
 import { CalendarClock, Trophy } from 'lucide-react'
 import { stageLabel } from '@/lib/prediction-reminder-rules'
@@ -81,7 +80,6 @@ export default async function ChampionshipPredictionsPage({ params }: { params: 
 
   return (
     <div className="space-y-8">
-      <ChampionshipPageNav championshipId={championship.id} name={championship.name} />
       <h2 className="text-xl font-bold text-white">Predictions</h2>
 
       <section className="rounded-2xl border border-[#C9A84C]/30 bg-gradient-to-br from-[#C9A84C]/10 to-transparent p-5">
