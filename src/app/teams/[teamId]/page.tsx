@@ -135,8 +135,6 @@ export default async function TeamDetailPage({ params }: Props) {
           <div className="space-y-2">
             {tournamentMatches.map((match) => {
               const isHome = match.homeTeam === team.name
-              const opponent = isHome ? match.awayTeam : match.homeTeam
-              const opponentCrest = isHome ? match.awayTeamCrest : match.homeTeamCrest
               const teamScore = isHome ? match.homeScore : match.awayScore
               const oppScore = isHome ? match.awayScore : match.homeScore
               const won = teamScore != null && oppScore != null && teamScore > oppScore
@@ -148,18 +146,39 @@ export default async function TeamDetailPage({ params }: Props) {
                 ? `Group ${match.group.replace('GROUP_', '')}`
                 : match.stage.replace(/_/g, ' ')
               return (
-                <Link key={match.id} href={href} className="flex items-center justify-between rounded-lg border border-white/5 bg-white/[0.03] px-4 py-2.5 hover:bg-white/[0.06] transition-colors">
-                  <div className="flex items-center gap-2 min-w-0">
-                    <span className={`w-5 shrink-0 text-center text-xs font-bold ${resultColor}`}>{teamScore != null ? resultLabel : '–'}</span>
-                    {opponentCrest && <Image src={opponentCrest} alt="" width={20} height={20} className="max-h-5 w-auto shrink-0 object-contain" />}
-                    <span className="truncate text-sm text-white">{isHome ? 'vs' : '@'} {opponent}</span>
+                <Link
+                  key={match.id}
+                  href={href}
+                  className="grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-3 rounded-lg border border-white/5 bg-white/[0.03] px-4 py-2.5 hover:bg-white/[0.06] transition-colors"
+                >
+                  {/* Home team */}
+                  <div className="flex min-w-0 items-center justify-end gap-2">
+                    <span className="min-w-0 truncate text-right text-sm font-semibold text-white">{match.homeTeam}</span>
+                    {match.homeTeamCrest && (
+                      <Image src={match.homeTeamCrest} alt="" width={20} height={20} className="max-h-5 w-auto shrink-0 object-contain" />
+                    )}
                   </div>
-                  <div className="flex items-center gap-3 shrink-0 ml-3">
-                    <span className="text-sm font-bold text-white tabular-nums">
-                      {teamScore != null && oppScore != null ? `${teamScore}–${oppScore}` : '–'}
+                  {/* Score / result */}
+                  <div className="flex shrink-0 flex-col items-center gap-0.5">
+                    <span className="text-sm font-bold tabular-nums text-white">
+                      {match.homeScore != null && match.awayScore != null
+                        ? `${match.homeScore}–${match.awayScore}`
+                        : '–'}
                     </span>
-                    <span className="text-xs text-white/30">{stageLabel}</span>
-                    {match.status === 'LIVE' && <span className="text-xs font-semibold uppercase tracking-wider text-red-400">● Live</span>}
+                    <div className="flex items-center gap-1.5">
+                      <span className={`text-[11px] font-bold ${resultColor}`}>{teamScore != null ? resultLabel : ''}</span>
+                      <span className="text-[10px] text-white/30">{stageLabel}</span>
+                      {match.status === 'LIVE' && (
+                        <span className="text-[10px] font-semibold uppercase tracking-wider text-red-400">● Live</span>
+                      )}
+                    </div>
+                  </div>
+                  {/* Away team */}
+                  <div className="flex min-w-0 items-center justify-start gap-2">
+                    {match.awayTeamCrest && (
+                      <Image src={match.awayTeamCrest} alt="" width={20} height={20} className="max-h-5 w-auto shrink-0 object-contain" />
+                    )}
+                    <span className="min-w-0 truncate text-sm font-semibold text-white">{match.awayTeam}</span>
                   </div>
                 </Link>
               )

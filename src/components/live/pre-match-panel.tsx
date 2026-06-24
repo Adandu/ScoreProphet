@@ -12,6 +12,8 @@ type PreMatchMatch = {
   homeTeamCrest: string
   awayTeamCrest: string
   kickoff: Date
+  homeTeamUrl?: string
+  awayTeamUrl?: string
 }
 
 export async function PreMatchPanel({ match, now }: { match: PreMatchMatch; now: Date }) {
@@ -33,7 +35,7 @@ export async function PreMatchPanel({ match, now }: { match: PreMatchMatch; now:
     <div className="space-y-4">
       <div className="flex items-center rounded-xl border border-white/10 bg-[#0a1628] px-8 py-5">
         <div className="flex flex-1 justify-center">
-          <TeamBlock name={match.homeTeam} crest={match.homeTeamCrest} />
+          <TeamBlock name={match.homeTeam} crest={match.homeTeamCrest} href={match.homeTeamUrl} />
         </div>
 
         <div className="flex shrink-0 flex-col items-center gap-1.5">
@@ -50,7 +52,7 @@ export async function PreMatchPanel({ match, now }: { match: PreMatchMatch; now:
         </div>
 
         <div className="flex flex-1 justify-center">
-          <TeamBlock name={match.awayTeam} crest={match.awayTeamCrest} />
+          <TeamBlock name={match.awayTeam} crest={match.awayTeamCrest} href={match.awayTeamUrl} />
         </div>
       </div>
 

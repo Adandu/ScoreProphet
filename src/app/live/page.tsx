@@ -18,10 +18,18 @@ export default async function LivePage() {
     liveMatches = []
   }
 
-  const upcomingMatches = await prisma.match.findMany({
-    where: { status: 'SCHEDULED', kickoff: { gte: now, lte: soonCutoff } },
-    orderBy: { kickoff: 'asc' },
-  })
+  const [upcomingMatches, teams] = await Promise.all([
+    prisma.match.findMany({
+      where: { status: 'SCHEDULED', kickoff: { gte: now, lte: soonCutoff } },
+      orderBy: { kickoff: 'asc' },
+    }),
+    prisma.team.findMany({ select: { externalId: true, name: true } }),
+  ])
+
+  const teamUrlByName: Record<string, string> = {}
+  for (const team of teams) {
+    teamUrlByName[team.name] = team.externalId
+  }
 
   const hasActivity = liveMatches.length > 0 || upcomingMatches.length > 0
 
@@ -39,7 +47,15 @@ export default async function LivePage() {
     <div className="space-y-8">
       <LivePageRefresh isLive={hasActivity} />
       {upcomingMatches.map((match) => (
-        <PreMatchPanel key={match.id} match={match} now={now} />
+        <PreMatchPanel
+          key={match.id}
+          match={{
+            ...match,
+            homeTeamUrl: teamUrlByName[match.homeTeam] ? `/teams/${teamUrlByName[match.homeTeam]}` : undefined,
+            awayTeamUrl: teamUrlByName[match.awayTeam] ? `/teams/${teamUrlByName[match.awayTeam]}` : undefined,
+          }}
+          now={now}
+        />
       ))}
       {liveMatches.map((liveMatch) => (
         <LiveMatchPanel key={liveMatch.externalId} liveMatch={liveMatch} />
