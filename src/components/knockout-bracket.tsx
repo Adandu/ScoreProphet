@@ -1,4 +1,5 @@
 import Image from 'next/image'
+import Link from 'next/link'
 import { formatMatchTime } from '@/lib/format-date'
 
 type Stage = 'ROUND_OF_32' | 'ROUND_OF_16' | 'QUARTER_FINAL' | 'SEMI_FINAL' | 'THIRD_PLACE' | 'FINAL'
@@ -7,6 +8,10 @@ interface BracketMatch {
   id: number
   homeTeam: string
   awayTeam: string
+  homeTeamCrest?: string
+  awayTeamCrest?: string
+  homeTeamUrl?: string
+  awayTeamUrl?: string
   homeScore: number | null
   awayScore: number | null
   scoreDuration: string
@@ -30,6 +35,10 @@ interface DisplayMatch {
   matchNo: number
   homeTeam: string
   awayTeam: string
+  homeTeamCrest: string | null
+  awayTeamCrest: string | null
+  homeTeamUrl: string | null
+  awayTeamUrl: string | null
   homeScore: number | null
   awayScore: number | null
   scoreDuration: string
@@ -196,8 +205,8 @@ function MatchSlot({ match, timezone, compact = false, roomy = false }: { match:
 
   return (
     <div className={`w-full rounded-md border border-white/10 bg-[#0A1628]/80 ${roomy ? 'p-3' : 'p-1.5'} ${compact ? 'max-w-[132px]' : ''}`}>
-      <TeamLine team={match.homeTeam} score={match.homeScore} winner={homeWon} roomy={roomy} />
-      <TeamLine team={match.awayTeam} score={match.awayScore} winner={awayWon} roomy={roomy} />
+      <TeamLine team={match.homeTeam} crest={match.homeTeamCrest} href={match.homeTeamUrl} score={match.homeScore} winner={homeWon} roomy={roomy} />
+      <TeamLine team={match.awayTeam} crest={match.awayTeamCrest} href={match.awayTeamUrl} score={match.awayScore} winner={awayWon} roomy={roomy} />
       <div className={`mt-1.5 flex items-center justify-between gap-1 border-t border-white/10 pt-1.5 text-white/35 ${roomy ? 'text-[11px]' : 'text-[9px]'}`}>
         <span>{match.kickoff ? formatMatchTime(match.kickoff, timezone) : `M${match.matchNo}`}</span>
         {scoreNote && <span className="shrink-0 text-[#C9A84C]/80">{scoreNote}</span>}
@@ -207,11 +216,29 @@ function MatchSlot({ match, timezone, compact = false, roomy = false }: { match:
   )
 }
 
-function TeamLine({ team, score, winner, roomy = false }: { team: string; score: number | null; winner: boolean; roomy?: boolean }) {
+function TeamLine({ team, crest, href, score, winner, roomy = false }: { team: string; crest?: string | null; href?: string | null; score: number | null; winner: boolean; roomy?: boolean }) {
   const pending = /^[WL]?\d|^3[A-L]/.test(team)
-  return (
-    <div className={`flex items-center justify-between gap-2 py-0.5 ${roomy ? 'min-h-7 text-sm' : 'text-[10px]'} ${winner ? 'font-bold text-[#C9A84C]' : pending ? 'text-white/35' : 'text-white/80'}`}>
+  const colorClass = winner ? 'font-bold text-[#C9A84C]' : pending ? 'text-white/35' : 'text-white/80'
+  const imgSize = roomy ? 18 : 12
+
+  const inner = (
+    <>
+      {crest && !pending && (
+        <Image src={crest} alt="" width={imgSize} height={imgSize} className="shrink-0 object-contain" />
+      )}
       <span className="truncate">{team}</span>
+    </>
+  )
+
+  return (
+    <div className={`flex items-center justify-between gap-2 py-0.5 ${roomy ? 'min-h-7 text-sm' : 'text-[10px]'} ${colorClass}`}>
+      {href && !pending ? (
+        <Link href={href} className="flex min-w-0 items-center gap-1 truncate transition-opacity hover:opacity-80">
+          {inner}
+        </Link>
+      ) : (
+        <span className="flex min-w-0 items-center gap-1 truncate">{inner}</span>
+      )}
       <span className="shrink-0 tabular-nums">{score ?? ''}</span>
     </div>
   )
@@ -247,11 +274,17 @@ function buildDisplayMatches(matches: BracketMatch[]): DisplayMatch[] {
 
   return BRACKET_SLOTS.map((slot) => {
     const match = matchByNumber.get(slot.matchNo)
+    const realHome = match && match.homeTeam !== 'TBD'
+    const realAway = match && match.awayTeam !== 'TBD'
     return {
       id: match?.id ?? -slot.matchNo,
       matchNo: slot.matchNo,
-      homeTeam: match && match.homeTeam !== 'TBD' ? match.homeTeam : slot.homeSlot,
-      awayTeam: match && match.awayTeam !== 'TBD' ? match.awayTeam : slot.awaySlot,
+      homeTeam: realHome ? match.homeTeam : slot.homeSlot,
+      awayTeam: realAway ? match.awayTeam : slot.awaySlot,
+      homeTeamCrest: realHome ? (match.homeTeamCrest ?? null) : null,
+      awayTeamCrest: realAway ? (match.awayTeamCrest ?? null) : null,
+      homeTeamUrl: realHome ? (match.homeTeamUrl ?? null) : null,
+      awayTeamUrl: realAway ? (match.awayTeamUrl ?? null) : null,
       homeScore: match?.homeScore ?? null,
       awayScore: match?.awayScore ?? null,
       scoreDuration: match?.scoreDuration ?? 'REGULAR',
