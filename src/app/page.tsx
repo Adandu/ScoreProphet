@@ -9,6 +9,9 @@ import { fetchLiveMatches } from '@/lib/football-api'
 async function getFeaturedMatches() {
   const now = new Date()
   const next24Hours = new Date(now.getTime() + 24 * 60 * 60 * 1000)
+  // Keep showing a SCHEDULED match for up to 3 h after kickoff — covers the gap
+  // between the real kick-off and the API updating the status to LIVE.
+  const graceStart = new Date(now.getTime() - 3 * 60 * 60 * 1000)
 
   let upcoming
   try {
@@ -16,7 +19,7 @@ async function getFeaturedMatches() {
       where: {
         OR: [
           { status: 'LIVE' },
-          { status: 'SCHEDULED', kickoff: { gt: now, lte: next24Hours } },
+          { status: 'SCHEDULED', kickoff: { gt: graceStart, lte: next24Hours } },
         ],
       },
       orderBy: { kickoff: 'asc' },

@@ -35,10 +35,21 @@ export default async function ChampionshipResultsPage({
   const memberIds = memberRows.map((m) => m.userId)
   const members = memberRows.map((m) => m.user)
 
+  const now = new Date()
+  const graceStart = new Date(now.getTime() - 3 * 60 * 60 * 1000)
+  // Keep recently-kicked-off SCHEDULED matches visible during the brief
+  // gap between real kick-off and the API updating the status to LIVE.
+  const inProgressWhere = {
+    OR: [
+      { status: { in: ['FINISHED' as const, 'LIVE' as const] } },
+      { status: 'SCHEDULED' as const, kickoff: { lt: now, gte: graceStart } },
+    ],
+  }
+
   const [totalMatches, matches, dbTeams] = await Promise.all([
-    prisma.match.count({ where: { status: { in: ['FINISHED', 'LIVE'] } } }),
+    prisma.match.count({ where: inProgressWhere }),
     prisma.match.findMany({
-      where: { status: { in: ['FINISHED', 'LIVE'] } },
+      where: inProgressWhere,
       orderBy: { kickoff: 'desc' },
       take: PAGE_SIZE,
       skip: (page - 1) * PAGE_SIZE,

@@ -10,6 +10,7 @@ export default async function LivePage() {
 
   const now = new Date()
   const soonCutoff = new Date(now.getTime() + 15 * 60 * 1000)
+  const graceStart = new Date(now.getTime() - 3 * 60 * 60 * 1000)
 
   let liveMatches: NormalizedMatch[]
   try {
@@ -18,9 +19,11 @@ export default async function LivePage() {
     liveMatches = []
   }
 
+  // Include SCHEDULED matches up to 3 h after kickoff so they stay visible
+  // during the gap between the real kick-off and the API updating to LIVE.
   const [upcomingMatches, teams] = await Promise.all([
     prisma.match.findMany({
-      where: { status: 'SCHEDULED', kickoff: { gte: now, lte: soonCutoff } },
+      where: { status: 'SCHEDULED', kickoff: { gte: graceStart, lte: soonCutoff } },
       orderBy: { kickoff: 'asc' },
     }),
     prisma.team.findMany({ select: { externalId: true, name: true } }),

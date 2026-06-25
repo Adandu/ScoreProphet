@@ -19,12 +19,13 @@ export async function Navbar() {
   const canManageChampionships = user?.isAdmin || managedChampionships.length > 0
   const now = new Date()
   const soonCutoff = new Date(now.getTime() + 15 * 60 * 1000)
+  const graceStart = new Date(now.getTime() - 3 * 60 * 60 * 1000)
   const hasLiveMatch = await prisma.match
     .count({
       where: {
         OR: [
           { status: 'LIVE' },
-          { status: 'SCHEDULED', kickoff: { gte: now, lte: soonCutoff } },
+          { status: 'SCHEDULED', kickoff: { gte: graceStart, lte: soonCutoff } },
         ],
       },
     })
