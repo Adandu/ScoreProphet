@@ -156,22 +156,27 @@ function askClaude(match, ctx, doubleChanceEnabled) {
 
   const prompt = `Analyse this World Cup 2026 match and predict the outcome for a prediction game.
 
-Match: ${match.homeTeam} vs ${match.awayTeam}
+HOME team: ${match.homeTeam}
+AWAY team: ${match.awayTeam}
 Stage: ${match.stage}${match.group ? ` (Group ${match.group})` : ''}
 Kickoff: ${match.kickoff}
 
-${match.homeTeam} recent form (oldest→newest): ${ctx.homeForm}
-${match.awayTeam} recent form (oldest→newest): ${ctx.awayForm}
+${match.homeTeam} (HOME) recent form (oldest→newest): ${ctx.homeForm}
+${match.awayTeam} (AWAY) recent form (oldest→newest): ${ctx.awayForm}
 
 Head-to-head:
 ${ctx.h2hSummary}
 ${ctx.standingsSummary}
 
-Respond with valid JSON only:
+Respond with valid JSON only. Rules:
+- "outcome": "1" = ${match.homeTeam} wins, "X" = draw, "2" = ${match.awayTeam} wins
+- "exactScore": "HOME_GOALS-AWAY_GOALS" (e.g. "2-1" means ${match.homeTeam} scores 2, ${match.awayTeam} scores 1). The outcome MUST match the exactScore (if ${match.awayTeam} wins, away goals must be higher).${doubleInstruction}
+- "reasoning": 1-2 sentence explanation
+
 {
   "outcome": "1" or "X" or "2",
-  "exactScore": "N-N",${doubleInstruction}
-  "reasoning": "1-2 sentence explanation of the key factor driving your prediction"
+  "exactScore": "HOME_GOALS-AWAY_GOALS",${doubleInstruction}
+  "reasoning": "..."
 }`
 
   try {
@@ -186,7 +191,20 @@ Respond with valid JSON only:
     // Extract JSON from response
     const jsonMatch = raw.match(/\{[\s\S]*\}/)
     if (!jsonMatch) throw new Error('No JSON in response')
-    return JSON.parse(jsonMatch[0])
+    const parsed = JSON.parse(jsonMatch[0])
+
+    // Validate outcome is consistent with exactScore
+    const scoreParts = (parsed.exactScore ?? '').split('-').map(Number)
+    if (scoreParts.length === 2 && !isNaN(scoreParts[0]) && !isNaN(scoreParts[1])) {
+      const [h, a] = scoreParts
+      const impliedOutcome = h > a ? '1' : h < a ? '2' : 'X'
+      if (impliedOutcome !== parsed.outcome) {
+        console.error(`[bot-predict] Inconsistent prediction for ${match.homeTeam} vs ${match.awayTeam}: outcome=${parsed.outcome} but exactScore=${parsed.exactScore} implies ${impliedOutcome}. Discarding.`)
+        return null
+      }
+    }
+
+    return parsed
   } catch (err) {
     console.error(`[bot-predict] Claude call failed for ${match.homeTeam} vs ${match.awayTeam}: ${err.message}`)
     return null
