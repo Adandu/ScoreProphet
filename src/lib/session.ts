@@ -8,6 +8,7 @@ export interface SessionData {
   timezone?: string
   theme?: 'DARK' | 'LIGHT'
   selectedChampionshipId?: number
+  selectedTournamentId?: number
 }
 
 export async function getSession(): Promise<IronSession<SessionData>> {

@@ -1,0 +1,34 @@
+import { prisma } from '@/lib/db'
+import type { SessionData } from '@/lib/session'
+import type { Tournament } from '@prisma/client'
+
+export type { Tournament }
+
+export async function getActiveTournaments(): Promise<Tournament[]> {
+  return prisma.tournament.findMany({
+    where: { isActive: true },
+    orderBy: { startDate: 'desc' },
+  })
+}
+
+export async function getSelectedTournament(session: Partial<SessionData>): Promise<Tournament | null> {
+  if (session.selectedTournamentId) {
+    return prisma.tournament.findFirst({
+      where: { id: session.selectedTournamentId },
+    })
+  }
+  const active = await getActiveTournaments()
+  return active[0] ?? null
+}
+
+export async function getTournamentForUser(
+  tournamentId: number,
+  userId: number
+): Promise<Tournament | null> {
+  return prisma.tournament.findFirst({
+    where: {
+      id: tournamentId,
+      championships: { some: { members: { some: { userId } } } },
+    },
+  })
+}
