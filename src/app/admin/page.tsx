@@ -1,12 +1,14 @@
 import { prisma } from '@/lib/db'
 import { requireAdmin } from '@/lib/auth'
+import { listTournamentsForAdmin, fetchCompetitionsFromApi } from '@/actions/admin'
 import { AdminClient } from './_admin-client'
+import { TournamentManager } from './_tournament-manager'
 
 export default async function AdminPage() {
   const session = await requireAdmin()
   const timezone = session.timezone ?? 'Europe/Bucharest'
 
-  const [matches, users, championships, auditLogs, jobStatuses] = await Promise.all([
+  const [matches, users, championships, auditLogs, jobStatuses, tournaments, availableCompetitions] = await Promise.all([
     prisma.match.findMany({
       orderBy: { kickoff: 'asc' },
       select: {
@@ -36,10 +38,14 @@ export default async function AdminPage() {
       },
     }),
     prisma.jobStatus.findMany({ orderBy: { lastRunAt: 'desc' } }),
+    listTournamentsForAdmin(),
+    fetchCompetitionsFromApi().catch(() => []),
   ])
 
   return (
-    <AdminClient
+    <div className="space-y-10">
+      <TournamentManager tournaments={tournaments} availableCompetitions={availableCompetitions} />
+      <AdminClient
       timezone={timezone}
       matches={matches.map((m) => ({
         id: m.id,
@@ -80,5 +86,6 @@ export default async function AdminPage() {
         runCount: j.runCount,
       }))}
     />
+    </div>
   )
 }

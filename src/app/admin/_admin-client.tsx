@@ -1,7 +1,7 @@
 'use client'
 
 import { useActionState, type FormEvent } from 'react'
-import { overrideMatchScore, recalculateAllPoints, removeUser, resetMatchOverride, sendTestPredictionReminder, syncMatchesFromApi } from '@/actions/admin'
+import { overrideMatchScore, removeUser, resetMatchOverride, sendTestPredictionReminder } from '@/actions/admin'
 import { createChampionship, deleteChampionship, setChampionshipManagers, setChampionshipMembers, updateChampionship } from '@/actions/championships'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -81,31 +81,12 @@ export function AdminClient({
   jobStatuses: JobStatusEntry[]
   timezone: string
 }) {
-  const [syncState, syncAction, syncPending] = useActionState(syncMatchesFromApi, null)
-  const [recalcState, recalcAction, recalcPending] = useActionState(recalculateAllPoints, null)
   const [testReminderState, testReminderAction, testReminderPending] = useActionState(sendTestPredictionReminder, null)
   const [createState, createAction, createPending] = useActionState(createChampionship, null)
 
   return (
     <div className="space-y-10">
       <h1 className="text-2xl font-bold text-white">Admin Panel</h1>
-
-      {/* Actions */}
-      <section className="flex gap-3 flex-wrap">
-        <form action={syncAction}>
-          <Button type="submit" disabled={syncPending} className="bg-blue-600 hover:bg-blue-700 text-white">
-            {syncPending ? 'Syncing…' : 'Sync Matches from API'}
-          </Button>
-        </form>
-        <form action={recalcAction}>
-          <Button type="submit" disabled={recalcPending} variant="outline" className="border-white/20 text-white hover:bg-white/10 bg-transparent">
-            {recalcPending ? 'Recalculating…' : 'Recalculate All Points'}
-          </Button>
-        </form>
-        {syncState?.error && <p className="text-sm text-red-400 self-center">{syncState.error}</p>}
-        {syncState?.success && <p className="text-sm text-green-400 self-center">Synced {typeof syncState.synced === 'number' ? syncState.synced : 0} matches</p>}
-        {recalcState?.success && <p className="text-sm text-green-400 self-center">Recalculated {typeof recalcState.count === 'number' ? recalcState.count : 0} matches</p>}
-      </section>
 
       <section className="rounded-xl border border-white/10 bg-white/5 p-4">
         <h2 className="text-lg font-semibold text-[#C9A84C]">Test Prediction Notification</h2>

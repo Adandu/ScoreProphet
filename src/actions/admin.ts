@@ -313,6 +313,92 @@ function sleep(ms: number): Promise<void> {
 }
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
+export async function listTournamentsForAdmin() {
+  return prisma.tournament.findMany({ orderBy: { startDate: 'desc' } })
+}
+
+export async function fetchCompetitionsFromApi() {
+  const { fetchAvailableCompetitions } = await import('@/lib/football-api')
+  return fetchAvailableCompetitions()
+}
+
+export async function createTournamentFromApi(prevState: unknown, formData: FormData) {
+  const code = formData.get('competitionCode') as string
+  const season = formData.get('season') as string
+  const name = formData.get('name') as string
+  const type = formData.get('type') as string
+  const startDate = formData.get('startDate') as string
+  const endDate = formData.get('endDate') as string
+
+  if (!code || !name) return { success: false, error: 'Missing required fields' }
+
+  const existing = await prisma.tournament.findFirst({ where: { competitionCode: code, season } })
+  if (existing) return { success: false, error: 'Tournament already exists' }
+
+  const tournament = await prisma.tournament.create({
+    data: { name, competitionCode: code, season, type, isActive: true, isArchived: false,
+            startDate: new Date(startDate), endDate: new Date(endDate) },
+  })
+
+  // Initial fixture sync
+  const { fetchAllMatches } = await import('@/lib/football-api')
+  const matches = await fetchAllMatches(code, season || undefined)
+  let synced = 0
+  for (const m of matches) {
+    await prisma.match.upsert({
+      where: { externalId: m.externalId },
+      update: { homeTeam: m.homeTeam, awayTeam: m.awayTeam, stage: m.stage,
+                group: m.group, kickoff: m.kickoff, status: m.status,
+                competitionCode: code, tournamentId: tournament.id },
+      create: { ...m, competitionCode: code, tournamentId: tournament.id },
+    })
+    synced++
+  }
+  return { success: true, synced, tournamentId: tournament.id }
+}
+
+export async function syncTournamentFixtures(prevState: unknown, formData: FormData) {
+  const tournamentId = Number(formData.get('tournamentId'))
+  const tournament = await prisma.tournament.findFirst({ where: { id: tournamentId } })
+  if (!tournament) return { success: false, error: 'Tournament not found' }
+
+  const { fetchAllMatches } = await import('@/lib/football-api')
+  const matches = await fetchAllMatches(tournament.competitionCode, tournament.season ?? undefined)
+  let synced = 0
+  for (const m of matches) {
+    await prisma.match.upsert({
+      where: { externalId: m.externalId },
+      update: { homeTeam: m.homeTeam, awayTeam: m.awayTeam, stage: m.stage,
+                group: m.group, kickoff: m.kickoff, status: m.status },
+      create: { ...m, competitionCode: tournament.competitionCode, tournamentId: tournament.id },
+    })
+    synced++
+  }
+  return { success: true, synced }
+}
+
+export async function archiveTournament(prevState: unknown, formData: FormData) {
+  const tournamentId = Number(formData.get('tournamentId'))
+  await prisma.tournament.update({
+    where: { id: tournamentId },
+    data: { isActive: false, isArchived: true },
+  })
+  return { success: true }
+}
+
+export async function recalculateTournamentPoints(prevState: unknown, formData: FormData) {
+  const tournamentId = Number(formData.get('tournamentId'))
+  const matches = await prisma.match.findMany({
+    where: { tournamentId, status: 'FINISHED' },
+    select: { id: true },
+  })
+  for (const m of matches) {
+    await recalculateMatchPoints(m.id)
+  }
+  return { success: true, count: matches.length }
+}
+
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 export async function syncMatchesFromApi(prevState: unknown) {
   const session = await requireAdmin()
   const { fetchAllMatches, fetchHeadToHead } = await import('@/lib/football-api')
