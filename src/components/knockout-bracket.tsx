@@ -77,9 +77,9 @@ const BRACKET_SLOTS: BracketSlot[] = [
   { matchNo: 83, stage: 'ROUND_OF_32', homeSlot: '2K', awaySlot: '2L' },     // Jul 2b  — 2K vs 2L
   { matchNo: 84, stage: 'ROUND_OF_32', homeSlot: '1H', awaySlot: '2J' },     // Jul 2c  — 1H vs 2J
   { matchNo: 85, stage: 'ROUND_OF_32', homeSlot: '1B', awaySlot: '3EFGIJ' }, // Jul 3a  — 1B vs best-3rd
-  { matchNo: 87, stage: 'ROUND_OF_32', homeSlot: '1K', awaySlot: '3DEIJL' }, // Jul 3b  — 1K vs best-3rd
-  { matchNo: 86, stage: 'ROUND_OF_32', homeSlot: '1J', awaySlot: '2H' },     // Jul 3c  — 1J vs 2H
-  { matchNo: 88, stage: 'ROUND_OF_32', homeSlot: '2D', awaySlot: '2G' },     // Jul 4   — 2D vs 2G
+  { matchNo: 88, stage: 'ROUND_OF_32', homeSlot: '2D', awaySlot: '2G' },     // Jul 3b  — 2D vs 2G (Australia vs Egypt)
+  { matchNo: 86, stage: 'ROUND_OF_32', homeSlot: '1J', awaySlot: '2H' },     // Jul 3c  — 1J vs 2H (Argentina vs Cape Verde)
+  { matchNo: 87, stage: 'ROUND_OF_32', homeSlot: '1K', awaySlot: '3DEIJL' }, // Jul 4   — 1K vs best-3rd (Colombia)
   { matchNo: 89, stage: 'ROUND_OF_16', homeSlot: 'W74', awaySlot: 'W77' },
   { matchNo: 90, stage: 'ROUND_OF_16', homeSlot: 'W73', awaySlot: 'W75' },
   { matchNo: 91, stage: 'ROUND_OF_16', homeSlot: 'W76', awaySlot: 'W78' },
