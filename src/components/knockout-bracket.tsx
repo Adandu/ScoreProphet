@@ -66,9 +66,9 @@ const MAIN_ROUNDS: Stage[] = ['ROUND_OF_32', 'ROUND_OF_16', 'QUARTER_FINAL', 'SE
 const BRACKET_SLOTS: BracketSlot[] = [
   { matchNo: 73, stage: 'ROUND_OF_32', homeSlot: '2A', awaySlot: '2B' },     // Jun 28 — 2A vs 2B
   { matchNo: 76, stage: 'ROUND_OF_32', homeSlot: '1C', awaySlot: '2F' },     // Jun 29a — 1C vs 2F
-  { matchNo: 78, stage: 'ROUND_OF_32', homeSlot: '2E', awaySlot: '2I' },     // Jun 29b — 2E vs 2I
+  { matchNo: 74, stage: 'ROUND_OF_32', homeSlot: '1E', awaySlot: '3ABCDF' }, // Jun 29b — 1E vs best-3rd
   { matchNo: 75, stage: 'ROUND_OF_32', homeSlot: '1F', awaySlot: '2C' },     // Jun 30a — 1F vs 2C
-  { matchNo: 74, stage: 'ROUND_OF_32', homeSlot: '1E', awaySlot: '3ABCDF' }, // Jun 30b — 1E vs best-3rd
+  { matchNo: 78, stage: 'ROUND_OF_32', homeSlot: '2E', awaySlot: '2I' },     // Jun 30b — 2E vs 2I
   { matchNo: 77, stage: 'ROUND_OF_32', homeSlot: '1I', awaySlot: '3CDFGH' }, // Jun 30c — 1I vs best-3rd
   { matchNo: 79, stage: 'ROUND_OF_32', homeSlot: '1A', awaySlot: '3CEFHI' }, // Jul 1a  — 1A vs best-3rd
   { matchNo: 80, stage: 'ROUND_OF_32', homeSlot: '1L', awaySlot: '3EHIJK' }, // Jul 1b  — 1L vs best-3rd
