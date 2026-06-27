@@ -8,6 +8,7 @@ import { KnockoutBracket } from '@/components/knockout-bracket'
 import { TournamentTabs } from '@/components/tournament-tabs'
 import { TournamentStatisticsPanel } from '@/components/tournament-statistics-panel'
 import { TopScorersPanel } from '@/components/top-scorers-panel'
+import { getCurrentTournament } from '@/lib/selected-tournament'
 import Image from 'next/image'
 import Link from 'next/link'
 
@@ -15,8 +16,13 @@ export default async function TournamentPage() {
   const session = await requireAuth()
   const timezone = session.timezone ?? 'Europe/Bucharest'
 
+  const tournament = await getCurrentTournament()
+
   const [matches, teams] = await Promise.all([
-    prisma.match.findMany({ orderBy: { kickoff: 'asc' } }),
+    prisma.match.findMany({
+      where: { ...(tournament ? { tournamentId: tournament.id } : {}) },
+      orderBy: { kickoff: 'asc' },
+    }),
     prisma.team.findMany({ select: { externalId: true, name: true, crest: true }, orderBy: { name: 'asc' } }),
   ])
   const groupMatches = matches.filter((match) => match.stage === 'GROUP')

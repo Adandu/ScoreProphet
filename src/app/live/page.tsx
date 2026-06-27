@@ -4,6 +4,7 @@ import { requireAuth } from '@/lib/auth'
 import { prisma } from '@/lib/db'
 import { PreMatchPanel } from '@/components/live/pre-match-panel'
 import { LiveMatchPanel } from '@/components/live/live-match-panel'
+import { getCurrentTournament } from '@/lib/selected-tournament'
 
 export default async function LivePage() {
   await requireAuth()
@@ -11,6 +12,9 @@ export default async function LivePage() {
   const now = new Date()
   const soonCutoff = new Date(now.getTime() + 15 * 60 * 1000)
   const graceStart = new Date(now.getTime() - 3 * 60 * 60 * 1000)
+
+  const tournament = await getCurrentTournament()
+  const tournamentId = tournament?.id
 
   let liveMatches: NormalizedMatch[]
   try {
@@ -23,7 +27,11 @@ export default async function LivePage() {
   // during the gap between the real kick-off and the API updating to LIVE.
   const [upcomingMatches, teams] = await Promise.all([
     prisma.match.findMany({
-      where: { status: 'SCHEDULED', kickoff: { gte: graceStart, lte: soonCutoff } },
+      where: {
+        status: 'SCHEDULED',
+        kickoff: { gte: graceStart, lte: soonCutoff },
+        ...(tournamentId ? { tournamentId } : {}),
+      },
       orderBy: { kickoff: 'asc' },
     }),
     prisma.team.findMany({ select: { externalId: true, name: true } }),

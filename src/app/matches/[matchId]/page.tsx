@@ -5,6 +5,7 @@ import { requireAuth } from '@/lib/auth'
 import { LiveMatchPanel } from '@/components/live/live-match-panel'
 import { fetchLiveMatchDetails, type NormalizedMatch, type LiveMatchDetails } from '@/lib/football-api'
 import { canCallMatchDetailApi } from '@/lib/api-call-budget'
+import { getCurrentTournament } from '@/lib/selected-tournament'
 import type { Stage } from '@/lib/types'
 
 export const revalidate = 0
@@ -13,11 +14,14 @@ export default async function MatchDetailPage({ params }: { params: Promise<{ ma
   await requireAuth()
   const { matchId } = await params
 
-  const [match, dbTeams] = await Promise.all([
+  const [match, dbTeams, tournament] = await Promise.all([
     prisma.match.findUnique({ where: { externalId: matchId } }),
     prisma.team.findMany({ select: { externalId: true, name: true } }).catch(() => []),
+    getCurrentTournament(),
   ])
   if (!match || match.status !== 'FINISHED') notFound()
+  // Verify the match belongs to the currently selected tournament
+  if (tournament && match.tournamentId !== tournament.id) notFound()
 
   const teamUrlByName: Record<string, string> = {}
   for (const t of dbTeams) if (t.externalId) teamUrlByName[t.name] = t.externalId
