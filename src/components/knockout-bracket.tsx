@@ -62,22 +62,22 @@ const ROUND_LABELS: Record<Stage, string> = {
 const MAIN_ROUNDS: Stage[] = ['ROUND_OF_32', 'ROUND_OF_16', 'QUARTER_FINAL', 'SEMI_FINAL']
 
 const BRACKET_SLOTS: BracketSlot[] = [
-  { matchNo: 73, stage: 'ROUND_OF_32', homeSlot: '2A', awaySlot: '2B' },
-  { matchNo: 74, stage: 'ROUND_OF_32', homeSlot: '1E', awaySlot: '3ABCDF' },
-  { matchNo: 75, stage: 'ROUND_OF_32', homeSlot: '1F', awaySlot: '2C' },
-  { matchNo: 76, stage: 'ROUND_OF_32', homeSlot: '1C', awaySlot: '2F' },
-  { matchNo: 77, stage: 'ROUND_OF_32', homeSlot: '1I', awaySlot: '3CDFGH' },
-  { matchNo: 78, stage: 'ROUND_OF_32', homeSlot: '2E', awaySlot: '2I' },
-  { matchNo: 79, stage: 'ROUND_OF_32', homeSlot: '1A', awaySlot: '3CEFHI' },
-  { matchNo: 80, stage: 'ROUND_OF_32', homeSlot: '1L', awaySlot: '3EHIJK' },
-  { matchNo: 81, stage: 'ROUND_OF_32', homeSlot: '1D', awaySlot: '3BEFIJ' },
-  { matchNo: 82, stage: 'ROUND_OF_32', homeSlot: '1G', awaySlot: '3AEHIJ' },
-  { matchNo: 83, stage: 'ROUND_OF_32', homeSlot: '2K', awaySlot: '2L' },
-  { matchNo: 84, stage: 'ROUND_OF_32', homeSlot: '1H', awaySlot: '2J' },
-  { matchNo: 85, stage: 'ROUND_OF_32', homeSlot: '1B', awaySlot: '3EFGIJ' },
-  { matchNo: 86, stage: 'ROUND_OF_32', homeSlot: '1J', awaySlot: '2H' },
-  { matchNo: 87, stage: 'ROUND_OF_32', homeSlot: '1K', awaySlot: '3DEIJL' },
-  { matchNo: 88, stage: 'ROUND_OF_32', homeSlot: '2D', awaySlot: '2G' },
+  { matchNo: 73, stage: 'ROUND_OF_32', homeSlot: '2A', awaySlot: '2B' },    // ✓ South Africa vs Canada
+  { matchNo: 74, stage: 'ROUND_OF_32', homeSlot: '1C', awaySlot: '2F' },    // ✓ Brazil vs Japan
+  { matchNo: 75, stage: 'ROUND_OF_32', homeSlot: '2E', awaySlot: '1I' },    // ✓ Germany; E↔I cross-pair → France
+  { matchNo: 76, stage: 'ROUND_OF_32', homeSlot: '1F', awaySlot: '2C' },    // ✓ Netherlands vs Morocco
+  { matchNo: 77, stage: 'ROUND_OF_32', homeSlot: '1E', awaySlot: '2I' },    // ✓ Ivory Coast; E↔I cross-pair → Norway
+  { matchNo: 78, stage: 'ROUND_OF_32', homeSlot: '1G', awaySlot: '3CDFIJ' }, // Egypt vs best-3rd
+  { matchNo: 79, stage: 'ROUND_OF_32', homeSlot: '1A', awaySlot: '3CEFHI' }, // ✓ Mexico vs best-3rd
+  { matchNo: 80, stage: 'ROUND_OF_32', homeSlot: '1L', awaySlot: '3EHIJK' }, // Ghana vs best-3rd
+  { matchNo: 81, stage: 'ROUND_OF_32', homeSlot: '1K', awaySlot: '3AEFIJ' }, // Colombia vs best-3rd
+  { matchNo: 82, stage: 'ROUND_OF_32', homeSlot: '1D', awaySlot: '3B' },    // ✓ USA vs Bosnia
+  { matchNo: 83, stage: 'ROUND_OF_32', homeSlot: '2K', awaySlot: '2L' },    // Portugal vs England
+  { matchNo: 84, stage: 'ROUND_OF_32', homeSlot: '1H', awaySlot: '2J' },    // Spain vs Austria
+  { matchNo: 85, stage: 'ROUND_OF_32', homeSlot: '1B', awaySlot: '3EFGIJ' }, // ✓ Switzerland vs best-3rd
+  { matchNo: 86, stage: 'ROUND_OF_32', homeSlot: '3D', awaySlot: '2H' },    // ✓ Australia vs Cape Verde
+  { matchNo: 87, stage: 'ROUND_OF_32', homeSlot: '1J', awaySlot: '3DEIJL' }, // ✓ Argentina vs best-3rd
+  { matchNo: 88, stage: 'ROUND_OF_32', homeSlot: '2D', awaySlot: '2G' },    // Paraguay vs Belgium
   { matchNo: 89, stage: 'ROUND_OF_16', homeSlot: 'W74', awaySlot: 'W77' },
   { matchNo: 90, stage: 'ROUND_OF_16', homeSlot: 'W73', awaySlot: 'W75' },
   { matchNo: 91, stage: 'ROUND_OF_16', homeSlot: 'W76', awaySlot: 'W78' },
