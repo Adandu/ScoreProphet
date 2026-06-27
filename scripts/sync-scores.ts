@@ -113,7 +113,7 @@ async function main() {
   // Fetch active, non-archived tournaments to scope all sync operations
   const activeTournaments = await prisma.tournament.findMany({
     where: { isActive: true, isArchived: false },
-    select: { id: true, competitionCode: true },
+    select: { id: true, competitionCode: true, season: true },
   })
 
   if (activeTournaments.length === 0) {
@@ -140,11 +140,11 @@ async function main() {
   // Collect live matches from API for each active tournament
   const apiLiveMatches: ApiMatch[] = []
   for (const tournament of activeTournaments) {
-    const res = await fetch(`${BASE_URL}/competitions/${tournament.competitionCode}/matches?status=IN_PLAY,PAUSED`, {
+    const res = await fetch(`${BASE_URL}/competitions/${tournament.competitionCode}/matches?status=IN_PLAY,PAUSED${tournament.season ? `&season=${tournament.season}` : ''}`, {
       headers: getHeaders(),
     })
     if (!res.ok) {
-      if (res.status === 429) { console.warn('[score-sync] Rate limited by API'); return }
+      if (res.status === 429) { console.warn('[score-sync] Rate limited by API, skipping tournament', tournament.competitionCode); continue }
       throw new Error(`[score-sync] API error ${res.status}: ${res.statusText}`)
     }
     const data = await res.json()

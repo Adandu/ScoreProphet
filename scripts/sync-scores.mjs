@@ -126,7 +126,7 @@ async function recalculateMatchPoints(match) {
 async function main() {
   const activeTournaments = await prisma.tournament.findMany({
     where: { isActive: true, isArchived: false },
-    select: { id: true, competitionCode: true }
+    select: { id: true, competitionCode: true, season: true }
   });
   if (activeTournaments.length === 0) {
     console.log("[score-sync] No active tournaments to sync.");
@@ -143,13 +143,13 @@ async function main() {
   if (dbLiveMatches.length === 0 && nearKickoffCount === 0) return;
   const apiLiveMatches = [];
   for (const tournament of activeTournaments) {
-    const res = await fetch(`${BASE_URL}/competitions/${tournament.competitionCode}/matches?status=IN_PLAY,PAUSED`, {
+    const res = await fetch(`${BASE_URL}/competitions/${tournament.competitionCode}/matches?status=IN_PLAY,PAUSED${tournament.season ? `&season=${tournament.season}` : ""}`, {
       headers: getHeaders()
     });
     if (!res.ok) {
       if (res.status === 429) {
-        console.warn("[score-sync] Rate limited by API");
-        return;
+        console.warn("[score-sync] Rate limited by API, skipping tournament", tournament.competitionCode);
+        continue;
       }
       throw new Error(`[score-sync] API error ${res.status}: ${res.statusText}`);
     }
