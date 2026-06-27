@@ -71,7 +71,7 @@ export const requireChampionshipAccessLean = cache(async (championshipId: number
   if (!Number.isInteger(championshipId) || championshipId <= 0) redirect('/')
   const championship = await prisma.championship.findUnique({
     where: { id: championshipId },
-    select: { id: true, name: true, description: true, isActive: true, doubleChanceEnabled: true, competitionCode: true },
+    select: { id: true, name: true, description: true, isActive: true, doubleChanceEnabled: true, competitionCode: true, tournamentId: true },
   })
 
   if (!championship || !championship.isActive) redirect('/')

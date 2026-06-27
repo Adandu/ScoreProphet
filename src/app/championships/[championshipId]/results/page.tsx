@@ -46,10 +46,11 @@ export default async function ChampionshipResultsPage({
     ],
   }
 
+  const tournamentWhere = { ...inProgressWhere, tournamentId: championship.tournamentId }
   const [totalMatches, matches, dbTeams] = await Promise.all([
-    prisma.match.count({ where: inProgressWhere }),
+    prisma.match.count({ where: tournamentWhere }),
     prisma.match.findMany({
-      where: inProgressWhere,
+      where: tournamentWhere,
       orderBy: { kickoff: 'desc' },
       take: PAGE_SIZE,
       skip: (page - 1) * PAGE_SIZE,

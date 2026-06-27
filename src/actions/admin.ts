@@ -313,15 +313,18 @@ function sleep(ms: number): Promise<void> {
 }
 
 export async function listTournamentsForAdmin() {
+  await requireAdmin()
   return prisma.tournament.findMany({ orderBy: { startDate: 'desc' } })
 }
 
 export async function fetchCompetitionsFromApi() {
+  await requireAdmin()
   const { fetchAvailableCompetitions } = await import('@/lib/football-api')
   return fetchAvailableCompetitions()
 }
 
 export async function createTournamentFromApi(prevState: unknown, formData: FormData) {
+  await requireAdmin()
   const code = formData.get('competitionCode') as string
   const season = formData.get('season') as string
   const name = formData.get('name') as string
@@ -362,6 +365,7 @@ export async function createTournamentFromApi(prevState: unknown, formData: Form
 }
 
 export async function syncTournamentFixtures(prevState: unknown, formData: FormData) {
+  await requireAdmin()
   const tournamentId = Number(formData.get('tournamentId'))
   const tournament = await prisma.tournament.findFirst({ where: { id: tournamentId } })
   if (!tournament) return { success: false, error: 'Tournament not found' }
@@ -382,6 +386,7 @@ export async function syncTournamentFixtures(prevState: unknown, formData: FormD
 }
 
 export async function archiveTournament(prevState: unknown, formData: FormData) {
+  await requireAdmin()
   const tournamentId = Number(formData.get('tournamentId'))
   if (!tournamentId || isNaN(tournamentId)) return { success: false, error: 'Invalid tournament ID' }
   await prisma.tournament.update({
@@ -392,6 +397,7 @@ export async function archiveTournament(prevState: unknown, formData: FormData) 
 }
 
 export async function recalculateTournamentPoints(prevState: unknown, formData: FormData) {
+  await requireAdmin()
   const tournamentId = Number(formData.get('tournamentId'))
   if (!tournamentId || isNaN(tournamentId)) return { success: false, error: 'Invalid tournament ID' }
   const matches = await prisma.match.findMany({

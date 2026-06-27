@@ -7,6 +7,7 @@ import { requireAdmin, requireAuth } from '@/lib/auth'
 import { getSession } from '@/lib/session'
 import { getAppUrl } from '@/lib/app-url'
 import { userCanManageChampionship } from '@/lib/championships'
+import { getSelectedTournament } from '@/lib/tournament'
 import { hashInviteToken } from '@/lib/invites'
 import { logAdminAction } from '@/lib/audit'
 
@@ -28,8 +29,11 @@ export async function createChampionship(prevState: unknown, formData: FormData)
 
   if (!name || name.length < 2 || name.length > 60) return { error: 'Championship name must be 2-60 characters' }
 
+  const tournament = await getSelectedTournament(session)
+  if (!tournament) return { error: 'No active tournament selected' }
+
   try {
-    const championship = await prisma.championship.create({ data: { name, description, tournamentId: 1 } })
+    const championship = await prisma.championship.create({ data: { name, description, tournamentId: tournament.id } })
     await logAdminAction({
       adminId: session.userId!,
       adminUsername: session.username ?? String(session.userId),
