@@ -37,7 +37,7 @@ describe('getActiveTournaments', () => {
     expect(result).toHaveLength(1)
     expect(result[0].competitionCode).toBe('WC')
     expect(prisma.tournament.findMany).toHaveBeenCalledWith(
-      expect.objectContaining({ where: { isActive: true } })
+      expect.objectContaining({ where: { isActive: true }, orderBy: { startDate: 'desc' } })
     )
   })
 })

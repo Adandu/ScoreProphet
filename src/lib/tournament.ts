@@ -12,7 +12,7 @@ export async function getActiveTournaments(): Promise<Tournament[]> {
 }
 
 export async function getSelectedTournament(session: Partial<SessionData>): Promise<Tournament | null> {
-  if (session.selectedTournamentId) {
+  if (session.selectedTournamentId !== undefined) {
     return prisma.tournament.findFirst({
       where: { id: session.selectedTournamentId },
     })
