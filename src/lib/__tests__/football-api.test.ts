@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { fetchAllMatches, fetchAllTeams, fetchLiveMatches, fetchStandings, fetchTopScorers, type NormalizedMatch, type NormalizedTeam } from '@/lib/football-api'
+import { fetchAllMatches, fetchAllTeams, fetchAvailableCompetitions, fetchLiveMatches, fetchStandings, fetchTopScorers, type NormalizedMatch, type NormalizedTeam } from '@/lib/football-api'
 
 // We test normalizeMatch and normalizeTeam indirectly by mocking fetch and
 // calling the public fetchAllMatches / fetchAllTeams functions, which pipe
@@ -335,5 +335,39 @@ describe('fetchTopScorers', () => {
     mockFetch({ scorers: [{ player: { name: 'X' }, goals: 3 }] })
     const [s] = await fetchTopScorers()
     expect(s).toMatchObject({ playerName: 'X', teamName: '', goals: 3, assists: 0, penalties: 0 })
+  })
+})
+
+// ---------------------------------------------------------------------------
+// fetchAvailableCompetitions
+// ---------------------------------------------------------------------------
+
+describe('fetchAvailableCompetitions', () => {
+  it('returns normalized competitions from API response', async () => {
+    mockFetch({
+      competitions: [
+        {
+          code: 'WC',
+          name: 'FIFA World Cup',
+          type: 'CUP',
+          currentSeason: { id: 1, startDate: '2026-06-11', endDate: '2026-07-19' },
+        },
+        {
+          code: 'CL',
+          name: 'UEFA Champions League',
+          type: 'CUP',
+          currentSeason: null,
+        },
+      ],
+    })
+    const result = await fetchAvailableCompetitions()
+    expect(result).toHaveLength(2)
+    expect(result[0]).toEqual({
+      code: 'WC',
+      name: 'FIFA World Cup',
+      type: 'CUP',
+      currentSeason: { id: 1, startDate: '2026-06-11', endDate: '2026-07-19' },
+    })
+    expect(result[1].currentSeason).toBeNull()
   })
 })

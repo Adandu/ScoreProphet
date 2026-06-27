@@ -1,7 +1,6 @@
 import type { Stage } from '@/lib/types'
 
 const BASE_URL = 'https://api.football-data.org/v4'
-const COMPETITION = process.env.FOOTBALL_API_COMPETITION ?? 'WC'
 const FOOTBALL_API_KEY = process.env.FOOTBALL_API_KEY
 
 if (!FOOTBALL_API_KEY && process.env.NODE_ENV === 'production') {
@@ -194,9 +193,9 @@ export interface TopScorer {
   penalties: number
 }
 
-export async function fetchStandings(): Promise<StandingsGroup[]> {
+export async function fetchStandings(competitionCode = 'WC'): Promise<StandingsGroup[]> {
   const res = await fetch(
-    `${BASE_URL}/competitions/${COMPETITION}/standings`,
+    `${BASE_URL}/competitions/${competitionCode}/standings`,
     { headers: getHeaders(), next: { revalidate: 300 } },
   )
   if (!res.ok) {
@@ -229,9 +228,9 @@ export async function fetchStandings(): Promise<StandingsGroup[]> {
     }))
 }
 
-export async function fetchTopScorers(limit = 20): Promise<TopScorer[]> {
+export async function fetchTopScorers(competitionCode = 'WC', limit = 20): Promise<TopScorer[]> {
   const res = await fetch(
-    `${BASE_URL}/competitions/${COMPETITION}/scorers?limit=${limit}`,
+    `${BASE_URL}/competitions/${competitionCode}/scorers?limit=${limit}`,
     { headers: getHeaders(), next: { revalidate: 300 } },
   )
   if (!res.ok) {
@@ -318,9 +317,10 @@ function normalizeMatch(m: any): NormalizedMatch {
   }
 }
 
-export async function fetchAllMatches(): Promise<NormalizedMatch[]> {
+export async function fetchAllMatches(competitionCode = 'WC', season?: string): Promise<NormalizedMatch[]> {
+  const seasonParam = season ? `?season=${season}` : ''
   const res = await fetch(
-    `${BASE_URL}/competitions/${COMPETITION}/matches`,
+    `${BASE_URL}/competitions/${competitionCode}/matches${seasonParam}`,
     {
       headers: getHeaders(),
       next: { revalidate: 60 },
@@ -334,9 +334,9 @@ export async function fetchAllMatches(): Promise<NormalizedMatch[]> {
   return (data.matches ?? []).map((m: any) => normalizeMatch(m))
 }
 
-export async function fetchLiveMatches(): Promise<NormalizedMatch[]> {
+export async function fetchLiveMatches(competitionCode = 'WC'): Promise<NormalizedMatch[]> {
   const res = await fetch(
-    `${BASE_URL}/competitions/${COMPETITION}/matches?status=IN_PLAY,PAUSED`,
+    `${BASE_URL}/competitions/${competitionCode}/matches?status=IN_PLAY,PAUSED`,
     {
       headers: getHeaders(),
       next: { revalidate: 5 },
@@ -351,13 +351,13 @@ export async function fetchLiveMatches(): Promise<NormalizedMatch[]> {
   return matches.map((m: any) => normalizeMatch(m))
 }
 
-export async function fetchAllTeams(): Promise<NormalizedTeam[]> {
+export async function fetchAllTeams(competitionCode = 'WC'): Promise<NormalizedTeam[]> {
   if (process.env.NODE_ENV !== 'test' && teamsCache && Date.now() < teamsCache.expiresAt) {
     return teamsCache.teams
   }
 
   const res = await fetch(
-    `${BASE_URL}/competitions/${COMPETITION}/teams`,
+    `${BASE_URL}/competitions/${competitionCode}/teams`,
     {
       headers: getHeaders(),
       next: { revalidate: 60 },
@@ -589,6 +589,33 @@ export async function fetchLiveMatchDetails(matchId: string | number): Promise<L
       scored: p.scored === true,
     })),
   }
+}
+
+export interface AvailableCompetition {
+  code: string
+  name: string
+  type: string
+  currentSeason: { id: number; startDate: string; endDate: string } | null
+}
+
+export async function fetchAvailableCompetitions(): Promise<AvailableCompetition[]> {
+  const res = await fetch(`${BASE_URL}/competitions`, {
+    headers: { 'X-Auth-Token': FOOTBALL_API_KEY ?? '' },
+  })
+  if (!res.ok) throw new Error(`football-api fetchAvailableCompetitions ${res.status}`)
+  const data = await res.json()
+  return (data.competitions ?? []).map((c: Record<string, unknown>) => ({
+    code: c.code as string,
+    name: (c.name as string) ?? '',
+    type: (c.type as string) ?? '',
+    currentSeason: c.currentSeason
+      ? {
+          id: (c.currentSeason as Record<string, unknown>).id as number,
+          startDate: (c.currentSeason as Record<string, unknown>).startDate as string,
+          endDate: (c.currentSeason as Record<string, unknown>).endDate as string,
+        }
+      : null,
+  }))
 }
 
 function normalizeTeamStatType(value: string | undefined): 'CORNERS' | 'FREE_KICKS' | 'GOAL_KICKS' | 'OFFSIDES' | 'FOULS' | 'SAVES' | 'THROW_INS' | 'SHOTS' | 'SHOTS_ON_GOAL' | 'SHOTS_OFF_GOAL' | 'YELLOW_CARDS' | 'RED_CARDS' | null {

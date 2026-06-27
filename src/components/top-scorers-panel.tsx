@@ -4,7 +4,7 @@ import { fetchTopScorers, type TopScorer } from '@/lib/football-api'
 export async function TopScorersPanel() {
   let scorers: TopScorer[] = []
   try {
-    scorers = await fetchTopScorers(20)
+    scorers = await fetchTopScorers('WC', 20)
   } catch {
     scorers = []
   }
