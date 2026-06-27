@@ -5,6 +5,7 @@ import { fetchStandings } from '@/lib/football-api'
 import { computeFormByTeam } from '@/lib/team-form'
 import { GroupStageTab } from '@/components/group-stage-tab'
 import { KnockoutBracket } from '@/components/knockout-bracket'
+import { MatchScheduleList } from '@/components/match-schedule-list'
 import { TournamentTabs } from '@/components/tournament-tabs'
 import { TournamentStatisticsPanel } from '@/components/tournament-statistics-panel'
 import { TopScorersPanel } from '@/components/top-scorers-panel'
@@ -89,27 +90,45 @@ export default async function TournamentPage() {
             />
           }
           bracket={
-            <KnockoutBracket
-              timezone={timezone}
-              matches={knockoutMatches.map((match) => ({
-                id: match.id,
-                homeTeam: match.homeTeam,
-                awayTeam: match.awayTeam,
-                homeTeamCrest: match.homeTeamCrest || undefined,
-                awayTeamCrest: match.awayTeamCrest || undefined,
-                homeTeamUrl: teamIdByName[match.homeTeam] ? `/teams/${teamIdByName[match.homeTeam]}` : undefined,
-                awayTeamUrl: teamIdByName[match.awayTeam] ? `/teams/${teamIdByName[match.awayTeam]}` : undefined,
-                homeScore: match.fullTimeHomeScore ?? match.homeScore,
-                awayScore: match.fullTimeAwayScore ?? match.awayScore,
-                scoreDuration: match.scoreDuration,
-                penaltiesHomeScore: match.penaltiesHomeScore,
-                penaltiesAwayScore: match.penaltiesAwayScore,
-                winnerTeam: match.winnerTeam,
-                status: match.status,
-                stage: match.stage,
-                kickoff: match.kickoff.toISOString(),
-              }))}
-            />
+            tournament?.type === 'WORLD_CUP' ? (
+              <KnockoutBracket
+                timezone={timezone}
+                matches={knockoutMatches.map((match) => ({
+                  id: match.id,
+                  homeTeam: match.homeTeam,
+                  awayTeam: match.awayTeam,
+                  homeTeamCrest: match.homeTeamCrest || undefined,
+                  awayTeamCrest: match.awayTeamCrest || undefined,
+                  homeTeamUrl: teamIdByName[match.homeTeam] ? `/teams/${teamIdByName[match.homeTeam]}` : undefined,
+                  awayTeamUrl: teamIdByName[match.awayTeam] ? `/teams/${teamIdByName[match.awayTeam]}` : undefined,
+                  homeScore: match.fullTimeHomeScore ?? match.homeScore,
+                  awayScore: match.fullTimeAwayScore ?? match.awayScore,
+                  scoreDuration: match.scoreDuration,
+                  penaltiesHomeScore: match.penaltiesHomeScore,
+                  penaltiesAwayScore: match.penaltiesAwayScore,
+                  winnerTeam: match.winnerTeam,
+                  status: match.status,
+                  stage: match.stage,
+                  kickoff: match.kickoff.toISOString(),
+                }))}
+              />
+            ) : (
+              <MatchScheduleList
+                matches={[...groupMatches, ...knockoutMatches].map((m) => ({
+                  id: m.id,
+                  homeTeam: m.homeTeam,
+                  awayTeam: m.awayTeam,
+                  homeTeamCrest: m.homeTeamCrest || undefined,
+                  awayTeamCrest: m.awayTeamCrest || undefined,
+                  homeScore: m.homeScore,
+                  awayScore: m.awayScore,
+                  status: m.status,
+                  stage: m.stage,
+                  kickoff: m.kickoff.toISOString(),
+                }))}
+                timezone={timezone}
+              />
+            )
           }
           teams={teamsTab}
           scorers={<TopScorersPanel />}
