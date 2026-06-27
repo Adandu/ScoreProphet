@@ -196,7 +196,7 @@ export default async function ChampionshipPredictionsPage({
                           doubleChanceEnabled={championship.doubleChanceEnabled}
                           isArchived={isArchived}
                         />
-                        {(visibleExisting.length > 0 || advanceByMatch[match.id]) && (
+                        {!isArchived && (visibleExisting.length > 0 || advanceByMatch[match.id]) && (
                           <ResetButton matchId={match.id} championshipId={championshipId} />
                         )}
                       </>
