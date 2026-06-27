@@ -5,9 +5,17 @@ import { TimezoneSelector } from '@/components/timezone-selector'
 import { ChampionshipSelector } from '@/components/championship-selector'
 import { UsernameDropdown } from '@/components/username-dropdown'
 import { MobileMenu } from '@/components/mobile-menu'
+import { TournamentSwitcher } from '@/components/tournament-switcher'
 import { prisma } from '@/lib/db'
+import type { Tournament } from '@prisma/client'
 
-export async function Navbar() {
+interface NavbarProps {
+  activeTournaments?: Tournament[]
+  selectedTournamentId?: number | null
+  isArchivedView?: boolean
+}
+
+export async function Navbar({ activeTournaments = [], selectedTournamentId = null, isArchivedView = false }: NavbarProps) {
   const user = await getCurrentUser()
   const [championships, selectedChampionship, managedChampionships] = user
     ? await Promise.all([
@@ -66,6 +74,7 @@ export async function Navbar() {
 
             {/* Desktop right-side controls */}
             <div className="hidden items-center gap-3 lg:flex">
+              <TournamentSwitcher tournaments={activeTournaments} selectedId={selectedTournamentId} />
               {championships.length > 1 && selectedChampionship && (
                 <ChampionshipSelector
                   championships={championships.map((c) => ({ id: c.id, name: c.name }))}
