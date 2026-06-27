@@ -15,11 +15,54 @@ interface Props {
   availableCompetitions: AvailableCompetition[]
 }
 
+function TournamentRow({ tournament }: { tournament: Tournament }) {
+  const [syncState, syncAction, syncPending] = useActionState(syncTournamentFixtures, null)
+  const [recalcState, recalcAction, recalcPending] = useActionState(recalculateTournamentPoints, null)
+  const [archiveState, archiveAction, archivePending] = useActionState(archiveTournament, null)
+
+  return (
+    <div className="flex items-center justify-between rounded-lg border border-white/10 bg-white/5 p-4">
+      <div>
+        <p className="font-medium text-white">{tournament.name}</p>
+        <p className="text-sm text-white/50">{tournament.competitionCode} · {tournament.season} · {tournament.type}</p>
+        {tournament.isArchived && <span className="text-xs text-amber-400">Archived</span>}
+        {syncState?.success && <p className="text-xs text-green-400">Synced {syncState.synced} matches</p>}
+        {syncState?.error && <p className="text-xs text-red-400">{syncState.error}</p>}
+        {recalcState?.success && <p className="text-xs text-green-400">Recalculated {recalcState.count} matches</p>}
+        {recalcState?.error && <p className="text-xs text-red-400">{recalcState.error}</p>}
+        {archiveState?.error && <p className="text-xs text-red-400">{archiveState.error}</p>}
+      </div>
+      <div className="flex gap-2">
+        <form action={syncAction}>
+          <input type="hidden" name="tournamentId" value={tournament.id} />
+          <button type="submit" disabled={syncPending}
+            className="rounded bg-blue-600 px-3 py-1 text-sm text-white hover:bg-blue-700 disabled:opacity-50">
+            {syncPending ? 'Syncing…' : 'Sync'}
+          </button>
+        </form>
+        <form action={recalcAction}>
+          <input type="hidden" name="tournamentId" value={tournament.id} />
+          <button type="submit" disabled={recalcPending}
+            className="rounded bg-purple-600 px-3 py-1 text-sm text-white hover:bg-purple-700 disabled:opacity-50">
+            {recalcPending ? 'Recalc…' : 'Recalculate'}
+          </button>
+        </form>
+        {!tournament.isArchived && (
+          <form action={archiveAction}>
+            <input type="hidden" name="tournamentId" value={tournament.id} />
+            <button type="submit" disabled={archivePending}
+              className="rounded bg-amber-600 px-3 py-1 text-sm text-white hover:bg-amber-700 disabled:opacity-50">
+              {archivePending ? 'Archiving…' : 'Archive'}
+            </button>
+          </form>
+        )}
+      </div>
+    </div>
+  )
+}
+
 export function TournamentManager({ tournaments, availableCompetitions }: Props) {
   const [createState, createAction, createPending] = useActionState(createTournamentFromApi, null)
-  const [syncState, syncAction, syncPending] = useActionState(syncTournamentFixtures, null)
-  const [archiveState, archiveAction, archivePending] = useActionState(archiveTournament, null)
-  const [recalcState, recalcAction, recalcPending] = useActionState(recalculateTournamentPoints, null)
   const [selectedCode, setSelectedCode] = useState('')
 
   const selected = availableCompetitions.find((c) => c.code === selectedCode)
@@ -30,44 +73,7 @@ export function TournamentManager({ tournaments, availableCompetitions }: Props)
 
       {/* Existing tournaments */}
       <div className="space-y-3">
-        {tournaments.map((t) => (
-          <div key={t.id} className="flex items-center justify-between rounded-lg border border-white/10 bg-white/5 p-4">
-            <div>
-              <p className="font-medium text-white">{t.name}</p>
-              <p className="text-sm text-white/50">{t.competitionCode} · {t.season} · {t.type}</p>
-              {t.isArchived && <span className="text-xs text-amber-400">Archived</span>}
-            </div>
-            <div className="flex gap-2">
-              <form action={syncAction}>
-                <input type="hidden" name="tournamentId" value={t.id} />
-                <button type="submit" disabled={syncPending}
-                  className="rounded bg-blue-600 px-3 py-1 text-sm text-white hover:bg-blue-700 disabled:opacity-50">
-                  {syncPending ? 'Syncing…' : 'Sync'}
-                </button>
-              </form>
-              <form action={recalcAction}>
-                <input type="hidden" name="tournamentId" value={t.id} />
-                <button type="submit" disabled={recalcPending}
-                  className="rounded bg-purple-600 px-3 py-1 text-sm text-white hover:bg-purple-700 disabled:opacity-50">
-                  {recalcPending ? 'Recalc…' : 'Recalculate'}
-                </button>
-              </form>
-              {!t.isArchived && (
-                <form action={archiveAction}>
-                  <input type="hidden" name="tournamentId" value={t.id} />
-                  <button type="submit" disabled={archivePending}
-                    className="rounded bg-amber-600 px-3 py-1 text-sm text-white hover:bg-amber-700 disabled:opacity-50">
-                    Archive
-                  </button>
-                </form>
-              )}
-            </div>
-          </div>
-        ))}
-        {syncState?.error && <p className="text-sm text-red-400">{syncState.error}</p>}
-        {syncState?.success && <p className="text-sm text-green-400">Synced {syncState.synced} matches.</p>}
-        {recalcState?.success && <p className="text-sm text-green-400">Recalculated {recalcState.count} matches.</p>}
-        {archiveState?.success && <p className="text-sm text-green-400">Tournament archived.</p>}
+        {tournaments.map((t) => <TournamentRow key={t.id} tournament={t} />)}
       </div>
 
       {/* Add tournament */}

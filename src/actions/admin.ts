@@ -312,7 +312,6 @@ function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms))
 }
 
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
 export async function listTournamentsForAdmin() {
   return prisma.tournament.findMany({ orderBy: { startDate: 'desc' } })
 }
@@ -340,19 +339,24 @@ export async function createTournamentFromApi(prevState: unknown, formData: Form
             startDate: new Date(startDate), endDate: new Date(endDate) },
   })
 
-  // Initial fixture sync
-  const { fetchAllMatches } = await import('@/lib/football-api')
-  const matches = await fetchAllMatches(code, season || undefined)
+  // Initial fixture sync — roll back tournament if sync fails
   let synced = 0
-  for (const m of matches) {
-    await prisma.match.upsert({
-      where: { externalId: m.externalId },
-      update: { homeTeam: m.homeTeam, awayTeam: m.awayTeam, stage: m.stage,
-                group: m.group, kickoff: m.kickoff, status: m.status,
-                competitionCode: code, tournamentId: tournament.id },
-      create: { ...m, competitionCode: code, tournamentId: tournament.id },
-    })
-    synced++
+  try {
+    const { fetchAllMatches } = await import('@/lib/football-api')
+    const matches = await fetchAllMatches(code, season ?? undefined)
+    for (const m of matches) {
+      await prisma.match.upsert({
+        where: { externalId: m.externalId },
+        update: { homeTeam: m.homeTeam, awayTeam: m.awayTeam, stage: m.stage,
+                  group: m.group, kickoff: m.kickoff, status: m.status,
+                  competitionCode: code, tournamentId: tournament.id },
+        create: { ...m, competitionCode: code, tournamentId: tournament.id },
+      })
+      synced++
+    }
+  } catch (err) {
+    await prisma.tournament.delete({ where: { id: tournament.id } })
+    return { success: false, error: `Tournament created but fixture sync failed: ${err instanceof Error ? err.message : String(err)}` }
   }
   return { success: true, synced, tournamentId: tournament.id }
 }
@@ -379,6 +383,7 @@ export async function syncTournamentFixtures(prevState: unknown, formData: FormD
 
 export async function archiveTournament(prevState: unknown, formData: FormData) {
   const tournamentId = Number(formData.get('tournamentId'))
+  if (!tournamentId || isNaN(tournamentId)) return { success: false, error: 'Invalid tournament ID' }
   await prisma.tournament.update({
     where: { id: tournamentId },
     data: { isActive: false, isArchived: true },
@@ -388,6 +393,7 @@ export async function archiveTournament(prevState: unknown, formData: FormData) 
 
 export async function recalculateTournamentPoints(prevState: unknown, formData: FormData) {
   const tournamentId = Number(formData.get('tournamentId'))
+  if (!tournamentId || isNaN(tournamentId)) return { success: false, error: 'Invalid tournament ID' }
   const matches = await prisma.match.findMany({
     where: { tournamentId, status: 'FINISHED' },
     select: { id: true },
