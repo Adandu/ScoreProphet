@@ -122,6 +122,16 @@ async function fetchAllTeams() {
 
 async function main() {
   console.log(`[seed] Syncing ${COMPETITION} matches from football-data.org...`)
+
+  const tournament = await prisma.tournament.findFirst({
+    where: { competitionCode: COMPETITION, isActive: true },
+    orderBy: { startDate: 'desc' },
+  })
+  if (!tournament) {
+    console.warn(`[seed] No active tournament found for competition code ${COMPETITION}, skipping match sync.`)
+    return
+  }
+
   let matches
   try {
     matches = await fetchAllMatches()
@@ -141,7 +151,7 @@ async function main() {
     await prisma.match.upsert({
       where: { externalId: match.externalId },
       update: match,
-      create: match,
+      create: { ...match, tournamentId: tournament.id },
     })
   }
   console.log(`[seed] Synced ${matches.length} matches.`)
