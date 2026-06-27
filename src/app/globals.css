@@ -18,6 +18,11 @@ body {
   min-height: 100vh;
 }
 
+option {
+  background-color: #0A1628;
+  color: #ffffff;
+}
+
 .light body {
   background-color: var(--background);
   color: var(--foreground);
@@ -79,5 +84,10 @@ body {
 .light input,
 .light select,
 .light textarea {
+  color: rgb(15 23 42);
+}
+
+.light option {
+  background-color: #f4f7fb;
   color: rgb(15 23 42);
 }
