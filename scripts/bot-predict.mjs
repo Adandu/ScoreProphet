@@ -69,9 +69,12 @@ function findMatchesToPredict(botId) {
     SELECT m.id, m.externalId, m.homeTeam, m.awayTeam, m.kickoff,
            m.stage, m."group", m.headToHeadJson, m.competitionCode
     FROM Match m
+    JOIN Tournament t ON t.id = m.tournamentId
     WHERE m.status = 'SCHEDULED'
       AND m.kickoff <= ?
       AND m.kickoff > datetime('now')
+      AND t.isActive = 1
+      AND t.isArchived = 0
   `).all(cutoff)
 
   // Filter to matches where bot has no prediction yet

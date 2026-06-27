@@ -51,7 +51,6 @@ function calculateTournamentWinnerPoints(predictedTeam, actualWinner) {
 }
 
 // scripts/sync-scores.ts
-var COMPETITION = process.env.FOOTBALL_API_COMPETITION ?? "WC";
 var BASE_URL = "https://api.football-data.org/v4";
 var dbUrl = (process.env.DATABASE_URL ?? "file:./dev.db").replace(/^file:/, "");
 var adapter = new PrismaBetterSqlite3({ url: dbUrl });
@@ -125,25 +124,38 @@ async function recalculateMatchPoints(match) {
   if (ops.length > 0) await prisma.$transaction(ops);
 }
 async function main() {
+  const activeTournaments = await prisma.tournament.findMany({
+    where: { isActive: true, isArchived: false },
+    select: { id: true, competitionCode: true }
+  });
+  if (activeTournaments.length === 0) {
+    console.log("[score-sync] No active tournaments to sync.");
+    return;
+  }
+  const activeTournamentIds = activeTournaments.map((t) => t.id);
   const now = /* @__PURE__ */ new Date();
   const windowStart = new Date(now.getTime() - 3 * 60 * 60 * 1e3);
   const windowEnd = new Date(now.getTime() + 15 * 60 * 1e3);
   const [dbLiveMatches, nearKickoffCount] = await Promise.all([
-    prisma.match.findMany({ where: { status: "LIVE" } }),
-    prisma.match.count({ where: { kickoff: { gte: windowStart, lte: windowEnd }, status: "SCHEDULED" } })
+    prisma.match.findMany({ where: { status: "LIVE", tournamentId: { in: activeTournamentIds } } }),
+    prisma.match.count({ where: { kickoff: { gte: windowStart, lte: windowEnd }, status: "SCHEDULED", tournamentId: { in: activeTournamentIds } } })
   ]);
   if (dbLiveMatches.length === 0 && nearKickoffCount === 0) return;
-  const res = await fetch(`${BASE_URL}/competitions/${COMPETITION}/matches?status=IN_PLAY,PAUSED`, {
-    headers: getHeaders()
-  });
-  if (!res.ok) {
-    if (res.status === 429) {
-      console.warn("[score-sync] Rate limited by API");
-      return;
+  const apiLiveMatches = [];
+  for (const tournament of activeTournaments) {
+    const res = await fetch(`${BASE_URL}/competitions/${tournament.competitionCode}/matches?status=IN_PLAY,PAUSED`, {
+      headers: getHeaders()
+    });
+    if (!res.ok) {
+      if (res.status === 429) {
+        console.warn("[score-sync] Rate limited by API");
+        return;
+      }
+      throw new Error(`[score-sync] API error ${res.status}: ${res.statusText}`);
     }
-    throw new Error(`[score-sync] API error ${res.status}: ${res.statusText}`);
+    const data = await res.json();
+    apiLiveMatches.push(...(data.matches ?? []));
   }
-  const apiLiveMatches = (await res.json()).matches ?? [];
   const apiLiveIds = new Set(apiLiveMatches.map((m) => String(m.id)));
   let updated = 0;
   for (const m of apiLiveMatches) {

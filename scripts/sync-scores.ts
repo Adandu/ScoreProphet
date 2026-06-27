@@ -8,7 +8,6 @@ import {
 } from '../src/lib/scoring'
 import type { PredictionType } from '../src/lib/types'
 
-const COMPETITION = process.env.FOOTBALL_API_COMPETITION ?? 'WC'
 const BASE_URL = 'https://api.football-data.org/v4'
 const dbUrl = (process.env.DATABASE_URL ?? 'file:./dev.db').replace(/^file:/, '')
 const adapter = new PrismaBetterSqlite3({ url: dbUrl })
@@ -28,6 +27,13 @@ type ApiScore = {
   fullTime?: ApiScoreSide
   extraTime?: ApiScoreSide
   penalties?: ApiScoreSide
+}
+type ApiMatch = {
+  id: number | string
+  status: string
+  score?: ApiScore
+  homeTeam?: { name?: string }
+  awayTeam?: { name?: string }
 }
 
 function getHeaders(): Record<string, string> {
@@ -104,6 +110,19 @@ async function recalculateMatchPoints(match: Match) {
 }
 
 async function main() {
+  // Fetch active, non-archived tournaments to scope all sync operations
+  const activeTournaments = await prisma.tournament.findMany({
+    where: { isActive: true, isArchived: false },
+    select: { id: true, competitionCode: true },
+  })
+
+  if (activeTournaments.length === 0) {
+    console.log('[score-sync] No active tournaments to sync.')
+    return
+  }
+
+  const activeTournamentIds = activeTournaments.map(t => t.id)
+
   // Skip unless a match is live, or a scheduled match is near its kickoff window
   // (15 min before kickoff up to 3 h after, to cover delayed kickoffs).
   // Keeps the 5-second sync loop from hitting the API outside match windows.
@@ -112,22 +131,27 @@ async function main() {
   const windowEnd = new Date(now.getTime() + 15 * 60 * 1000)
 
   const [dbLiveMatches, nearKickoffCount] = await Promise.all([
-    prisma.match.findMany({ where: { status: 'LIVE' } }),
-    prisma.match.count({ where: { kickoff: { gte: windowStart, lte: windowEnd }, status: 'SCHEDULED' } }),
+    prisma.match.findMany({ where: { status: 'LIVE', tournamentId: { in: activeTournamentIds } } }),
+    prisma.match.count({ where: { kickoff: { gte: windowStart, lte: windowEnd }, status: 'SCHEDULED', tournamentId: { in: activeTournamentIds } } }),
   ])
 
   if (dbLiveMatches.length === 0 && nearKickoffCount === 0) return
 
-  // Fetch live matches from API
-  const res = await fetch(`${BASE_URL}/competitions/${COMPETITION}/matches?status=IN_PLAY,PAUSED`, {
-    headers: getHeaders(),
-  })
-  if (!res.ok) {
-    if (res.status === 429) { console.warn('[score-sync] Rate limited by API'); return }
-    throw new Error(`[score-sync] API error ${res.status}: ${res.statusText}`)
+  // Collect live matches from API for each active tournament
+  const apiLiveMatches: ApiMatch[] = []
+  for (const tournament of activeTournaments) {
+    const res = await fetch(`${BASE_URL}/competitions/${tournament.competitionCode}/matches?status=IN_PLAY,PAUSED`, {
+      headers: getHeaders(),
+    })
+    if (!res.ok) {
+      if (res.status === 429) { console.warn('[score-sync] Rate limited by API'); return }
+      throw new Error(`[score-sync] API error ${res.status}: ${res.statusText}`)
+    }
+    const data = await res.json()
+    apiLiveMatches.push(...((data.matches ?? []) as ApiMatch[]))
   }
-  const apiLiveMatches = (await res.json()).matches ?? []
-  const apiLiveIds = new Set(apiLiveMatches.map((m: { id: number | string }) => String(m.id)))
+
+  const apiLiveIds = new Set(apiLiveMatches.map(m => String(m.id)))
 
   let updated = 0
 
