@@ -1,6 +1,7 @@
 'use server'
 
 import { revalidatePath } from 'next/cache'
+import { redirect } from 'next/navigation'
 import { prisma } from '@/lib/db'
 import { requireAdmin } from '@/lib/auth'
 import { calculatePredictionPoints, calculateAdvancePointsForMatch, calculateTournamentWinnerPoints } from '@/lib/scoring'
@@ -408,6 +409,16 @@ export async function recalculateTournamentPoints(prevState: unknown, formData: 
     await recalculateMatchPoints(m.id)
   }
   return { success: true, count: matches.length }
+}
+
+export async function deleteTournament(prevState: unknown, formData: FormData) {
+  await requireAdmin()
+  const tournamentId = Number(formData.get('tournamentId'))
+  if (!tournamentId || isNaN(tournamentId)) return { success: false, error: 'Invalid tournament ID' }
+  await prisma.match.deleteMany({ where: { tournamentId } })
+  await prisma.championship.deleteMany({ where: { tournamentId } })
+  await prisma.tournament.delete({ where: { id: tournamentId } })
+  redirect('/')
 }
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars

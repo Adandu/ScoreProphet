@@ -6,6 +6,7 @@ import {
   syncTournamentFixtures,
   archiveTournament,
   recalculateTournamentPoints,
+  deleteTournament,
 } from '@/actions/admin'
 import type { Tournament } from '@prisma/client'
 import type { AvailableCompetition } from '@/lib/football-api'
@@ -19,6 +20,8 @@ function TournamentRow({ tournament }: { tournament: Tournament }) {
   const [syncState, syncAction, syncPending] = useActionState(syncTournamentFixtures, null)
   const [recalcState, recalcAction, recalcPending] = useActionState(recalculateTournamentPoints, null)
   const [archiveState, archiveAction, archivePending] = useActionState(archiveTournament, null)
+  const [deleteState, deleteAction, deletePending] = useActionState(deleteTournament, null)
+  const [confirmingDelete, setConfirmingDelete] = useState(false)
 
   return (
     <div className="flex items-center justify-between rounded-lg border border-white/10 bg-white/5 p-4">
@@ -31,8 +34,9 @@ function TournamentRow({ tournament }: { tournament: Tournament }) {
         {recalcState?.success && <p className="text-xs text-green-400">Recalculated {recalcState.count} matches</p>}
         {recalcState?.error && <p className="text-xs text-red-400">{recalcState.error}</p>}
         {archiveState?.error && <p className="text-xs text-red-400">{archiveState.error}</p>}
+        {deleteState?.error && <p className="text-xs text-red-400">{deleteState.error}</p>}
       </div>
-      <div className="flex gap-2">
+      <div className="flex gap-2 items-center">
         <form action={syncAction}>
           <input type="hidden" name="tournamentId" value={tournament.id} />
           <button type="submit" disabled={syncPending}
@@ -55,6 +59,27 @@ function TournamentRow({ tournament }: { tournament: Tournament }) {
               {archivePending ? 'Archiving…' : 'Archive'}
             </button>
           </form>
+        )}
+        {confirmingDelete ? (
+          <div className="flex gap-2 items-center">
+            <span className="text-xs text-red-400">Delete all data?</span>
+            <form action={deleteAction}>
+              <input type="hidden" name="tournamentId" value={tournament.id} />
+              <button type="submit" disabled={deletePending}
+                className="rounded bg-red-600 px-3 py-1 text-sm text-white hover:bg-red-700 disabled:opacity-50">
+                {deletePending ? 'Deleting…' : 'Yes, delete'}
+              </button>
+            </form>
+            <button onClick={() => setConfirmingDelete(false)}
+              className="rounded bg-white/10 px-3 py-1 text-sm text-white hover:bg-white/20">
+              Cancel
+            </button>
+          </div>
+        ) : (
+          <button onClick={() => setConfirmingDelete(true)}
+            className="rounded bg-red-900/60 px-3 py-1 text-sm text-red-300 hover:bg-red-700 hover:text-white">
+            Delete
+          </button>
         )}
       </div>
     </div>
