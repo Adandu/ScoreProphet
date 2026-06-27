@@ -13,18 +13,19 @@ export interface ChampionshipSummary {
   isManager?: boolean
 }
 
-export const getUserChampionships = cache(async (userId: number): Promise<ChampionshipSummary[]> => {
+export const getUserChampionships = cache(async (userId: number, tournamentId?: number): Promise<ChampionshipSummary[]> => {
+  const tournamentFilter = tournamentId ? { tournamentId } : {}
   const [memberships, managerAssignments] = await Promise.all([
     prisma.championshipMember.findMany({
       where: {
         userId,
-        championship: { isActive: true },
+        championship: { isActive: true, ...tournamentFilter },
       },
       include: { championship: true },
       orderBy: { championship: { name: 'asc' } },
     }),
     prisma.championshipManager.findMany({
-      where: { userId, championship: { isActive: true } },
+      where: { userId, championship: { isActive: true, ...tournamentFilter } },
       include: { championship: true },
     }),
   ])

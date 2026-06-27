@@ -2,6 +2,7 @@ import type { ReactNode } from 'react'
 import { requireChampionshipAccessLean, getUserChampionships } from '@/lib/championships'
 import { ChampionshipSelector } from '@/components/championship-selector'
 import { ChampionshipTabBar } from '@/components/championship-tab-bar'
+import { getCurrentTournament } from '@/lib/selected-tournament'
 
 export default async function ChampionshipLayout({
   children,
@@ -12,8 +13,11 @@ export default async function ChampionshipLayout({
 }) {
   const { championshipId: rawId } = await params
   const championshipId = parseInt(rawId, 10)
-  const { session, championship } = await requireChampionshipAccessLean(championshipId)
-  const championships = await getUserChampionships(session.userId!)
+  const [{ session, championship }, currentTournament] = await Promise.all([
+    requireChampionshipAccessLean(championshipId),
+    getCurrentTournament(),
+  ])
+  const championships = await getUserChampionships(session.userId!, currentTournament?.id)
 
   return (
     <div className="space-y-6">

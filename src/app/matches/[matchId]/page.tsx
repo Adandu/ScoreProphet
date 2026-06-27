@@ -1,4 +1,4 @@
-import { notFound } from 'next/navigation'
+import { notFound, redirect } from 'next/navigation'
 import { BackButton } from '@/components/back-button'
 import { prisma } from '@/lib/db'
 import { requireAuth } from '@/lib/auth'
@@ -21,7 +21,7 @@ export default async function MatchDetailPage({ params }: { params: Promise<{ ma
   ])
   if (!match || match.status !== 'FINISHED') notFound()
   // Verify the match belongs to the currently selected tournament
-  if (tournament && match.tournamentId !== tournament.id) notFound()
+  if (tournament && match.tournamentId !== tournament.id) redirect('/')
 
   const teamUrlByName: Record<string, string> = {}
   for (const t of dbTeams) if (t.externalId) teamUrlByName[t.name] = t.externalId

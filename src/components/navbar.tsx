@@ -19,7 +19,7 @@ export async function Navbar({ activeTournaments = [], selectedTournamentId = nu
   const user = await getCurrentUser()
   const [championships, selectedChampionship, managedChampionships] = user
     ? await Promise.all([
-        getUserChampionships(user.userId),
+        getUserChampionships(user.userId, selectedTournamentId ?? undefined),
         getSelectedChampionship(user.userId),
         getManagedChampionships(user.userId),
       ])
