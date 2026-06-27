@@ -61,23 +61,25 @@ const ROUND_LABELS: Record<Stage, string> = {
 
 const MAIN_ROUNDS: Stage[] = ['ROUND_OF_32', 'ROUND_OF_16', 'QUARTER_FINAL', 'SEMI_FINAL']
 
+// Slots are listed in kickoff date order (how buildDisplayMatches assigns them).
+// The matchNo determines which R16 branch each winner enters — do not change matchNos.
 const BRACKET_SLOTS: BracketSlot[] = [
-  { matchNo: 73, stage: 'ROUND_OF_32', homeSlot: '2A', awaySlot: '2B' },    // ✓ South Africa vs Canada
-  { matchNo: 74, stage: 'ROUND_OF_32', homeSlot: '1C', awaySlot: '2F' },    // ✓ Brazil vs Japan
-  { matchNo: 75, stage: 'ROUND_OF_32', homeSlot: '2E', awaySlot: '1I' },    // ✓ Germany; E↔I cross-pair → France
-  { matchNo: 76, stage: 'ROUND_OF_32', homeSlot: '1F', awaySlot: '2C' },    // ✓ Netherlands vs Morocco
-  { matchNo: 77, stage: 'ROUND_OF_32', homeSlot: '1E', awaySlot: '2I' },    // ✓ Ivory Coast; E↔I cross-pair → Norway
-  { matchNo: 78, stage: 'ROUND_OF_32', homeSlot: '1G', awaySlot: '3CDFIJ' }, // Egypt vs best-3rd
-  { matchNo: 79, stage: 'ROUND_OF_32', homeSlot: '1A', awaySlot: '3CEFHI' }, // ✓ Mexico vs best-3rd
-  { matchNo: 80, stage: 'ROUND_OF_32', homeSlot: '1L', awaySlot: '3EHIJK' }, // Ghana vs best-3rd
-  { matchNo: 81, stage: 'ROUND_OF_32', homeSlot: '1K', awaySlot: '3AEFIJ' }, // Colombia vs best-3rd
-  { matchNo: 82, stage: 'ROUND_OF_32', homeSlot: '1D', awaySlot: '3B' },    // ✓ USA vs Bosnia
-  { matchNo: 83, stage: 'ROUND_OF_32', homeSlot: '2K', awaySlot: '2L' },    // Portugal vs England
-  { matchNo: 84, stage: 'ROUND_OF_32', homeSlot: '1H', awaySlot: '2J' },    // Spain vs Austria
-  { matchNo: 85, stage: 'ROUND_OF_32', homeSlot: '1B', awaySlot: '3EFGIJ' }, // ✓ Switzerland vs best-3rd
-  { matchNo: 86, stage: 'ROUND_OF_32', homeSlot: '3D', awaySlot: '2H' },    // ✓ Australia vs Cape Verde
-  { matchNo: 87, stage: 'ROUND_OF_32', homeSlot: '1J', awaySlot: '3DEIJL' }, // ✓ Argentina vs best-3rd
-  { matchNo: 88, stage: 'ROUND_OF_32', homeSlot: '2D', awaySlot: '2G' },    // Paraguay vs Belgium
+  { matchNo: 73, stage: 'ROUND_OF_32', homeSlot: '2A', awaySlot: '2B' },     // Jun 28 — 2A vs 2B
+  { matchNo: 76, stage: 'ROUND_OF_32', homeSlot: '1C', awaySlot: '2F' },     // Jun 29a — 1C vs 2F
+  { matchNo: 78, stage: 'ROUND_OF_32', homeSlot: '2E', awaySlot: '2I' },     // Jun 29b — 2E vs 2I
+  { matchNo: 75, stage: 'ROUND_OF_32', homeSlot: '1F', awaySlot: '2C' },     // Jun 30a — 1F vs 2C
+  { matchNo: 74, stage: 'ROUND_OF_32', homeSlot: '1E', awaySlot: '3ABCDF' }, // Jun 30b — 1E vs best-3rd
+  { matchNo: 77, stage: 'ROUND_OF_32', homeSlot: '1I', awaySlot: '3CDFGH' }, // Jun 30c — 1I vs best-3rd
+  { matchNo: 79, stage: 'ROUND_OF_32', homeSlot: '1A', awaySlot: '3CEFHI' }, // Jul 1a  — 1A vs best-3rd
+  { matchNo: 80, stage: 'ROUND_OF_32', homeSlot: '1L', awaySlot: '3EHIJK' }, // Jul 1b  — 1L vs best-3rd
+  { matchNo: 82, stage: 'ROUND_OF_32', homeSlot: '1G', awaySlot: '3AEHIJ' }, // Jul 1c  — 1G vs best-3rd
+  { matchNo: 81, stage: 'ROUND_OF_32', homeSlot: '1D', awaySlot: '3BEFIJ' }, // Jul 2a  — 1D vs best-3rd
+  { matchNo: 83, stage: 'ROUND_OF_32', homeSlot: '2K', awaySlot: '2L' },     // Jul 2b  — 2K vs 2L
+  { matchNo: 84, stage: 'ROUND_OF_32', homeSlot: '1H', awaySlot: '2J' },     // Jul 2c  — 1H vs 2J
+  { matchNo: 85, stage: 'ROUND_OF_32', homeSlot: '1B', awaySlot: '3EFGIJ' }, // Jul 3a  — 1B vs best-3rd
+  { matchNo: 87, stage: 'ROUND_OF_32', homeSlot: '1K', awaySlot: '3DEIJL' }, // Jul 3b  — 1K vs best-3rd
+  { matchNo: 86, stage: 'ROUND_OF_32', homeSlot: '1J', awaySlot: '2H' },     // Jul 3c  — 1J vs 2H
+  { matchNo: 88, stage: 'ROUND_OF_32', homeSlot: '2D', awaySlot: '2G' },     // Jul 4   — 2D vs 2G
   { matchNo: 89, stage: 'ROUND_OF_16', homeSlot: 'W74', awaySlot: 'W77' },
   { matchNo: 90, stage: 'ROUND_OF_16', homeSlot: 'W73', awaySlot: 'W75' },
   { matchNo: 91, stage: 'ROUND_OF_16', homeSlot: 'W76', awaySlot: 'W78' },
