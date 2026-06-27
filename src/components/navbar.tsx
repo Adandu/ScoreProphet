@@ -51,7 +51,7 @@ export async function Navbar({ activeTournaments = [], selectedTournamentId = nu
             {/* Desktop nav links */}
             <div className="hidden items-center gap-5 text-sm text-white/70 lg:flex">
               <Link href="/" className="hover:text-white transition-colors">Home</Link>
-              {hasLiveMatch && (
+              {hasLiveMatch && !isArchivedView && (
                 <Link
                   href="/live"
                   className="flex items-center gap-1.5 font-semibold text-red-400 hover:text-red-300 transition-colors"
@@ -111,7 +111,7 @@ export async function Navbar({ activeTournaments = [], selectedTournamentId = nu
           user={user}
           championships={championships.map((c) => ({ id: c.id, name: c.name }))}
           selectedChampionship={selectedChampionship}
-          hasLiveMatch={Boolean(user && hasLiveMatch)}
+          hasLiveMatch={Boolean(user && hasLiveMatch && !isArchivedView)}
           canManageChampionships={canManageChampionships}
         />
       </div>

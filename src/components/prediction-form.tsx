@@ -22,6 +22,7 @@ interface Props {
   existingAdvanceTeam?: string
   championshipId: number
   doubleChanceEnabled: boolean
+  isArchived?: boolean
 }
 
 const SINGLE_OPTS = ['1', 'X', '2']
@@ -78,8 +79,27 @@ export function PredictionForm({
   existingAdvanceTeam,
   championshipId,
   doubleChanceEnabled,
+  isArchived = false,
 }: Props) {
+  // Hook must be called unconditionally (Rules of Hooks)
   const [state, formAction, pending] = useActionState(savePrediction, null)
+
+  if (isArchived) {
+    return (
+      <div className="mt-3 rounded-lg border border-white/10 bg-white/5 p-3 text-white/50 text-sm text-center">
+        Predictions locked — tournament has ended.
+        {existing.length > 0 && (
+          <div className="mt-2 flex flex-wrap justify-center gap-1">
+            {existing.map((p) => (
+              <span key={p.id} className="inline-block rounded border border-white/15 bg-white/10 px-2 py-0.5 text-xs text-white/60">
+                {p.value}
+              </span>
+            ))}
+          </div>
+        )}
+      </div>
+    )
+  }
 
   const hasSingle = existing.some((p) => p.type === 'SINGLE_OUTCOME')
   const hasDouble = existing.some((p) => p.type === 'DOUBLE_CHANCE')

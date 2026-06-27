@@ -1,5 +1,6 @@
 import { prisma } from '@/lib/db'
 import { requireChampionshipAccessLean } from '@/lib/championships'
+import { getSelectedTournament } from '@/lib/tournament'
 import { PredictionForm } from '@/components/prediction-form'
 import { ResetButton } from '@/components/reset-button'
 import { TournamentWinnerSelector } from '@/components/tournament-winner-selector'
@@ -28,6 +29,9 @@ export default async function ChampionshipPredictionsPage({
   const championshipId = parseInt(rawId, 10)
   const { session, championship } = await requireChampionshipAccessLean(championshipId)
   const timezone = session.timezone ?? 'Europe/Bucharest'
+
+  const selectedTournament = await getSelectedTournament(session)
+  const isArchived = selectedTournament?.isArchived ?? false
 
   const [matches, userPredictions, userAdvances, dbTeams, firstGroupMatch, winnerPrediction] = await Promise.all([
     prisma.match.findMany({
@@ -190,6 +194,7 @@ export default async function ChampionshipPredictionsPage({
                           existingAdvanceTeam={advanceByMatch[match.id]}
                           championshipId={championshipId}
                           doubleChanceEnabled={championship.doubleChanceEnabled}
+                          isArchived={isArchived}
                         />
                         {(visibleExisting.length > 0 || advanceByMatch[match.id]) && (
                           <ResetButton matchId={match.id} championshipId={championshipId} />

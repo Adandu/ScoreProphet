@@ -2,6 +2,7 @@ import type { Metadata } from 'next'
 import { Inter } from 'next/font/google'
 import './globals.css'
 import { Navbar } from '@/components/navbar'
+import { ArchiveBanner } from '@/components/archive-banner'
 import { getCurrentUser } from '@/lib/auth'
 import { getActiveTournaments, getSelectedTournament } from '@/lib/tournament'
 import { getSession } from '@/lib/session'
@@ -31,6 +32,12 @@ export default async function RootLayout({ children }: { children: React.ReactNo
           selectedTournamentId={selectedTournament?.id ?? null}
           isArchivedView={selectedTournament?.isArchived ?? false}
         />
+        {selectedTournament?.isArchived && (
+          <ArchiveBanner
+            tournamentName={selectedTournament.name}
+            firstActiveTournamentId={activeTournaments.find((t) => !t.isArchived)?.id ?? null}
+          />
+        )}
         <main className="mx-auto w-full max-w-[90rem] px-4 py-6">{children}</main>
       </body>
     </html>
