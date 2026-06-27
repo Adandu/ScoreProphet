@@ -66,6 +66,7 @@ async function main() {
         homeScore: m.homeScore,
         awayScore: m.awayScore,
         winnerTeam: m.winnerTeam,
+        tournamentId: 1,
       },
     })
 

@@ -24,7 +24,7 @@ export function predictionReminderWindow(now: Date) {
 }
 
 export function arePredictionsConfigured(
-  match: { stage: keyof typeof STAGE_LABELS },
+  match: { stage: string },
   predictions: PredictionSummary[],
   hasAdvancePrediction: boolean,
   doubleChanceEnabled: boolean

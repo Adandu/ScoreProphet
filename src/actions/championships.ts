@@ -29,7 +29,7 @@ export async function createChampionship(prevState: unknown, formData: FormData)
   if (!name || name.length < 2 || name.length > 60) return { error: 'Championship name must be 2-60 characters' }
 
   try {
-    const championship = await prisma.championship.create({ data: { name, description } })
+    const championship = await prisma.championship.create({ data: { name, description, tournamentId: 1 } })
     await logAdminAction({
       adminId: session.userId!,
       adminUsername: session.username ?? String(session.userId),

@@ -29,6 +29,25 @@ model User {
   achievements              UserAchievement[]
 }
 
+model Tournament {
+  id              Int            @id @default(autoincrement())
+  name            String
+  competitionCode String
+  season          String
+  type            String
+  isActive        Boolean        @default(true)
+  isArchived      Boolean        @default(false)
+  startDate       DateTime
+  endDate         DateTime
+  createdAt       DateTime       @default(now())
+  matches         Match[]
+  championships   Championship[]
+
+  @@index([isActive])
+  @@index([isArchived])
+  @@index([competitionCode])
+}
+
 model Championship {
   id                  Int                  @id @default(autoincrement())
   name                String               @unique
@@ -38,6 +57,8 @@ model Championship {
   competitionCode     String               @default("WC")
   createdAt           DateTime             @default(now())
   updatedAt           DateTime             @updatedAt
+  tournamentId        Int
+  tournament          Tournament           @relation(fields: [tournamentId], references: [id])
   members             ChampionshipMember[]
   managers            ChampionshipManager[]
   invites             ChampionshipInvite[]
@@ -46,6 +67,7 @@ model Championship {
   achievements        UserAchievement[]
 
   @@index([competitionCode])
+  @@index([tournamentId])
 }
 
 model ChampionshipMember {
@@ -89,7 +111,7 @@ model Match {
   awayTeam                   String
   homeTeamCrest              String            @default("")
   awayTeamCrest              String            @default("")
-  stage                      Stage
+  stage                      String
   group                      String?
   kickoff                    DateTime
   status                     MatchStatus       @default(SCHEDULED)
@@ -112,6 +134,8 @@ model Match {
   headToHeadAwayTeamId       String?
   headToHeadJson             String            @default("[]")
   headToHeadSyncedAt         DateTime?
+  tournamentId               Int
+  tournament                 Tournament        @relation(fields: [tournamentId], references: [id])
   predictions                Prediction[]
   advances                   KnockoutAdvance[]
   predictionReminders        PredictionReminder[]
@@ -122,6 +146,7 @@ model Match {
   @@index([status])
   @@index([kickoff])
   @@index([competitionCode, stage])
+  @@index([tournamentId])
 }
 
 model UserAchievement {
@@ -278,16 +303,6 @@ model AdminAuditLog {
 
   @@index([adminId])
   @@index([createdAt])
-}
-
-enum Stage {
-  GROUP
-  ROUND_OF_32
-  ROUND_OF_16
-  QUARTER_FINAL
-  SEMI_FINAL
-  THIRD_PLACE
-  FINAL
 }
 
 enum MatchStatus {

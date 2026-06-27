@@ -9,7 +9,7 @@ import { normalizeEmail } from '@/lib/utils'
 import { sendPredictionReminderEmail } from '@/lib/email'
 import { formatMatchTime } from '@/lib/format-date'
 import { getAppUrl } from '@/lib/app-url'
-import { STAGE_LABELS } from '@/lib/prediction-reminder-rules'
+import { STAGE_LABELS, stageLabel } from '@/lib/prediction-reminder-rules'
 import { logAdminAction } from '@/lib/audit'
 
 export async function overrideMatchScore(prevState: unknown, formData: FormData) {
@@ -299,7 +299,7 @@ export async function sendTestPredictionReminder(prevState: unknown, formData: F
       homeTeam: match.homeTeam,
       awayTeam: match.awayTeam,
       kickoffLabel: formatMatchTime(match.kickoff, session.timezone ?? 'Europe/Bucharest'),
-      stageLabel: STAGE_LABELS[match.stage],
+      stageLabel: stageLabel(match.stage),
       championshipName: championship.name,
     },
     `${appUrl}/championships/${championship.id}/predictions`
@@ -391,6 +391,7 @@ export async function syncMatchesFromApi(prevState: unknown) {
           homeScore: m.homeScore,
           awayScore: m.awayScore,
           winnerTeam: m.winnerTeam,
+          tournamentId: 1,
         },
       })
 
