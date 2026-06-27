@@ -600,7 +600,7 @@ export interface AvailableCompetition {
 
 export async function fetchAvailableCompetitions(): Promise<AvailableCompetition[]> {
   const res = await fetch(`${BASE_URL}/competitions`, {
-    headers: { 'X-Auth-Token': FOOTBALL_API_KEY ?? '' },
+    headers: getHeaders(),
   })
   if (!res.ok) throw new Error(`football-api fetchAvailableCompetitions ${res.status}`)
   const data = await res.json()
