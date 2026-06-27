@@ -9,7 +9,7 @@ import { normalizeEmail } from '@/lib/utils'
 import { sendPredictionReminderEmail } from '@/lib/email'
 import { formatMatchTime } from '@/lib/format-date'
 import { getAppUrl } from '@/lib/app-url'
-import { STAGE_LABELS, stageLabel } from '@/lib/prediction-reminder-rules'
+import { stageLabel } from '@/lib/prediction-reminder-rules'
 import { logAdminAction } from '@/lib/audit'
 
 export async function overrideMatchScore(prevState: unknown, formData: FormData) {
