@@ -42,9 +42,9 @@ export const getUserChampionships = cache(async (userId: number, tournamentId?: 
   }))
 })
 
-export const getSelectedChampionship = cache(async (userId: number): Promise<ChampionshipSummary | null> => {
+export const getSelectedChampionship = cache(async (userId: number, tournamentId?: number): Promise<ChampionshipSummary | null> => {
   const session = await getSession()
-  const championships = await getUserChampionships(userId)
+  const championships = await getUserChampionships(userId, tournamentId)
   if (championships.length === 0) return null
 
   const selected = championships.find((championship) => championship.id === session.selectedChampionshipId)

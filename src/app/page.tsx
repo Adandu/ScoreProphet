@@ -117,7 +117,7 @@ export default async function HomePage() {
   const tournament = await getCurrentTournament()
   const [matches, selectedChampionship, liveApiMatches, dbTeams] = await Promise.all([
     getFeaturedMatches(tournament?.id),
-    getSelectedChampionship(session.userId!),
+    getSelectedChampionship(session.userId!, tournament?.id),
     fetchLiveMatches(tournament?.competitionCode).catch(() => []),
     prisma.team.findMany({ select: { externalId: true, name: true } }).catch(() => []),
   ])
