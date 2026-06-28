@@ -4,19 +4,22 @@ import { LiveMatchCard } from '@/components/live-match-card'
 import { Countdown } from '@/components/countdown'
 import { parseStoredHeadToHead } from '@/lib/head-to-head'
 import { getSelectedChampionship } from '@/lib/championships'
+import { getCurrentTournament } from '@/lib/selected-tournament'
 import { fetchLiveMatches } from '@/lib/football-api'
 
-async function getFeaturedMatches() {
+async function getFeaturedMatches(tournamentId?: number) {
   const now = new Date()
   const next24Hours = new Date(now.getTime() + 24 * 60 * 60 * 1000)
   // Keep showing a SCHEDULED match for up to 3 h after kickoff — covers the gap
   // between the real kick-off and the API updating the status to LIVE.
   const graceStart = new Date(now.getTime() - 3 * 60 * 60 * 1000)
+  const tFilter = tournamentId ? { tournamentId } : {}
 
   let upcoming
   try {
     upcoming = await prisma.match.findMany({
       where: {
+        ...tFilter,
         OR: [
           { status: 'LIVE' },
           { status: 'SCHEDULED', kickoff: { gt: graceStart, lte: next24Hours } },
@@ -33,7 +36,7 @@ async function getFeaturedMatches() {
   let fallback
   try {
     fallback = await prisma.match.findFirst({
-      where: { status: 'SCHEDULED', kickoff: { gt: now } },
+      where: { ...tFilter, status: 'SCHEDULED', kickoff: { gt: now } },
       orderBy: { kickoff: 'asc' },
     })
   } catch {
@@ -111,10 +114,11 @@ async function getRevealedPredictionsByMatch(
 
 export default async function HomePage() {
   const session = await requireAuth()
+  const tournament = await getCurrentTournament()
   const [matches, selectedChampionship, liveApiMatches, dbTeams] = await Promise.all([
-    getFeaturedMatches(),
+    getFeaturedMatches(tournament?.id),
     getSelectedChampionship(session.userId!),
-    fetchLiveMatches().catch(() => []),
+    fetchLiveMatches(tournament?.competitionCode).catch(() => []),
     prisma.team.findMany({ select: { externalId: true, name: true } }).catch(() => []),
   ])
 
@@ -136,7 +140,7 @@ export default async function HomePage() {
   return (
     <div className="space-y-8">
       <h1 className="text-3xl font-bold text-white">
-        World Cup 2026 <span className="text-[#C9A84C]">Predictions</span>
+        {tournament?.name ?? 'ScoreProphet'} <span className="text-[#C9A84C]">Predictions</span>
       </h1>
       {matches.length > 0 ? (
         <div className="mx-auto grid w-full justify-items-center gap-4">

@@ -2,8 +2,8 @@ import Image from 'next/image'
 import Link from 'next/link'
 import { getTournamentStatistics, type TeamRef, type StatEvent, type CountResult } from '@/lib/tournament-statistics'
 
-export async function TournamentStatisticsPanel() {
-  const stats = await getTournamentStatistics()
+export async function TournamentStatisticsPanel({ tournamentId }: { tournamentId: number }) {
+  const stats = await getTournamentStatistics(tournamentId)
   const teamsByName = new Map(stats.teams.map((team) => [team.name, team]))
 
   return (

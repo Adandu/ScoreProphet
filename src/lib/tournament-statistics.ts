@@ -125,55 +125,58 @@ export function computeTournamentStatistics({ matches, events, teamStats, teams 
   }
 }
 
-// Cached across requests so the heavy aggregation is not recomputed on every
-// /tournament view. Stats may lag live data by up to the revalidate window.
-export const getTournamentStatistics = unstable_cache(
-  async (): Promise<TournamentStatistics> => {
-    const [matches, events, teamStats, teams] = await Promise.all([
-      prisma.match.findMany({
-        where: { status: 'FINISHED' },
-        orderBy: { kickoff: 'asc' },
-        select: {
-          externalId: true,
-          homeTeam: true,
-          awayTeam: true,
-          homeScore: true,
-          awayScore: true,
-          fullTimeHomeScore: true,
-          fullTimeAwayScore: true,
-        },
-      }),
-      prisma.matchEvent.findMany({
-        select: {
-          type: true,
-          minute: true,
-          teamName: true,
-          playerName: true,
-          relatedPlayerName: true,
-          match: {
-            select: {
-              homeTeam: true,
-              awayTeam: true,
-              homeScore: true,
-              awayScore: true,
+export function getTournamentStatistics(tournamentId: number) {
+  return unstable_cache(
+    async (): Promise<TournamentStatistics> => {
+      const matchFilter = { status: 'FINISHED' as const, tournamentId }
+      const [matches, events, teamStats, teams] = await Promise.all([
+        prisma.match.findMany({
+          where: matchFilter,
+          orderBy: { kickoff: 'asc' },
+          select: {
+            externalId: true,
+            homeTeam: true,
+            awayTeam: true,
+            homeScore: true,
+            awayScore: true,
+            fullTimeHomeScore: true,
+            fullTimeAwayScore: true,
+          },
+        }),
+        prisma.matchEvent.findMany({
+          where: { match: { tournamentId } },
+          select: {
+            type: true,
+            minute: true,
+            teamName: true,
+            playerName: true,
+            relatedPlayerName: true,
+            match: {
+              select: {
+                homeTeam: true,
+                awayTeam: true,
+                homeScore: true,
+                awayScore: true,
+              },
             },
           },
-        },
-        orderBy: [{ minute: 'asc' }, { id: 'asc' }],
-      }),
-      prisma.matchTeamStat.findMany({
-        select: { type: true, value: true },
-      }),
-      prisma.team.findMany({
-        orderBy: { name: 'asc' },
-        select: { externalId: true, name: true, crest: true, squadJson: true },
-      }),
-    ])
-    return computeTournamentStatistics({ matches, events, teamStats, teams })
-  },
-  ['tournament-statistics'],
-  { revalidate: 60 }
-)
+          orderBy: [{ minute: 'asc' }, { id: 'asc' }],
+        }),
+        prisma.matchTeamStat.findMany({
+          where: { match: { tournamentId } },
+          select: { type: true, value: true },
+        }),
+        prisma.team.findMany({
+          orderBy: { name: 'asc' },
+          select: { externalId: true, name: true, crest: true, squadJson: true },
+        }),
+      ])
+      return computeTournamentStatistics({ matches, events, teamStats, teams })
+    },
+    [`tournament-statistics-${tournamentId}`],
+    { revalidate: 60 }
+  )()
+}
 
 function topCount<T>(items: T[], keyFn: (item: T) => string): CountResult | null {
   const counts = new Map<string, number>()

@@ -228,9 +228,10 @@ export async function fetchStandings(competitionCode = 'WC'): Promise<StandingsG
     }))
 }
 
-export async function fetchTopScorers(competitionCode = 'WC', limit = 20): Promise<TopScorer[]> {
+export async function fetchTopScorers(competitionCode = 'WC', limit = 20, season?: string): Promise<TopScorer[]> {
+  const seasonParam = season ? `&season=${season}` : ''
   const res = await fetch(
-    `${BASE_URL}/competitions/${competitionCode}/scorers?limit=${limit}`,
+    `${BASE_URL}/competitions/${competitionCode}/scorers?limit=${limit}${seasonParam}`,
     { headers: getHeaders(), next: { revalidate: 300 } },
   )
   if (!res.ok) {

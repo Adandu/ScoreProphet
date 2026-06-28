@@ -1,10 +1,10 @@
 import Image from 'next/image'
 import { fetchTopScorers, type TopScorer } from '@/lib/football-api'
 
-export async function TopScorersPanel() {
+export async function TopScorersPanel({ competitionCode = 'WC', season }: { competitionCode?: string; season?: string }) {
   let scorers: TopScorer[] = []
   try {
-    scorers = await fetchTopScorers('WC', 20)
+    scorers = await fetchTopScorers(competitionCode, 20, season)
   } catch {
     scorers = []
   }

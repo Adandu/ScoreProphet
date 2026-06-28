@@ -19,26 +19,37 @@ export default async function TournamentPage() {
 
   const tournament = await getCurrentTournament()
 
-  const [matches, teams] = await Promise.all([
+  const [matches, allTeams] = await Promise.all([
     prisma.match.findMany({
       where: { ...(tournament ? { tournamentId: tournament.id } : {}) },
       orderBy: { kickoff: 'asc' },
     }),
     prisma.team.findMany({ select: { externalId: true, name: true, crest: true }, orderBy: { name: 'asc' } }),
   ])
+
+  // Derive which team names actually appear in this tournament's matches
+  const tournamentTeamNames = new Set<string>()
+  for (const m of matches) {
+    if (m.homeTeam && m.homeTeam !== 'TBD') tournamentTeamNames.add(m.homeTeam)
+    if (m.awayTeam && m.awayTeam !== 'TBD') tournamentTeamNames.add(m.awayTeam)
+  }
+
+  // Filter to only teams participating in the current tournament
+  const teams = allTeams.filter((t) => tournamentTeamNames.has(t.name))
+
   const groupMatches = matches.filter((match) => match.stage === 'GROUP')
   const knockoutMatches = matches.filter((match) => match.stage !== 'GROUP')
 
   const teamIdByName: Record<string, string> = {}
   const teamCrestByName: Record<string, string> = {}
-  for (const team of teams) {
+  for (const team of allTeams) {
     teamIdByName[team.name] = team.externalId
     if (team.crest) teamCrestByName[team.name] = team.crest
   }
 
   const formByTeam: Record<string, string> = {}
   try {
-    for (const group of await fetchStandings()) {
+    for (const group of await fetchStandings(tournament?.competitionCode ?? 'WC')) {
       for (const row of group.table) if (row.form) formByTeam[row.teamName] = row.form
     }
   } catch {
@@ -135,8 +146,8 @@ export default async function TournamentPage() {
             )
           }
           teams={teamsTab}
-          scorers={<TopScorersPanel />}
-          statistics={<TournamentStatisticsPanel />}
+          scorers={<TopScorersPanel competitionCode={tournament?.competitionCode ?? 'WC'} season={tournament?.season ?? undefined} />}
+          statistics={tournament ? <TournamentStatisticsPanel tournamentId={tournament.id} /> : <p className="text-white/40">No tournament selected.</p>}
         />
       </Suspense>
     </div>
