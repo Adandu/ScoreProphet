@@ -6,6 +6,8 @@ import { Menu, X } from 'lucide-react'
 import { logout } from '@/actions/auth'
 import { TimezoneSelector } from '@/components/timezone-selector'
 import { ChampionshipSelector } from '@/components/championship-selector'
+import { TournamentSwitcher } from '@/components/tournament-switcher'
+import type { Tournament } from '@prisma/client'
 
 interface User {
   userId: number
@@ -26,12 +28,16 @@ export function MobileMenu({
   selectedChampionship,
   hasLiveMatch = false,
   canManageChampionships = false,
+  activeTournaments = [],
+  selectedTournamentId = null,
 }: {
   user: User | null
   championships: Championship[]
   selectedChampionship: Championship | null
   hasLiveMatch?: boolean
   canManageChampionships?: boolean
+  activeTournaments?: Tournament[]
+  selectedTournamentId?: number | null
 }) {
   const [open, setOpen] = useState(false)
 
@@ -96,6 +102,12 @@ export function MobileMenu({
             </div>
 
             <div className="border-t border-white/10 pt-3 flex flex-col gap-3">
+              {activeTournaments.length > 1 && (
+                <div className="flex items-center gap-2">
+                  <span className="text-xs text-white/40">Tournament:</span>
+                  <TournamentSwitcher tournaments={activeTournaments} selectedId={selectedTournamentId} />
+                </div>
+              )}
               {championships.length > 1 && selectedChampionship && (
                 <div className="flex items-center gap-2">
                   <span className="text-xs text-white/40">Championship:</span>

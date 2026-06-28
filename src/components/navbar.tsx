@@ -113,6 +113,8 @@ export async function Navbar({ activeTournaments = [], selectedTournamentId = nu
           selectedChampionship={selectedChampionship}
           hasLiveMatch={Boolean(user && hasLiveMatch && !isArchivedView)}
           canManageChampionships={canManageChampionships}
+          activeTournaments={activeTournaments}
+          selectedTournamentId={selectedTournamentId}
         />
       </div>
     </nav>
