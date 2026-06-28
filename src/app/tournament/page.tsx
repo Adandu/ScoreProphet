@@ -30,7 +30,11 @@ export default async function TournamentPage() {
   const knockoutMatches = matches.filter((match) => match.stage !== 'GROUP')
 
   const teamIdByName: Record<string, string> = {}
-  for (const team of teams) teamIdByName[team.name] = team.externalId
+  const teamCrestByName: Record<string, string> = {}
+  for (const team of teams) {
+    teamIdByName[team.name] = team.externalId
+    if (team.crest) teamCrestByName[team.name] = team.crest
+  }
 
   const formByTeam: Record<string, string> = {}
   try {
@@ -97,8 +101,8 @@ export default async function TournamentPage() {
                   id: match.id,
                   homeTeam: match.homeTeam,
                   awayTeam: match.awayTeam,
-                  homeTeamCrest: match.homeTeamCrest || undefined,
-                  awayTeamCrest: match.awayTeamCrest || undefined,
+                  homeTeamCrest: match.homeTeamCrest || teamCrestByName[match.homeTeam] || undefined,
+                  awayTeamCrest: match.awayTeamCrest || teamCrestByName[match.awayTeam] || undefined,
                   homeTeamUrl: teamIdByName[match.homeTeam] ? `/teams/${teamIdByName[match.homeTeam]}` : undefined,
                   awayTeamUrl: teamIdByName[match.awayTeam] ? `/teams/${teamIdByName[match.awayTeam]}` : undefined,
                   homeScore: match.fullTimeHomeScore ?? match.homeScore,
