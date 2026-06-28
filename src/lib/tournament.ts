@@ -13,9 +13,9 @@ export async function getActiveTournaments(): Promise<Tournament[]> {
 
 export async function getSelectedTournament(session: Partial<SessionData>): Promise<Tournament | null> {
   if (session.selectedTournamentId !== undefined) {
-    return prisma.tournament.findFirst({
-      where: { id: session.selectedTournamentId },
-    })
+    const t = await prisma.tournament.findFirst({ where: { id: session.selectedTournamentId } })
+    if (t) return t
+    // Stored id no longer exists (tournament deleted) — fall through to default
   }
   const active = await getActiveTournaments()
   return active[0] ?? null
