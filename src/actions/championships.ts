@@ -29,11 +29,20 @@ export async function createChampionship(prevState: unknown, formData: FormData)
 
   if (!name || name.length < 2 || name.length > 60) return { error: 'Championship name must be 2-60 characters' }
 
-  const tournament = await getSelectedTournament(session)
-  if (!tournament) return { error: 'No active tournament selected' }
+  const explicitId = parseId(formData.get('tournamentId'))
+  let tournamentId: number
+  if (explicitId) {
+    const t = await prisma.tournament.findFirst({ where: { id: explicitId, isActive: true, isArchived: false } })
+    if (!t) return { error: 'Selected tournament is not active' }
+    tournamentId = t.id
+  } else {
+    const t = await getSelectedTournament(session)
+    if (!t) return { error: 'No active tournament selected' }
+    tournamentId = t.id
+  }
 
   try {
-    const championship = await prisma.championship.create({ data: { name, description, tournamentId: tournament.id } })
+    const championship = await prisma.championship.create({ data: { name, description, tournamentId } })
     await logAdminAction({
       adminId: session.userId!,
       adminUsername: session.username ?? String(session.userId),

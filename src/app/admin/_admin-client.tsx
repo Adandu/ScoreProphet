@@ -56,6 +56,11 @@ interface JobStatusEntry {
   runCount: number
 }
 
+interface ActiveTournament {
+  id: number
+  name: string
+}
+
 function relativeTime(date: string): string {
   const diff = Date.now() - new Date(date).getTime()
   const mins = Math.floor(diff / 60000)
@@ -73,6 +78,7 @@ export function AdminClient({
   auditLogs,
   jobStatuses,
   timezone,
+  activeTournaments = [],
 }: {
   matches: Match[]
   users: User[]
@@ -80,6 +86,7 @@ export function AdminClient({
   auditLogs: AuditLog[]
   jobStatuses: JobStatusEntry[]
   timezone: string
+  activeTournaments?: ActiveTournament[]
 }) {
   const [testReminderState, testReminderAction, testReminderPending] = useActionState(sendTestPredictionReminder, null)
   const [createState, createAction, createPending] = useActionState(createChampionship, null)
@@ -124,6 +131,21 @@ export function AdminClient({
             <label className="mb-1 block text-xs text-white/40" htmlFor="championship-description">Description</label>
             <Input id="championship-description" name="description" className="bg-white/10 text-white border-white/20" />
           </div>
+          {activeTournaments.length > 0 && (
+            <div>
+              <label className="mb-1 block text-xs text-white/40" htmlFor="championship-tournament">Tournament</label>
+              <select
+                id="championship-tournament"
+                name="tournamentId"
+                required
+                className="rounded bg-white/10 border border-white/20 px-3 py-2 text-sm text-white"
+              >
+                {activeTournaments.map((t) => (
+                  <option key={t.id} value={t.id}>{t.name}</option>
+                ))}
+              </select>
+            </div>
+          )}
           <Button type="submit" disabled={createPending} className="bg-[#C9A84C] text-[#0A1628] hover:bg-[#C9A84C]/90 font-semibold">
             {createPending ? 'Creating…' : 'Create'}
           </Button>

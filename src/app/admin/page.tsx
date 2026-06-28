@@ -42,11 +42,14 @@ export default async function AdminPage() {
     fetchCompetitionsFromApi().catch(() => []),
   ])
 
+  const activeTournaments = tournaments.filter((t) => t.isActive && !t.isArchived)
+
   return (
     <div className="space-y-10">
       <TournamentManager tournaments={tournaments} availableCompetitions={availableCompetitions} />
       <AdminClient
       timezone={timezone}
+      activeTournaments={activeTournaments.map((t) => ({ id: t.id, name: t.name }))}
       matches={matches.map((m) => ({
         id: m.id,
         homeTeam: m.homeTeam,
