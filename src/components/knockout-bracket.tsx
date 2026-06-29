@@ -82,15 +82,16 @@ const BRACKET_SLOTS: BracketSlot[] = [
   { matchNo: 88, stage: 'ROUND_OF_32', homeSlot: '2D', awaySlot: '2G' },
   { matchNo: 86, stage: 'ROUND_OF_32', homeSlot: '1J', awaySlot: '2H' },
   { matchNo: 87, stage: 'ROUND_OF_32', homeSlot: '1K', awaySlot: '3DEIJL' },
-  // R16 pairings derived from consecutive externalId groupings (537415+537416→R16 537375, 537417+537418→R16 537376, etc.)
-  { matchNo: 89, stage: 'ROUND_OF_16', homeSlot: 'W73', awaySlot: 'W76' },
-  { matchNo: 90, stage: 'ROUND_OF_16', homeSlot: 'W74', awaySlot: 'W75' },
-  { matchNo: 91, stage: 'ROUND_OF_16', homeSlot: 'W78', awaySlot: 'W77' },
-  { matchNo: 92, stage: 'ROUND_OF_16', homeSlot: 'W79', awaySlot: 'W80' },
-  { matchNo: 93, stage: 'ROUND_OF_16', homeSlot: 'W82', awaySlot: 'W81' },
-  { matchNo: 94, stage: 'ROUND_OF_16', homeSlot: 'W83', awaySlot: 'W84' },
-  { matchNo: 95, stage: 'ROUND_OF_16', homeSlot: 'W85', awaySlot: 'W88' },
-  { matchNo: 96, stage: 'ROUND_OF_16', homeSlot: 'W86', awaySlot: 'W87' },
+  // R16 pairings: R32 matches paired by consecutive externalIds (537417+537418→same R16, etc.)
+  // M89 = first R16 by kickoff (537376 = Canada's confirmed match = W73 vs W75)
+  { matchNo: 89, stage: 'ROUND_OF_16', homeSlot: 'W73', awaySlot: 'W75' },
+  { matchNo: 90, stage: 'ROUND_OF_16', homeSlot: 'W74', awaySlot: 'W77' },
+  { matchNo: 91, stage: 'ROUND_OF_16', homeSlot: 'W84', awaySlot: 'W83' },
+  { matchNo: 92, stage: 'ROUND_OF_16', homeSlot: 'W81', awaySlot: 'W82' },
+  { matchNo: 93, stage: 'ROUND_OF_16', homeSlot: 'W76', awaySlot: 'W78' },
+  { matchNo: 94, stage: 'ROUND_OF_16', homeSlot: 'W79', awaySlot: 'W80' },
+  { matchNo: 95, stage: 'ROUND_OF_16', homeSlot: 'W86', awaySlot: 'W88' },
+  { matchNo: 96, stage: 'ROUND_OF_16', homeSlot: 'W85', awaySlot: 'W87' },
   { matchNo: 97, stage: 'QUARTER_FINAL', homeSlot: 'W89', awaySlot: 'W90' },
   { matchNo: 98, stage: 'QUARTER_FINAL', homeSlot: 'W91', awaySlot: 'W92' },
   { matchNo: 99, stage: 'QUARTER_FINAL', homeSlot: 'W93', awaySlot: 'W94' },
@@ -106,14 +107,14 @@ const BRACKET_SLOTS: BracketSlot[] = [
 // Each pair of adjacent R32 matchNos feeds into the same R16 slot.
 // Left arm → SF M101; right arm → SF M102.
 const LEFT_ARM: Partial<Record<Stage, number[]>> = {
-  ROUND_OF_32: [74, 75, 73, 76, 78, 77, 79, 80],
-  ROUND_OF_16: [90, 89, 91, 92],
+  ROUND_OF_32: [73, 75, 74, 77, 84, 83, 81, 82],
+  ROUND_OF_16: [89, 90, 91, 92],
   QUARTER_FINAL: [97, 98],
   SEMI_FINAL: [101],
 }
 
 const RIGHT_ARM: Partial<Record<Stage, number[]>> = {
-  ROUND_OF_32: [82, 81, 83, 84, 85, 88, 86, 87],
+  ROUND_OF_32: [76, 78, 79, 80, 86, 88, 85, 87],
   ROUND_OF_16: [93, 94, 95, 96],
   QUARTER_FINAL: [99, 100],
   SEMI_FINAL: [102],
@@ -288,10 +289,8 @@ function buildDisplayMatches(matches: BracketMatch[]): DisplayMatch[] {
 
   for (const stage of ['ROUND_OF_32', 'ROUND_OF_16', 'QUARTER_FINAL', 'SEMI_FINAL', 'THIRD_PLACE', 'FINAL'] as Stage[]) {
     const stageSlots = BRACKET_SLOTS.filter((slot) => slot.stage === stage)
-    // API assigns externalIds in bracket-position order for both R32 and R16.
-    // Kickoff order diverges from bracket position at R16 (e.g. 537376 kicks off before 537375
-    // but is the second bracket slot), so use externalId sort for R32 and R16.
-    const sortFn = stage === 'ROUND_OF_32' || stage === 'ROUND_OF_16' ? byExternalId : byKickoff
+    // Match numbers follow kickoff order (M73 = first R32 match, M74 = third by kickoff, etc.)
+    const sortFn = byKickoff
     const stageMatches = matches.filter((match) => match.stage === stage).sort(sortFn)
     stageSlots.forEach((slot, index) => {
       const match = stageMatches[index]
