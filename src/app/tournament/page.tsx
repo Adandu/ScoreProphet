@@ -110,6 +110,7 @@ export default async function TournamentPage() {
                 timezone={timezone}
                 matches={knockoutMatches.map((match) => ({
                   id: match.id,
+                  externalId: match.externalId,
                   homeTeam: match.homeTeam,
                   awayTeam: match.awayTeam,
                   homeTeamCrest: match.homeTeamCrest || teamCrestByName[match.homeTeam] || undefined,

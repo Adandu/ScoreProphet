@@ -8,6 +8,7 @@ type Stage = 'ROUND_OF_32' | 'ROUND_OF_16' | 'QUARTER_FINAL' | 'SEMI_FINAL' | 'T
 
 interface BracketMatch {
   id: number
+  externalId: string
   homeTeam: string
   awayTeam: string
   homeTeamCrest?: string
@@ -284,7 +285,10 @@ function buildDisplayMatches(matches: BracketMatch[]): DisplayMatch[] {
 
   for (const stage of ['ROUND_OF_32', 'ROUND_OF_16', 'QUARTER_FINAL', 'SEMI_FINAL', 'THIRD_PLACE', 'FINAL'] as Stage[]) {
     const stageSlots = BRACKET_SLOTS.filter((slot) => slot.stage === stage)
-    const stageMatches = matches.filter((match) => match.stage === stage).sort(byKickoff)
+    // R32 externalIds are assigned by the API in bracket-position order, not kickoff order.
+    // All other stages use kickoff order which aligns with the API bracket structure.
+    const sortFn = stage === 'ROUND_OF_32' ? byExternalId : byKickoff
+    const stageMatches = matches.filter((match) => match.stage === stage).sort(sortFn)
     stageSlots.forEach((slot, index) => {
       const match = stageMatches[index]
       if (match) matchByNumber.set(slot.matchNo, match)
@@ -319,6 +323,10 @@ function buildDisplayMatches(matches: BracketMatch[]): DisplayMatch[] {
 
 function byKickoff(a: BracketMatch, b: BracketMatch) {
   return new Date(a.kickoff).getTime() - new Date(b.kickoff).getTime()
+}
+
+function byExternalId(a: BracketMatch, b: BracketMatch) {
+  return parseInt(a.externalId, 10) - parseInt(b.externalId, 10)
 }
 
 function getScoreNote(match: DisplayMatch) {
