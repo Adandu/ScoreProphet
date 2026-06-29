@@ -161,7 +161,8 @@ export default async function ChampionshipPredictionsPage({
                   : existing.filter((p) => p.type !== 'DOUBLE_CHANCE')
                 const hasResultPrediction = visibleExisting.some((p) => p.type === 'SINGLE_OUTCOME' || p.type === 'DOUBLE_CHANCE')
                 const hasExactPrediction = visibleExisting.some((p) => p.type === 'EXACT_SCORE')
-                const hasAdvancePrediction = match.stage === 'GROUP' || Boolean(advanceByMatch[match.id])
+                const predictedDraw2 = visibleExisting.some((p) => p.type === 'SINGLE_OUTCOME' && p.value === 'X')
+                const hasAdvancePrediction = match.stage === 'GROUP' || !predictedDraw2 || Boolean(advanceByMatch[match.id])
                 const predictionsSet = hasResultPrediction && hasExactPrediction && hasAdvancePrediction
                 return (
                   <div key={match.id} className={`rounded-xl border p-4 ${locked ? 'border-white/5 bg-white/[0.03]' : 'border-white/10 bg-white/5'}`}>

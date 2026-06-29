@@ -1,6 +1,6 @@
 const REMINDER_LEAD_MS = 24 * 60 * 60 * 1000
 
-type PredictionSummary = { type: 'SINGLE_OUTCOME' | 'DOUBLE_CHANCE' | 'EXACT_SCORE' }
+type PredictionSummary = { type: 'SINGLE_OUTCOME' | 'DOUBLE_CHANCE' | 'EXACT_SCORE'; value?: string | null }
 
 export const STAGE_LABELS = {
   GROUP: 'Group Stage',
@@ -36,7 +36,10 @@ export function arePredictionsConfigured(
     (prediction) => prediction.type === 'SINGLE_OUTCOME' || prediction.type === 'DOUBLE_CHANCE'
   )
   const hasExactPrediction = visiblePredictions.some((prediction) => prediction.type === 'EXACT_SCORE')
-  const hasRequiredAdvancePrediction = match.stage === 'GROUP' || hasAdvancePrediction
+  const singleOutcome = visiblePredictions.find((p) => p.type === 'SINGLE_OUTCOME')
+  const predictedDraw = singleOutcome?.value === 'X'
+  const isKnockout = match.stage !== 'GROUP'
+  const hasRequiredAdvancePrediction = !isKnockout || !predictedDraw || hasAdvancePrediction
 
   return hasResultPrediction && hasExactPrediction && hasRequiredAdvancePrediction
 }

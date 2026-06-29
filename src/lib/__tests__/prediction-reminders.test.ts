@@ -35,21 +35,52 @@ describe('prediction reminders', () => {
     ).toBe(true)
   })
 
-  it('requires a knockout advance prediction outside the group stage', () => {
+  it('requires a knockout advance prediction only when the result is a draw', () => {
+    // 1 or 2 result — advance not required
     expect(
       arePredictionsConfigured(
         { stage: 'ROUND_OF_16' },
-        [{ type: 'SINGLE_OUTCOME' }, { type: 'EXACT_SCORE' }],
+        [{ type: 'SINGLE_OUTCOME', value: '1' }, { type: 'EXACT_SCORE' }],
+        false,
+        true
+      )
+    ).toBe(true)
+
+    expect(
+      arePredictionsConfigured(
+        { stage: 'ROUND_OF_16' },
+        [{ type: 'SINGLE_OUTCOME', value: '2' }, { type: 'EXACT_SCORE' }],
+        false,
+        true
+      )
+    ).toBe(true)
+
+    // X result without advance — not configured
+    expect(
+      arePredictionsConfigured(
+        { stage: 'ROUND_OF_16' },
+        [{ type: 'SINGLE_OUTCOME', value: 'X' }, { type: 'EXACT_SCORE' }],
         false,
         true
       )
     ).toBe(false)
 
+    // X result with advance — configured
+    expect(
+      arePredictionsConfigured(
+        { stage: 'ROUND_OF_16' },
+        [{ type: 'SINGLE_OUTCOME', value: 'X' }, { type: 'EXACT_SCORE' }],
+        true,
+        true
+      )
+    ).toBe(true)
+
+    // No value on single outcome — treated as non-draw, advance not required
     expect(
       arePredictionsConfigured(
         { stage: 'ROUND_OF_16' },
         [{ type: 'SINGLE_OUTCOME' }, { type: 'EXACT_SCORE' }],
-        true,
+        false,
         true
       )
     ).toBe(true)

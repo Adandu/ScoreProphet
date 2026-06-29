@@ -48,7 +48,7 @@ export async function sendDuePredictionReminders(appUrl: string, now = new Date(
       }),
       prisma.prediction.findMany({
         where: { championshipId: championship.id, matchId: { in: matchIds }, userId: { in: userIds } },
-        select: { userId: true, matchId: true, type: true },
+        select: { userId: true, matchId: true, type: true, value: true },
       }),
       prisma.knockoutAdvance.findMany({
         where: { championshipId: championship.id, matchId: { in: matchIds }, userId: { in: userIds } },
