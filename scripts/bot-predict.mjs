@@ -157,6 +157,14 @@ function askClaude(match, ctx, doubleChanceEnabled) {
     ? '\n- "doubleChance": one of "1X", "X2", or "12" (pick the two outcomes you think are most likely)'
     : ''
 
+  const isKnockout = match.stage !== 'GROUP'
+  const advanceInstruction = isKnockout
+    ? `\n- "advanceTeam": ONLY include this field if outcome is "X" (draw). Set it to "${match.homeTeam}" or "${match.awayTeam}" — the team you predict will advance after extra time / penalties.`
+    : ''
+  const advanceJsonField = isKnockout
+    ? `\n  "advanceTeam": "${match.homeTeam}" or "${match.awayTeam}" (only when outcome is "X"),`
+    : ''
+
   const prompt = `Analyse this World Cup 2026 match and predict the outcome for a prediction game.
 
 HOME team: ${match.homeTeam}
@@ -173,12 +181,12 @@ ${ctx.standingsSummary}
 
 Respond with valid JSON only. Rules:
 - "outcome": "1" = ${match.homeTeam} wins, "X" = draw, "2" = ${match.awayTeam} wins
-- "exactScore": "HOME_GOALS-AWAY_GOALS" (e.g. "2-1" means ${match.homeTeam} scores 2, ${match.awayTeam} scores 1). The outcome MUST match the exactScore (if ${match.awayTeam} wins, away goals must be higher).${doubleInstruction}
+- "exactScore": "HOME_GOALS-AWAY_GOALS" (e.g. "2-1" means ${match.homeTeam} scores 2, ${match.awayTeam} scores 1). The outcome MUST match the exactScore (if ${match.awayTeam} wins, away goals must be higher).${doubleInstruction}${advanceInstruction}
 - "reasoning": 1-2 sentence explanation
 
 {
   "outcome": "1" or "X" or "2",
-  "exactScore": "HOME_GOALS-AWAY_GOALS",${doubleInstruction}
+  "exactScore": "HOME_GOALS-AWAY_GOALS",${doubleInstruction}${advanceJsonField}
   "reasoning": "..."
 }`
 
@@ -221,7 +229,12 @@ function savePredictions(botId, match, prediction, championshipIds) {
     INSERT OR IGNORE INTO Prediction (userId, matchId, championshipId, type, value, reasoning, createdAt)
     VALUES (?, ?, ?, ?, ?, ?, datetime('now'))
   `)
+  const insertAdvance = db.prepare(`
+    INSERT OR IGNORE INTO KnockoutAdvance (userId, matchId, championshipId, predictedTeam)
+    VALUES (?, ?, ?, ?)
+  `)
 
+  const isKnockout = match.stage !== 'GROUP'
   const save = db.transaction((champIds) => {
     for (const champId of champIds) {
       const champ = db.prepare('SELECT doubleChanceEnabled FROM Championship WHERE id = ?').get(champId)
@@ -231,6 +244,10 @@ function savePredictions(botId, match, prediction, championshipIds) {
 
       if (champ?.doubleChanceEnabled && prediction.doubleChance) {
         insertPrediction.run(botId, match.id, champId, 'DOUBLE_CHANCE', prediction.doubleChance, '')
+      }
+
+      if (isKnockout && prediction.outcome === 'X' && prediction.advanceTeam) {
+        insertAdvance.run(botId, match.id, champId, prediction.advanceTeam)
       }
     }
   })
@@ -265,7 +282,8 @@ async function main() {
     if (!prediction) continue
 
     savePredictions(botId, match, prediction, championshipIds)
-    console.log(`[bot-predict] ✓ ${match.homeTeam} vs ${match.awayTeam}: ${prediction.outcome} / ${prediction.exactScore}`)
+    const advanceLog = prediction.outcome === 'X' && prediction.advanceTeam ? ` → ${prediction.advanceTeam} to advance` : ''
+    console.log(`[bot-predict] ✓ ${match.homeTeam} vs ${match.awayTeam}: ${prediction.outcome} / ${prediction.exactScore}${advanceLog}`)
   }
 }
 
