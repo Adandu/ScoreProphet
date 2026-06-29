@@ -82,17 +82,18 @@ const BRACKET_SLOTS: BracketSlot[] = [
   { matchNo: 88, stage: 'ROUND_OF_32', homeSlot: '2D', awaySlot: '2G' },
   { matchNo: 86, stage: 'ROUND_OF_32', homeSlot: '1J', awaySlot: '2H' },
   { matchNo: 87, stage: 'ROUND_OF_32', homeSlot: '1K', awaySlot: '3DEIJL' },
-  { matchNo: 89, stage: 'ROUND_OF_16', homeSlot: 'W74', awaySlot: 'W77' },
-  { matchNo: 90, stage: 'ROUND_OF_16', homeSlot: 'W73', awaySlot: 'W75' },
-  { matchNo: 91, stage: 'ROUND_OF_16', homeSlot: 'W76', awaySlot: 'W78' },
+  // R16 pairings derived from consecutive externalId groupings (537415+537416→R16 537375, 537417+537418→R16 537376, etc.)
+  { matchNo: 89, stage: 'ROUND_OF_16', homeSlot: 'W73', awaySlot: 'W76' },
+  { matchNo: 90, stage: 'ROUND_OF_16', homeSlot: 'W74', awaySlot: 'W75' },
+  { matchNo: 91, stage: 'ROUND_OF_16', homeSlot: 'W78', awaySlot: 'W77' },
   { matchNo: 92, stage: 'ROUND_OF_16', homeSlot: 'W79', awaySlot: 'W80' },
-  { matchNo: 93, stage: 'ROUND_OF_16', homeSlot: 'W83', awaySlot: 'W84' },
-  { matchNo: 94, stage: 'ROUND_OF_16', homeSlot: 'W81', awaySlot: 'W82' },
-  { matchNo: 95, stage: 'ROUND_OF_16', homeSlot: 'W86', awaySlot: 'W88' },
-  { matchNo: 96, stage: 'ROUND_OF_16', homeSlot: 'W85', awaySlot: 'W87' },
+  { matchNo: 93, stage: 'ROUND_OF_16', homeSlot: 'W82', awaySlot: 'W81' },
+  { matchNo: 94, stage: 'ROUND_OF_16', homeSlot: 'W83', awaySlot: 'W84' },
+  { matchNo: 95, stage: 'ROUND_OF_16', homeSlot: 'W85', awaySlot: 'W88' },
+  { matchNo: 96, stage: 'ROUND_OF_16', homeSlot: 'W86', awaySlot: 'W87' },
   { matchNo: 97, stage: 'QUARTER_FINAL', homeSlot: 'W89', awaySlot: 'W90' },
-  { matchNo: 98, stage: 'QUARTER_FINAL', homeSlot: 'W93', awaySlot: 'W94' },
-  { matchNo: 99, stage: 'QUARTER_FINAL', homeSlot: 'W91', awaySlot: 'W92' },
+  { matchNo: 98, stage: 'QUARTER_FINAL', homeSlot: 'W91', awaySlot: 'W92' },
+  { matchNo: 99, stage: 'QUARTER_FINAL', homeSlot: 'W93', awaySlot: 'W94' },
   { matchNo: 100, stage: 'QUARTER_FINAL', homeSlot: 'W95', awaySlot: 'W96' },
   { matchNo: 101, stage: 'SEMI_FINAL', homeSlot: 'W97', awaySlot: 'W98' },
   { matchNo: 102, stage: 'SEMI_FINAL', homeSlot: 'W99', awaySlot: 'W100' },
@@ -102,16 +103,18 @@ const BRACKET_SLOTS: BracketSlot[] = [
 
 // Bracket arms: matchNos in top-to-bottom visual order per stage.
 // Left arm leads to SF M101; right arm leads to SF M102.
+// Each pair of adjacent R32 matchNos feeds into the same R16 slot.
+// Left arm → SF M101; right arm → SF M102.
 const LEFT_ARM: Partial<Record<Stage, number[]>> = {
-  ROUND_OF_32: [74, 77, 73, 75, 83, 84, 81, 82],
-  ROUND_OF_16: [89, 90, 93, 94],
+  ROUND_OF_32: [74, 75, 73, 76, 78, 77, 79, 80],
+  ROUND_OF_16: [90, 89, 91, 92],
   QUARTER_FINAL: [97, 98],
   SEMI_FINAL: [101],
 }
 
 const RIGHT_ARM: Partial<Record<Stage, number[]>> = {
-  ROUND_OF_32: [76, 78, 79, 80, 86, 88, 85, 87],
-  ROUND_OF_16: [91, 92, 95, 96],
+  ROUND_OF_32: [82, 81, 83, 84, 85, 88, 86, 87],
+  ROUND_OF_16: [93, 94, 95, 96],
   QUARTER_FINAL: [99, 100],
   SEMI_FINAL: [102],
 }
@@ -285,9 +288,10 @@ function buildDisplayMatches(matches: BracketMatch[]): DisplayMatch[] {
 
   for (const stage of ['ROUND_OF_32', 'ROUND_OF_16', 'QUARTER_FINAL', 'SEMI_FINAL', 'THIRD_PLACE', 'FINAL'] as Stage[]) {
     const stageSlots = BRACKET_SLOTS.filter((slot) => slot.stage === stage)
-    // R32 externalIds are assigned by the API in bracket-position order, not kickoff order.
-    // All other stages use kickoff order which aligns with the API bracket structure.
-    const sortFn = stage === 'ROUND_OF_32' ? byExternalId : byKickoff
+    // API assigns externalIds in bracket-position order for both R32 and R16.
+    // Kickoff order diverges from bracket position at R16 (e.g. 537376 kicks off before 537375
+    // but is the second bracket slot), so use externalId sort for R32 and R16.
+    const sortFn = stage === 'ROUND_OF_32' || stage === 'ROUND_OF_16' ? byExternalId : byKickoff
     const stageMatches = matches.filter((match) => match.stage === stage).sort(sortFn)
     stageSlots.forEach((slot, index) => {
       const match = stageMatches[index]
