@@ -239,7 +239,7 @@ function MatchSlot({ match, timezone, compact = false, roomy = false }: { match:
       <TeamLine team={match.homeTeam} crest={match.homeTeamCrest} href={match.homeTeamUrl} score={match.homeScore} winner={homeWon} roomy={roomy} />
       <TeamLine team={match.awayTeam} crest={match.awayTeamCrest} href={match.awayTeamUrl} score={match.awayScore} winner={awayWon} roomy={roomy} />
       <div className={`mt-1.5 flex items-center justify-between gap-1 border-t border-white/10 pt-1.5 text-white/35 ${roomy ? 'text-[11px]' : 'text-[9px]'}`}>
-        <span>{match.kickoff ? formatMatchTime(match.kickoff, timezone) : `M${match.matchNo}`}</span>
+        <span><span className="text-white/20">M{match.matchNo}</span>{match.kickoff ? <> · {formatMatchTime(match.kickoff, timezone)}</> : ''}</span>
         {scoreNote && <span className="shrink-0 text-[#C9A84C]/80">{scoreNote}</span>}
         {match.status === 'LIVE' && <span className="h-2 w-2 animate-pulse rounded-full bg-green-400" />}
       </div>
