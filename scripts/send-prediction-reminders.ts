@@ -38,14 +38,16 @@ function formatMatchTime(date: Date, timezone = FALLBACK_TZ): string {
 
 function arePredictionsConfigured(
   match: { stage: string },
-  predictions: Array<{ type: string }>,
+  predictions: Array<{ type: string; value?: string | null }>,
   hasAdvancePrediction: boolean,
   doubleChanceEnabled: boolean,
 ): boolean {
   const visible = doubleChanceEnabled ? predictions : predictions.filter(p => p.type !== 'DOUBLE_CHANCE')
   const hasResult = visible.some(p => p.type === 'SINGLE_OUTCOME' || p.type === 'DOUBLE_CHANCE')
   const hasExact = visible.some(p => p.type === 'EXACT_SCORE')
-  const hasAdvance = match.stage === 'GROUP' || hasAdvancePrediction
+  const isKnockout = match.stage !== 'GROUP'
+  const predictedDraw = visible.find(p => p.type === 'SINGLE_OUTCOME')?.value === 'X'
+  const hasAdvance = !isKnockout || !predictedDraw || hasAdvancePrediction
   return hasResult && hasExact && hasAdvance
 }
 
@@ -88,7 +90,7 @@ async function main() {
       }),
       prisma.prediction.findMany({
         where: { championshipId: championship.id, matchId: { in: matchIds } },
-        select: { userId: true, matchId: true, type: true },
+        select: { userId: true, matchId: true, type: true, value: true },
       }),
       prisma.knockoutAdvance.findMany({
         where: { championshipId: championship.id, matchId: { in: matchIds } },
