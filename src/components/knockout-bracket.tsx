@@ -64,37 +64,44 @@ const ROUND_LABELS: Record<Stage, string> = {
 
 const MAIN_ROUNDS: Stage[] = ['ROUND_OF_32', 'ROUND_OF_16', 'QUARTER_FINAL', 'SEMI_FINAL']
 
-// Slots listed in kickoff date order. matchNo determines which R16 branch each winner enters.
+// R32 slots in kickoff order (verified from API + Wikipedia official match numbers).
+// Official FIFA matchNos 73-88 are assigned by bracket position which equals kickoff order.
+// R16 pairings verified from Wikipedia wikitext (en.wikipedia.org/wiki/2026_FIFA_World_Cup_knockout_stage):
+//   M89=W75vsW77(Paraguay/R16-2), M90=W73vsW76(Canada/Morocco/R16-1),
+//   M91=W74vsW78(Brazil/R16-3), M92=W79vsW80, M93=W83vsW84,
+//   M94=W81vsW82, M95=W86vsW88, M96=W85vsW87
+// QF pairings: M97=W89vsW90→SF101, M98=W93vsW94→SF101,
+//              M99=W91vsW92→SF102, M100=W95vsW96→SF102
+// Left arm →SF101 (M89,M90,M93,M94); Right arm →SF102 (M91,M92,M95,M96)
 const BRACKET_SLOTS: BracketSlot[] = [
   { matchNo: 73, stage: 'ROUND_OF_32', homeSlot: '2A', awaySlot: '2B' },
-  { matchNo: 76, stage: 'ROUND_OF_32', homeSlot: '1C', awaySlot: '2F' },
   { matchNo: 74, stage: 'ROUND_OF_32', homeSlot: '1E', awaySlot: '3ABCDF' },
   { matchNo: 75, stage: 'ROUND_OF_32', homeSlot: '1F', awaySlot: '2C' },
-  { matchNo: 78, stage: 'ROUND_OF_32', homeSlot: '2E', awaySlot: '2I' },
+  { matchNo: 76, stage: 'ROUND_OF_32', homeSlot: '1C', awaySlot: '2F' },
   { matchNo: 77, stage: 'ROUND_OF_32', homeSlot: '1I', awaySlot: '3CDFGH' },
+  { matchNo: 78, stage: 'ROUND_OF_32', homeSlot: '2E', awaySlot: '2I' },
   { matchNo: 79, stage: 'ROUND_OF_32', homeSlot: '1A', awaySlot: '3CEFHI' },
   { matchNo: 80, stage: 'ROUND_OF_32', homeSlot: '1L', awaySlot: '3EHIJK' },
-  { matchNo: 82, stage: 'ROUND_OF_32', homeSlot: '1G', awaySlot: '3AEHIJ' },
   { matchNo: 81, stage: 'ROUND_OF_32', homeSlot: '1D', awaySlot: '3BEFIJ' },
+  { matchNo: 82, stage: 'ROUND_OF_32', homeSlot: '1G', awaySlot: '3AEHIJ' },
   { matchNo: 83, stage: 'ROUND_OF_32', homeSlot: '2K', awaySlot: '2L' },
   { matchNo: 84, stage: 'ROUND_OF_32', homeSlot: '1H', awaySlot: '2J' },
   { matchNo: 85, stage: 'ROUND_OF_32', homeSlot: '1B', awaySlot: '3EFGIJ' },
-  { matchNo: 88, stage: 'ROUND_OF_32', homeSlot: '2D', awaySlot: '2G' },
   { matchNo: 86, stage: 'ROUND_OF_32', homeSlot: '1J', awaySlot: '2H' },
   { matchNo: 87, stage: 'ROUND_OF_32', homeSlot: '1K', awaySlot: '3DEIJL' },
-  // R16 pairings: R32 matches paired by consecutive externalIds (537417+537418→same R16, etc.)
-  // M89 = first R16 by kickoff (537376 = Canada's confirmed match = W73 vs W75)
-  { matchNo: 89, stage: 'ROUND_OF_16', homeSlot: 'W73', awaySlot: 'W75' },
-  { matchNo: 90, stage: 'ROUND_OF_16', homeSlot: 'W74', awaySlot: 'W77' },
-  { matchNo: 91, stage: 'ROUND_OF_16', homeSlot: 'W84', awaySlot: 'W83' },
-  { matchNo: 92, stage: 'ROUND_OF_16', homeSlot: 'W81', awaySlot: 'W82' },
-  { matchNo: 93, stage: 'ROUND_OF_16', homeSlot: 'W76', awaySlot: 'W78' },
-  { matchNo: 94, stage: 'ROUND_OF_16', homeSlot: 'W79', awaySlot: 'W80' },
+  { matchNo: 88, stage: 'ROUND_OF_32', homeSlot: '2D', awaySlot: '2G' },
+  // R16 entries listed in kickoff order (537376→M90, 537375→M89, 537377→M91, ...)
+  { matchNo: 90, stage: 'ROUND_OF_16', homeSlot: 'W73', awaySlot: 'W76' },
+  { matchNo: 89, stage: 'ROUND_OF_16', homeSlot: 'W75', awaySlot: 'W77' },
+  { matchNo: 91, stage: 'ROUND_OF_16', homeSlot: 'W74', awaySlot: 'W78' },
+  { matchNo: 92, stage: 'ROUND_OF_16', homeSlot: 'W79', awaySlot: 'W80' },
+  { matchNo: 93, stage: 'ROUND_OF_16', homeSlot: 'W83', awaySlot: 'W84' },
+  { matchNo: 94, stage: 'ROUND_OF_16', homeSlot: 'W81', awaySlot: 'W82' },
   { matchNo: 95, stage: 'ROUND_OF_16', homeSlot: 'W86', awaySlot: 'W88' },
   { matchNo: 96, stage: 'ROUND_OF_16', homeSlot: 'W85', awaySlot: 'W87' },
   { matchNo: 97, stage: 'QUARTER_FINAL', homeSlot: 'W89', awaySlot: 'W90' },
-  { matchNo: 98, stage: 'QUARTER_FINAL', homeSlot: 'W91', awaySlot: 'W92' },
-  { matchNo: 99, stage: 'QUARTER_FINAL', homeSlot: 'W93', awaySlot: 'W94' },
+  { matchNo: 98, stage: 'QUARTER_FINAL', homeSlot: 'W93', awaySlot: 'W94' },
+  { matchNo: 99, stage: 'QUARTER_FINAL', homeSlot: 'W91', awaySlot: 'W92' },
   { matchNo: 100, stage: 'QUARTER_FINAL', homeSlot: 'W95', awaySlot: 'W96' },
   { matchNo: 101, stage: 'SEMI_FINAL', homeSlot: 'W97', awaySlot: 'W98' },
   { matchNo: 102, stage: 'SEMI_FINAL', homeSlot: 'W99', awaySlot: 'W100' },
@@ -103,19 +110,19 @@ const BRACKET_SLOTS: BracketSlot[] = [
 ]
 
 // Bracket arms: matchNos in top-to-bottom visual order per stage.
-// Left arm leads to SF M101; right arm leads to SF M102.
-// Each pair of adjacent R32 matchNos feeds into the same R16 slot.
-// Left arm → SF M101; right arm → SF M102.
+// Left arm (→SF M101): M89,M90 feed QF97; M93,M94 feed QF98.
+// Right arm (→SF M102): M91,M92 feed QF99; M95,M96 feed QF100.
+// Adjacent R32 pairs in each arm feed the same R16 (home R32 listed first/top).
 const LEFT_ARM: Partial<Record<Stage, number[]>> = {
-  ROUND_OF_32: [73, 75, 74, 77, 84, 83, 81, 82],
-  ROUND_OF_16: [89, 90, 91, 92],
+  ROUND_OF_32: [75, 77, 73, 76, 83, 84, 81, 82],
+  ROUND_OF_16: [89, 90, 93, 94],
   QUARTER_FINAL: [97, 98],
   SEMI_FINAL: [101],
 }
 
 const RIGHT_ARM: Partial<Record<Stage, number[]>> = {
-  ROUND_OF_32: [76, 78, 79, 80, 86, 88, 85, 87],
-  ROUND_OF_16: [93, 94, 95, 96],
+  ROUND_OF_32: [74, 78, 79, 80, 86, 88, 85, 87],
+  ROUND_OF_16: [91, 92, 95, 96],
   QUARTER_FINAL: [99, 100],
   SEMI_FINAL: [102],
 }
