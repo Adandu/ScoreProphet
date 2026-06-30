@@ -64,7 +64,9 @@ const ROUND_LABELS: Record<Stage, string> = {
 
 const MAIN_ROUNDS: Stage[] = ['ROUND_OF_32', 'ROUND_OF_16', 'QUARTER_FINAL', 'SEMI_FINAL']
 
-// R32 matchNos assigned by kickoff order (API: M77=5th=IvoryCst/Nor, M78=6th=Fra/Swe).
+// R32 matchNos: FIFA assigns by bracket position, NOT kickoff order. Pairs swapped from schedule:
+// M78=5thKO(CIV/NOR) M77=6thKO(FRA/SWE) | M82=9thKO(BEL/SEN) M81=10thKO(USA/BIH)
+// M84=11thKO(ESP/AUT) M83=12thKO(POR/CRO) | M88=14thKO(AUS/EGY) M86=15thKO(ARG/CPV) M87=16thKO(COL/GHA)
 // R16 pairings confirmed by user vs official FIFA bracket:
 //   M89=W75+W78 (Paraguay vs France/Sweden, LEFT); M90=W73+W76 (Canada/Morocco, LEFT)
 //   M91=W74+W77 (Brazil vs Ivory Coast/Norway, RIGHT); M92=W79+W80 (RIGHT)
@@ -80,14 +82,14 @@ const BRACKET_SLOTS: BracketSlot[] = [
   { matchNo: 77, stage: 'ROUND_OF_32', homeSlot: '2E', awaySlot: '2I' },
   { matchNo: 79, stage: 'ROUND_OF_32', homeSlot: '1A', awaySlot: '3CEFHI' },
   { matchNo: 80, stage: 'ROUND_OF_32', homeSlot: '1L', awaySlot: '3EHIJK' },
-  { matchNo: 81, stage: 'ROUND_OF_32', homeSlot: '1D', awaySlot: '3BEFIJ' },
-  { matchNo: 82, stage: 'ROUND_OF_32', homeSlot: '1G', awaySlot: '3AEHIJ' },
-  { matchNo: 83, stage: 'ROUND_OF_32', homeSlot: '2K', awaySlot: '2L' },
-  { matchNo: 84, stage: 'ROUND_OF_32', homeSlot: '1H', awaySlot: '2J' },
+  { matchNo: 82, stage: 'ROUND_OF_32', homeSlot: '1D', awaySlot: '3BEFIJ' },
+  { matchNo: 81, stage: 'ROUND_OF_32', homeSlot: '1G', awaySlot: '3AEHIJ' },
+  { matchNo: 84, stage: 'ROUND_OF_32', homeSlot: '2K', awaySlot: '2L' },
+  { matchNo: 83, stage: 'ROUND_OF_32', homeSlot: '1H', awaySlot: '2J' },
   { matchNo: 85, stage: 'ROUND_OF_32', homeSlot: '1B', awaySlot: '3EFGIJ' },
-  { matchNo: 86, stage: 'ROUND_OF_32', homeSlot: '1J', awaySlot: '2H' },
-  { matchNo: 87, stage: 'ROUND_OF_32', homeSlot: '1K', awaySlot: '3DEIJL' },
-  { matchNo: 88, stage: 'ROUND_OF_32', homeSlot: '2D', awaySlot: '2G' },
+  { matchNo: 88, stage: 'ROUND_OF_32', homeSlot: '1J', awaySlot: '2H' },
+  { matchNo: 86, stage: 'ROUND_OF_32', homeSlot: '1K', awaySlot: '3DEIJL' },
+  { matchNo: 87, stage: 'ROUND_OF_32', homeSlot: '2D', awaySlot: '2G' },
   // R16 entries listed in kickoff order (537376→M90, 537375→M89, 537377→M91, ...)
   { matchNo: 90, stage: 'ROUND_OF_16', homeSlot: 'W73', awaySlot: 'W76' },
   { matchNo: 89, stage: 'ROUND_OF_16', homeSlot: 'W75', awaySlot: 'W77' },
