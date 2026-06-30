@@ -150,6 +150,27 @@ export function KnockoutBracket({ matches, timezone }: { matches: BracketMatch[]
 
           {/* Center: trophy + final + 3rd place */}
           <div className="flex min-w-[160px] flex-col items-center justify-center gap-2 px-1">
+            {/* Champion banner — shown only after the final is finished */}
+            {(() => {
+              const champion = final?.status === 'FINISHED' ? final.winnerTeam : null
+              const championCrest = champion
+                ? (champion === final?.homeTeam ? final?.homeTeamCrest : final?.awayTeamCrest)
+                : null
+              return champion ? (
+                <div className="flex w-full flex-col items-center gap-1.5 rounded-lg border border-[#C9A84C]/40 bg-[#C9A84C]/10 px-2 py-2">
+                  <span className="text-[9px] font-semibold uppercase tracking-widest text-[#C9A84C]/70">World Champion</span>
+                  {championCrest && (
+                    <Image src={championCrest} alt="" width={36} height={36} className="h-9 w-9 object-contain drop-shadow-md" />
+                  )}
+                  <span className="text-center text-sm font-bold text-[#C9A84C]">{champion}</span>
+                </div>
+              ) : (
+                <div className="flex w-full flex-col items-center gap-1 rounded-lg border border-dashed border-white/15 px-2 py-3">
+                  <span className="text-[9px] font-semibold uppercase tracking-widest text-white/25">World Champion</span>
+                  <span className="text-[10px] text-white/20">TBD</span>
+                </div>
+              )
+            })()}
             <Image src="/World_Cup_Trophy.png" alt="World Cup Trophy" width={104} height={130} className="h-28 w-auto object-contain drop-shadow-lg" />
             <p className="text-xs font-semibold uppercase tracking-widest text-[#C9A84C]">World Cup 2026</p>
             {final ? <MatchSlot match={final} timezone={timezone} compact /> : <EmptySlot label="Final" />}
