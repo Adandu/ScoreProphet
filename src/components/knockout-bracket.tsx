@@ -93,10 +93,10 @@ const BRACKET_SLOTS: BracketSlot[] = [
   { matchNo: 89, stage: 'ROUND_OF_16', homeSlot: 'W75', awaySlot: 'W78' },
   { matchNo: 91, stage: 'ROUND_OF_16', homeSlot: 'W74', awaySlot: 'W77' },
   { matchNo: 92, stage: 'ROUND_OF_16', homeSlot: 'W79', awaySlot: 'W80' },
-  { matchNo: 93, stage: 'ROUND_OF_16', homeSlot: 'W83', awaySlot: 'W84' },
-  { matchNo: 94, stage: 'ROUND_OF_16', homeSlot: 'W81', awaySlot: 'W82' },
-  { matchNo: 95, stage: 'ROUND_OF_16', homeSlot: 'W86', awaySlot: 'W88' },
-  { matchNo: 96, stage: 'ROUND_OF_16', homeSlot: 'W85', awaySlot: 'W87' },
+  { matchNo: 93, stage: 'ROUND_OF_16', homeSlot: 'W84', awaySlot: 'W83' },
+  { matchNo: 94, stage: 'ROUND_OF_16', homeSlot: 'W82', awaySlot: 'W81' },
+  { matchNo: 95, stage: 'ROUND_OF_16', homeSlot: 'W87', awaySlot: 'W86' },
+  { matchNo: 96, stage: 'ROUND_OF_16', homeSlot: 'W85', awaySlot: 'W88' },
   { matchNo: 97, stage: 'QUARTER_FINAL', homeSlot: 'W89', awaySlot: 'W90' },
   { matchNo: 98, stage: 'QUARTER_FINAL', homeSlot: 'W93', awaySlot: 'W94' },
   { matchNo: 99, stage: 'QUARTER_FINAL', homeSlot: 'W91', awaySlot: 'W92' },
@@ -112,14 +112,14 @@ const BRACKET_SLOTS: BracketSlot[] = [
 // Right arm (→SF M102): M91,M92 feed QF99; M95,M96 feed QF100.
 // Adjacent R32 pairs in each arm feed the same R16 (home R32 listed first/top).
 const LEFT_ARM: Partial<Record<Stage, number[]>> = {
-  ROUND_OF_32: [75, 78, 73, 76, 83, 84, 81, 82],
+  ROUND_OF_32: [75, 78, 73, 76, 84, 83, 82, 81],
   ROUND_OF_16: [89, 90, 93, 94],
   QUARTER_FINAL: [97, 98],
   SEMI_FINAL: [101],
 }
 
 const RIGHT_ARM: Partial<Record<Stage, number[]>> = {
-  ROUND_OF_32: [74, 77, 79, 80, 86, 88, 85, 87],
+  ROUND_OF_32: [74, 77, 79, 80, 87, 86, 85, 88],
   ROUND_OF_16: [91, 92, 95, 96],
   QUARTER_FINAL: [99, 100],
   SEMI_FINAL: [102],
