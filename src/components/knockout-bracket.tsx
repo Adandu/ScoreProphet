@@ -76,8 +76,8 @@ const BRACKET_SLOTS: BracketSlot[] = [
   { matchNo: 74, stage: 'ROUND_OF_32', homeSlot: '1E', awaySlot: '3ABCDF' },
   { matchNo: 75, stage: 'ROUND_OF_32', homeSlot: '1F', awaySlot: '2C' },
   { matchNo: 76, stage: 'ROUND_OF_32', homeSlot: '1C', awaySlot: '2F' },
-  { matchNo: 77, stage: 'ROUND_OF_32', homeSlot: '1I', awaySlot: '3CDFGH' },
-  { matchNo: 78, stage: 'ROUND_OF_32', homeSlot: '2E', awaySlot: '2I' },
+  { matchNo: 78, stage: 'ROUND_OF_32', homeSlot: '1I', awaySlot: '3CDFGH' },
+  { matchNo: 77, stage: 'ROUND_OF_32', homeSlot: '2E', awaySlot: '2I' },
   { matchNo: 79, stage: 'ROUND_OF_32', homeSlot: '1A', awaySlot: '3CEFHI' },
   { matchNo: 80, stage: 'ROUND_OF_32', homeSlot: '1L', awaySlot: '3EHIJK' },
   { matchNo: 81, stage: 'ROUND_OF_32', homeSlot: '1D', awaySlot: '3BEFIJ' },
@@ -90,8 +90,8 @@ const BRACKET_SLOTS: BracketSlot[] = [
   { matchNo: 88, stage: 'ROUND_OF_32', homeSlot: '2D', awaySlot: '2G' },
   // R16 entries listed in kickoff order (537376→M90, 537375→M89, 537377→M91, ...)
   { matchNo: 90, stage: 'ROUND_OF_16', homeSlot: 'W73', awaySlot: 'W76' },
-  { matchNo: 89, stage: 'ROUND_OF_16', homeSlot: 'W75', awaySlot: 'W78' },
-  { matchNo: 91, stage: 'ROUND_OF_16', homeSlot: 'W74', awaySlot: 'W77' },
+  { matchNo: 89, stage: 'ROUND_OF_16', homeSlot: 'W75', awaySlot: 'W77' },
+  { matchNo: 91, stage: 'ROUND_OF_16', homeSlot: 'W74', awaySlot: 'W78' },
   { matchNo: 92, stage: 'ROUND_OF_16', homeSlot: 'W79', awaySlot: 'W80' },
   { matchNo: 93, stage: 'ROUND_OF_16', homeSlot: 'W84', awaySlot: 'W83' },
   { matchNo: 94, stage: 'ROUND_OF_16', homeSlot: 'W82', awaySlot: 'W81' },
@@ -112,14 +112,14 @@ const BRACKET_SLOTS: BracketSlot[] = [
 // Right arm (→SF M102): M91,M92 feed QF99; M95,M96 feed QF100.
 // Adjacent R32 pairs in each arm feed the same R16 (home R32 listed first/top).
 const LEFT_ARM: Partial<Record<Stage, number[]>> = {
-  ROUND_OF_32: [75, 78, 73, 76, 84, 83, 82, 81],
+  ROUND_OF_32: [75, 77, 73, 76, 84, 83, 82, 81],
   ROUND_OF_16: [89, 90, 93, 94],
   QUARTER_FINAL: [97, 98],
   SEMI_FINAL: [101],
 }
 
 const RIGHT_ARM: Partial<Record<Stage, number[]>> = {
-  ROUND_OF_32: [74, 77, 79, 80, 87, 86, 85, 88],
+  ROUND_OF_32: [74, 78, 79, 80, 87, 86, 85, 88],
   ROUND_OF_16: [91, 92, 95, 96],
   QUARTER_FINAL: [99, 100],
   SEMI_FINAL: [102],
