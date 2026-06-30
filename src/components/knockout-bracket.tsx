@@ -140,17 +140,17 @@ export function KnockoutBracket({ matches, timezone }: { matches: BracketMatch[]
     <div className="space-y-6">
       <MobileBracket displayMatches={displayMatches} final={final} thirdPlace={thirdPlace} timezone={timezone} />
 
-      <div className="hidden rounded-xl border border-white/10 bg-white/5 p-3 xl:block">
+      <div className="hidden rounded-xl border border-white/10 bg-white/5 p-3 xl:block overflow-x-auto">
         {/* min-h ensures each flex slot is tall enough to hold a match card */}
-        <div className="flex w-full items-stretch justify-center gap-1 min-h-[640px]">
+        <div className="flex w-full items-stretch justify-center gap-1 min-h-[900px]">
           {/* Left arm: R32 → R16 → QF → SF (outermost to innermost) */}
           {MAIN_ROUNDS.map((stage) => (
             <AlignedColumn key={`left-${stage}`} title={ROUND_LABELS[stage]} matches={arm(LEFT_ARM, stage)} timezone={timezone} />
           ))}
 
           {/* Center: trophy + final + 3rd place */}
-          <div className="flex min-w-[136px] flex-col items-center justify-center gap-2 px-1">
-            <Image src="/World_Cup_Trophy.png" alt="World Cup Trophy" width={88} height={110} className="h-24 w-auto object-contain drop-shadow-lg" />
+          <div className="flex min-w-[160px] flex-col items-center justify-center gap-2 px-1">
+            <Image src="/World_Cup_Trophy.png" alt="World Cup Trophy" width={104} height={130} className="h-28 w-auto object-contain drop-shadow-lg" />
             <p className="text-xs font-semibold uppercase tracking-widest text-[#C9A84C]">World Cup 2026</p>
             {final ? <MatchSlot match={final} timezone={timezone} compact /> : <EmptySlot label="Final" />}
             {thirdPlace && (
@@ -222,8 +222,8 @@ function MobileBracket({
 // Each match gets an equal-height flex slot so R16 is perfectly centered between its two R32 feeders.
 function AlignedColumn({ title, matches, timezone }: { title: string; matches: DisplayMatch[]; timezone: string }) {
   return (
-    <section className="flex min-w-0 flex-1 flex-col">
-      <h2 className="truncate text-center text-[10px] font-semibold uppercase tracking-wide text-white/45 pb-1 shrink-0">{title}</h2>
+    <section className="flex min-w-[130px] flex-1 flex-col">
+      <h2 className="truncate text-center text-[11px] font-semibold uppercase tracking-wide text-white/45 pb-1 shrink-0">{title}</h2>
       <div className="flex flex-1 flex-col">
         {matches.length > 0
           ? matches.map((match) => (
@@ -243,10 +243,10 @@ function MatchSlot({ match, timezone, compact = false, roomy = false }: { match:
   const scoreNote = getScoreNote(match)
 
   return (
-    <div className={`w-full rounded-md border border-white/10 bg-[#0A1628]/80 ${roomy ? 'p-3' : 'p-1.5'} ${compact ? 'max-w-[132px]' : ''}`}>
+    <div className={`w-full rounded-md border border-white/10 bg-[#0A1628]/80 ${roomy ? 'p-3' : 'p-2'} ${compact ? 'max-w-[148px]' : ''}`}>
       <TeamLine team={match.homeTeam} crest={match.homeTeamCrest} href={match.homeTeamUrl} score={match.homeScore} winner={homeWon} roomy={roomy} />
       <TeamLine team={match.awayTeam} crest={match.awayTeamCrest} href={match.awayTeamUrl} score={match.awayScore} winner={awayWon} roomy={roomy} />
-      <div className={`mt-1.5 flex items-center justify-between gap-1 border-t border-white/10 pt-1.5 text-white/35 ${roomy ? 'text-[11px]' : 'text-[9px]'}`}>
+      <div className={`mt-1.5 flex items-center justify-between gap-1 border-t border-white/10 pt-1.5 text-white/35 ${roomy ? 'text-[11px]' : 'text-[10px]'}`}>
         <span><span className="text-white/20">M{match.matchNo}</span>{match.kickoff ? <> · {formatMatchTime(match.kickoff, timezone)}</> : ''}</span>
         {scoreNote && <span className="shrink-0 text-[#C9A84C]/80">{scoreNote}</span>}
         {match.status === 'LIVE' && <span className="h-2 w-2 animate-pulse rounded-full bg-green-400" />}
@@ -258,7 +258,7 @@ function MatchSlot({ match, timezone, compact = false, roomy = false }: { match:
 function TeamLine({ team, crest, href, score, winner, roomy = false }: { team: string; crest?: string | null; href?: string | null; score: number | null; winner: boolean; roomy?: boolean }) {
   const pending = /^[WL]?\d|^3[A-L]/.test(team)
   const colorClass = winner ? 'font-bold text-[#C9A84C]' : pending ? 'text-white/35' : 'text-white/80'
-  const imgSize = roomy ? 18 : 12
+  const imgSize = roomy ? 18 : 16
 
   const inner = (
     <>
@@ -270,7 +270,7 @@ function TeamLine({ team, crest, href, score, winner, roomy = false }: { team: s
   )
 
   return (
-    <div className={`flex items-center justify-between gap-2 py-0.5 ${roomy ? 'min-h-7 text-sm' : 'text-[10px]'} ${colorClass}`}>
+    <div className={`flex items-center justify-between gap-2 py-0.5 ${roomy ? 'min-h-7 text-sm' : 'text-[12px]'} ${colorClass}`}>
       {href && !pending ? (
         <Link href={href} className="flex min-w-0 items-center gap-1 truncate transition-opacity hover:opacity-80">
           {inner}
