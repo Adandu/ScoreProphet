@@ -214,6 +214,42 @@ async function main() {
     }
   }
 
+  // Re-sync FINISHED penalty/ET matches that are missing winner data (API lag at match end)
+  const stalePenaltyMatches = await prisma.match.findMany({
+    where: {
+      status: 'FINISHED',
+      scoreDuration: { in: ['PENALTY_SHOOTOUT', 'EXTRA_TIME'] },
+      winnerTeam: null,
+      adminOverride: false,
+      tournamentId: { in: activeTournamentIds },
+    },
+  })
+  for (const dbMatch of stalePenaltyMatches) {
+    try {
+      const r = await fetch(`${BASE_URL}/matches/${dbMatch.externalId}`, { headers: getHeaders() })
+      if (!r.ok) {
+        if (r.status === 429) { console.warn('[score-sync] Rate limited on stale match re-fetch'); break }
+        continue
+      }
+      const m = await r.json()
+      const scores = extractScores(m.score)
+      const winner = m.score?.winner ?? null
+      const winnerTeam = winner === 'HOME_TEAM' ? (m.homeTeam?.name ?? null)
+        : winner === 'AWAY_TEAM' ? (m.awayTeam?.name ?? null) : null
+      if (!winnerTeam) continue
+
+      const patched = await prisma.match.update({
+        where: { id: dbMatch.id },
+        data: { ...scores, winnerTeam },
+      })
+      await recalculateMatchPoints(patched)
+      updated++
+      console.log(`[score-sync] Patched stale penalty match: ${dbMatch.homeTeam} ${dbMatch.awayTeam} — winner: ${winnerTeam}`)
+    } catch (err) {
+      console.warn(`[score-sync] Failed to re-sync stale match ${dbMatch.externalId}:`, err instanceof Error ? err.message : err)
+    }
+  }
+
   if (updated > 0) console.log(`[score-sync] Recalculated points for ${updated} match(es)`)
   try {
     await prisma.jobStatus.upsert({

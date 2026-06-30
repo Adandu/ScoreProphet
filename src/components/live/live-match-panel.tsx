@@ -116,7 +116,7 @@ export async function LiveMatchPanel({ liveMatch, prefetchedDetails, homeTeamUrl
           </div>
           {isShootout && (
             <div className="text-sm font-semibold text-white/60">
-              ({homePenScore} : {awayPenScore}) pens
+              Pens {homePenScore}–{awayPenScore}
             </div>
           )}
           {liveMatch.status !== 'FINISHED' && (details.halftime ? (

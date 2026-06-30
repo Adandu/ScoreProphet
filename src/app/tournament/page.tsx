@@ -117,8 +117,12 @@ export default async function TournamentPage() {
                   awayTeamCrest: match.awayTeamCrest || teamCrestByName[match.awayTeam] || undefined,
                   homeTeamUrl: teamIdByName[match.homeTeam] ? `/teams/${teamIdByName[match.homeTeam]}` : undefined,
                   awayTeamUrl: teamIdByName[match.awayTeam] ? `/teams/${teamIdByName[match.awayTeam]}` : undefined,
-                  homeScore: match.fullTimeHomeScore ?? match.homeScore,
-                  awayScore: match.fullTimeAwayScore ?? match.awayScore,
+                  homeScore: match.scoreDuration === 'PENALTY_SHOOTOUT'
+                    ? (match.regularTimeHomeScore ?? match.homeScore)
+                    : (match.fullTimeHomeScore ?? match.homeScore),
+                  awayScore: match.scoreDuration === 'PENALTY_SHOOTOUT'
+                    ? (match.regularTimeAwayScore ?? match.awayScore)
+                    : (match.fullTimeAwayScore ?? match.awayScore),
                   scoreDuration: match.scoreDuration,
                   penaltiesHomeScore: match.penaltiesHomeScore,
                   penaltiesAwayScore: match.penaltiesAwayScore,
