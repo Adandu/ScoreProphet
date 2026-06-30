@@ -150,24 +150,38 @@ export function KnockoutBracket({ matches, timezone }: { matches: BracketMatch[]
 
           {/* Center: trophy + final + 3rd place */}
           <div className="flex min-w-[160px] flex-col items-center justify-center gap-2 px-1">
-            {/* Champion banner — shown only after the final is finished */}
+            {/* Champion banner */}
             {(() => {
-              const champion = final?.status === 'FINISHED' ? final.winnerTeam : null
+              const finished = final?.status === 'FINISHED'
+              const champion = finished ? final!.winnerTeam : null
               const championCrest = champion
-                ? (champion === final?.homeTeam ? final?.homeTeamCrest : final?.awayTeamCrest)
+                ? (champion === final!.homeTeam ? final!.homeTeamCrest : final!.awayTeamCrest)
                 : null
-              return champion ? (
-                <div className="flex w-full flex-col items-center gap-1.5 rounded-lg border border-[#C9A84C]/40 bg-[#C9A84C]/10 px-2 py-2">
-                  <span className="text-[9px] font-semibold uppercase tracking-widest text-[#C9A84C]/70">World Champion</span>
-                  {championCrest && (
-                    <Image src={championCrest} alt="" width={36} height={36} className="h-9 w-9 object-contain drop-shadow-md" />
-                  )}
-                  <span className="text-center text-sm font-bold text-[#C9A84C]">{champion}</span>
+              const homePending = !final || /^[WL]?\d|^3[A-L]/.test(final.homeTeam)
+              const awayPending = !final || /^[WL]?\d|^3[A-L]/.test(final.awayTeam)
+
+              if (champion) {
+                return (
+                  <div className="flex w-full flex-col items-center gap-1.5 rounded-lg border border-[#C9A84C]/50 bg-[#C9A84C]/10 px-2 py-2.5">
+                    <span className="text-[9px] font-semibold uppercase tracking-widest text-[#C9A84C]/70">World Champion</span>
+                    {championCrest && <Image src={championCrest} alt="" width={40} height={40} className="h-10 w-10 object-contain drop-shadow-md" />}
+                    <span className="text-center text-sm font-bold text-[#C9A84C]">{champion}</span>
+                  </div>
+                )
+              }
+
+              const TeamRow = ({ name, crest, pending }: { name: string; crest?: string | null; pending: boolean }) => (
+                <div className={`flex items-center gap-1.5 ${pending ? 'text-white/30' : 'text-white/75'}`}>
+                  {!pending && crest && <Image src={crest} alt="" width={14} height={14} className="h-3.5 w-3.5 shrink-0 object-contain" />}
+                  <span className="truncate text-[11px]">{pending ? '?' : name}</span>
                 </div>
-              ) : (
-                <div className="flex w-full flex-col items-center gap-1 rounded-lg border border-dashed border-white/15 px-2 py-3">
-                  <span className="text-[9px] font-semibold uppercase tracking-widest text-white/25">World Champion</span>
-                  <span className="text-[10px] text-white/20">TBD</span>
+              )
+
+              return (
+                <div className="flex w-full flex-col gap-1 rounded-lg border border-dashed border-white/15 px-2 py-2">
+                  <span className="mb-0.5 text-center text-[9px] font-semibold uppercase tracking-widest text-white/25">World Champion</span>
+                  <TeamRow name={final?.homeTeam ?? ''} crest={final?.homeTeamCrest} pending={homePending} />
+                  <TeamRow name={final?.awayTeam ?? ''} crest={final?.awayTeamCrest} pending={awayPending} />
                 </div>
               )
             })()}
