@@ -150,6 +150,8 @@ export function KnockoutBracket({ matches, timezone }: { matches: BracketMatch[]
 
           {/* Center: trophy + final + 3rd place */}
           <div className="flex min-w-[160px] flex-col items-center justify-center gap-2 px-1">
+            <Image src="/World_Cup_Trophy.png" alt="World Cup Trophy" width={104} height={130} className="h-28 w-auto object-contain drop-shadow-lg" />
+            <p className="text-xs font-semibold uppercase tracking-widest text-[#C9A84C]">World Cup 2026</p>
             {/* Champion — only shown after the final is finished */}
             {(() => {
               const champion = final?.status === 'FINISHED' ? final.winnerTeam : null
@@ -168,8 +170,6 @@ export function KnockoutBracket({ matches, timezone }: { matches: BracketMatch[]
                 </div>
               )
             })()}
-            <Image src="/World_Cup_Trophy.png" alt="World Cup Trophy" width={104} height={130} className="h-28 w-auto object-contain drop-shadow-lg" />
-            <p className="text-xs font-semibold uppercase tracking-widest text-[#C9A84C]">World Cup 2026</p>
             {final ? <MatchSlot match={final} timezone={timezone} compact /> : <EmptySlot label="Final" />}
             {thirdPlace && (
               <div className="mt-2 w-full">
