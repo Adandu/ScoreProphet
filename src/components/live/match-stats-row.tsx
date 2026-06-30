@@ -45,7 +45,7 @@ export function MatchStatsRow({
 
   return (
     <div className="overflow-hidden rounded-xl border border-white/10 bg-[#0a1628]">
-      <div className="border-b border-white/5 px-4 py-2.5 text-xs font-bold uppercase tracking-widest text-white/40">
+      <div className="border-b border-white/5 px-4 py-2.5 text-center text-xs font-bold uppercase tracking-widest text-white/40">
         Match Stats
       </div>
       <div className="divide-y divide-white/5">

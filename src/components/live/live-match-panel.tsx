@@ -189,7 +189,7 @@ export async function LiveMatchPanel({ liveMatch, prefetchedDetails, homeTeamUrl
       {/* Goals */}
       {(homeGoals.length > 0 || awayGoals.length > 0) && (
         <div className="overflow-hidden rounded-xl border border-white/10 bg-[#0a1628]">
-          <div className="border-b border-white/5 px-4 py-2.5 text-xs font-bold uppercase tracking-widest text-white/40">
+          <div className="border-b border-white/5 px-4 py-2.5 text-center text-xs font-bold uppercase tracking-widest text-white/40">
             ⚽ Goals
           </div>
           <div className="grid grid-cols-[1fr_1px_1fr]">
@@ -223,7 +223,7 @@ export async function LiveMatchPanel({ liveMatch, prefetchedDetails, homeTeamUrl
       {/* Cards */}
       {(homeBookings.length > 0 || awayBookings.length > 0) && (
         <div className="overflow-hidden rounded-xl border border-white/10 bg-[#0a1628]">
-          <div className="border-b border-white/5 px-4 py-2.5 text-xs font-bold uppercase tracking-widest text-white/40">
+          <div className="border-b border-white/5 px-4 py-2.5 text-center text-xs font-bold uppercase tracking-widest text-white/40">
             Cards
           </div>
           <div className="grid grid-cols-[1fr_1px_1fr]">
@@ -253,7 +253,7 @@ export async function LiveMatchPanel({ liveMatch, prefetchedDetails, homeTeamUrl
       {/* Substitutions */}
       {(homeSubs.length > 0 || awaySubs.length > 0) && (
         <div className="overflow-hidden rounded-xl border border-white/10 bg-[#0a1628]">
-          <div className="border-b border-white/5 px-4 py-2.5 text-xs font-bold uppercase tracking-widest text-white/40">
+          <div className="border-b border-white/5 px-4 py-2.5 text-center text-xs font-bold uppercase tracking-widest text-white/40">
             🔄 Substitutions
           </div>
           <div className="grid grid-cols-[1fr_1px_1fr]">
@@ -287,7 +287,7 @@ export async function LiveMatchPanel({ liveMatch, prefetchedDetails, homeTeamUrl
       {/* Penalty Shootout */}
       {isShootout && (homeShootout.length > 0 || awayShootout.length > 0) && (
         <div className="overflow-hidden rounded-xl border border-white/10 bg-[#0a1628]">
-          <div className="border-b border-white/5 px-4 py-2.5 text-xs font-bold uppercase tracking-widest text-white/40">
+          <div className="border-b border-white/5 px-4 py-2.5 text-center text-xs font-bold uppercase tracking-widest text-white/40">
             🥅 Penalty Shootout
           </div>
           <div className="grid grid-cols-[1fr_1px_1fr]">
