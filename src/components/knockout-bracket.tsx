@@ -148,35 +148,41 @@ export function KnockoutBracket({ matches, timezone }: { matches: BracketMatch[]
             <AlignedColumn key={`left-${stage}`} title={ROUND_LABELS[stage]} matches={arm(LEFT_ARM, stage)} timezone={timezone} />
           ))}
 
-          {/* Center: champion + trophy + final + 3rd place */}
-          <div className="flex min-w-[160px] flex-col items-center justify-center gap-2 px-1">
-            {/* Champion — only shown after the final is finished */}
-            {(() => {
-              const champion = final?.status === 'FINISHED' ? final.winnerTeam : null
-              const championCrest = champion
-                ? (champion === final!.homeTeam ? final!.homeTeamCrest : final!.awayTeamCrest)
-                : null
-              return champion ? (
-                <div className="flex w-full flex-col items-center gap-1.5 rounded-lg border border-[#C9A84C]/50 bg-[#C9A84C]/10 px-2 py-2.5">
-                  <span className="text-[9px] font-semibold uppercase tracking-widest text-[#C9A84C]/70">World Champion</span>
-                  {championCrest && <Image src={championCrest} alt="" width={40} height={40} className="h-10 w-10 object-contain drop-shadow-md" />}
-                  <span className="text-center text-sm font-bold text-[#C9A84C]">{champion}</span>
-                </div>
-              ) : (
-                <div className="flex w-full flex-col items-center gap-1 rounded-lg border border-dashed border-white/15 px-2 py-3">
-                  <span className="text-[9px] font-semibold uppercase tracking-widest text-white/25">World Champion</span>
-                </div>
-              )
-            })()}
-            <Image src="/World_Cup_Trophy.png" alt="World Cup Trophy" width={104} height={130} className="h-28 w-auto object-contain drop-shadow-lg" />
-            <p className="text-xs font-semibold uppercase tracking-widest text-[#C9A84C]">World Cup 2026</p>
+          {/* Center column: top half (champion+trophy) | Final | bottom half (3rd place) */}
+          <div className="flex min-w-[160px] flex-col items-center px-1">
+            {/* Top half — champion above trophy, everything bottom-aligned so Final sits at midpoint */}
+            <div className="flex flex-1 flex-col items-center justify-end gap-2 pb-2">
+              {(() => {
+                const champion = final?.status === 'FINISHED' ? final.winnerTeam : null
+                const championCrest = champion
+                  ? (champion === final!.homeTeam ? final!.homeTeamCrest : final!.awayTeamCrest)
+                  : null
+                return champion ? (
+                  <div className="flex w-full flex-col items-center gap-1.5 rounded-lg border border-[#C9A84C]/50 bg-[#C9A84C]/10 px-2 py-2.5">
+                    <span className="text-[9px] font-semibold uppercase tracking-widest text-[#C9A84C]/70">World Champion</span>
+                    {championCrest && <Image src={championCrest} alt="" width={40} height={40} className="h-10 w-10 object-contain drop-shadow-md" />}
+                    <span className="text-center text-sm font-bold text-[#C9A84C]">{champion}</span>
+                  </div>
+                ) : (
+                  <div className="flex w-full flex-col items-center gap-1 rounded-lg border border-dashed border-white/15 px-2 py-3">
+                    <span className="text-[9px] font-semibold uppercase tracking-widest text-white/25">World Champion</span>
+                  </div>
+                )
+              })()}
+              <Image src="/World_Cup_Trophy.png" alt="World Cup Trophy" width={104} height={130} className="h-28 w-auto object-contain drop-shadow-lg" />
+              <p className="text-xs font-semibold uppercase tracking-widest text-[#C9A84C]">World Cup 2026</p>
+            </div>
+            {/* Final — at the column midpoint, aligns with SF cards */}
             {final ? <MatchSlot match={final} timezone={timezone} compact /> : <EmptySlot label="Final" />}
-            {thirdPlace && (
-              <div className="mt-2 w-full">
-                <h2 className="mb-2 text-center text-[10px] font-semibold uppercase tracking-wide text-white/40">3rd Place</h2>
-                <MatchSlot match={thirdPlace} timezone={timezone} compact />
-              </div>
-            )}
+            {/* Bottom half — 3rd place top-aligned */}
+            <div className="flex flex-1 flex-col items-center justify-start w-full pt-4">
+              {thirdPlace && (
+                <>
+                  <h2 className="mb-2 text-center text-[10px] font-semibold uppercase tracking-wide text-white/40">3rd Place</h2>
+                  <MatchSlot match={thirdPlace} timezone={timezone} compact />
+                </>
+              )}
+            </div>
           </div>
 
           {/* Right arm: SF → QF → R16 → R32 (innermost to outermost) */}
