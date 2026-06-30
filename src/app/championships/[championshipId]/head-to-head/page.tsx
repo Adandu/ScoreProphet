@@ -48,7 +48,6 @@ export default async function HeadToHeadPage({
   const aName = members.find((m) => m.id === aId)!.username
   const bName = members.find((m) => m.id === bId)!.username
 
-  // Fetch data for H2H comparison and stats for both players
   const [h2h, aMatches, bMatches, aAdvances, bAdvances] = await Promise.all([
     getHeadToHead(championship, aId, bId),
     prisma.match.findMany({
@@ -69,6 +68,20 @@ export default async function HeadToHeadPage({
   const bAdvanceMap = new Map(bAdvances.map((b) => [b.matchId, b]))
   const aStats = computePlayerStats(aMatches, aAdvanceMap, championship.doubleChanceEnabled)
   const bStats = computePlayerStats(bMatches, bAdvanceMap, championship.doubleChanceEnabled)
+
+  // Exact score prediction lookup per match
+  const aExactByMatchId = new Map<number, string | null>()
+  for (const match of aMatches) {
+    const exact = match.predictions.find((p) => p.type === 'EXACT_SCORE')
+    if (exact) aExactByMatchId.set(match.id, exact.value)
+  }
+  const bExactByMatchId = new Map<number, string | null>()
+  for (const match of bMatches) {
+    const exact = match.predictions.find((p) => p.type === 'EXACT_SCORE')
+    if (exact) bExactByMatchId.set(match.id, exact.value)
+  }
+
+  const hasKnockout = h2h.matches.some((m) => m.stage !== 'GROUP')
 
   return (
     <div className="space-y-6">
@@ -94,40 +107,87 @@ export default async function HeadToHeadPage({
         </div>
       </div>
 
-      {/* Per-match table with crests and scores */}
+      {/* Stats comparison — shown above the match list */}
+      {(aStats.matchesPlayed > 0 || bStats.matchesPlayed > 0) && (
+        <div className="space-y-3">
+          <h3 className="text-base font-semibold text-white">{aName} — Statistics</h3>
+          <PlayerStatsPanel stats={aStats} />
+          <h3 className="mt-2 text-base font-semibold text-white">{bName} — Statistics</h3>
+          <PlayerStatsPanel stats={bStats} />
+        </div>
+      )}
+
+      {/* Per-match table with score prediction and advance comparison */}
       <div className="overflow-x-auto rounded-xl border border-white/10 bg-white/5">
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-white/10 text-white/40">
               <th className="px-4 py-3 text-left font-normal">Match</th>
-              <th className="px-4 py-3 text-center font-normal">{aName}</th>
-              <th className="px-4 py-3 text-center font-normal">{bName}</th>
+              <th className="px-3 py-3 text-center font-normal">{aName}</th>
+              <th className="px-3 py-3 text-center font-normal">{bName}</th>
             </tr>
           </thead>
           <tbody>
-            {h2h.matches.map((m) => (
-              <tr key={m.matchId} className="border-b border-white/5 last:border-0">
-                <td className="px-4 py-2.5">
-                  <div className="flex items-center gap-2">
-                    {m.homeTeamCrest && (
-                      <Image src={m.homeTeamCrest} alt="" width={20} height={20} className="max-h-5 w-auto object-contain" />
-                    )}
-                    <span className="text-white/80">{m.homeTeam}</span>
-                    <span className="font-bold tabular-nums text-[#C9A84C]">
-                      {m.homeScore !== null && m.awayScore !== null
-                        ? `${m.homeScore} – ${m.awayScore}`
-                        : 'vs'}
-                    </span>
-                    <span className="text-white/80">{m.awayTeam}</span>
-                    {m.awayTeamCrest && (
-                      <Image src={m.awayTeamCrest} alt="" width={20} height={20} className="max-h-5 w-auto object-contain" />
-                    )}
-                  </div>
-                </td>
-                <td className={`px-4 py-2.5 text-center tabular-nums ${m.aPoints > m.bPoints ? 'font-bold text-green-400' : 'text-white/60'}`}>{m.aPoints}</td>
-                <td className={`px-4 py-2.5 text-center tabular-nums ${m.bPoints > m.aPoints ? 'font-bold text-blue-400' : 'text-white/60'}`}>{m.bPoints}</td>
-              </tr>
-            ))}
+            {h2h.matches.map((m) => {
+              const isKnockout = m.stage !== 'GROUP'
+              const aExact = aExactByMatchId.get(m.matchId) ?? null
+              const bExact = bExactByMatchId.get(m.matchId) ?? null
+              const aAdvance = aAdvanceMap.get(m.matchId) ?? null
+              const bAdvance = bAdvanceMap.get(m.matchId) ?? null
+
+              return (
+                <tr key={m.matchId} className="border-b border-white/5 last:border-0">
+                  {/* Match info */}
+                  <td className="px-4 py-3">
+                    <div className="flex items-center gap-2">
+                      {m.homeTeamCrest && (
+                        <Image src={m.homeTeamCrest} alt="" width={20} height={20} className="max-h-5 w-auto object-contain" />
+                      )}
+                      <span className="text-white/80">{m.homeTeam}</span>
+                      <span className="font-bold tabular-nums text-[#C9A84C]">
+                        {m.homeScore !== null && m.awayScore !== null
+                          ? `${m.homeScore} – ${m.awayScore}`
+                          : 'vs'}
+                      </span>
+                      <span className="text-white/80">{m.awayTeam}</span>
+                      {m.awayTeamCrest && (
+                        <Image src={m.awayTeamCrest} alt="" width={20} height={20} className="max-h-5 w-auto object-contain" />
+                      )}
+                    </div>
+                  </td>
+
+                  {/* Player A */}
+                  <td className={`px-3 py-3 text-center ${m.aPoints > m.bPoints ? 'font-bold text-green-400' : 'text-white/60'}`}>
+                    <div className="flex flex-col items-center gap-0.5">
+                      {aExact && (
+                        <span className="tabular-nums text-xs">{aExact}</span>
+                      )}
+                      {isKnockout && aAdvance && (
+                        <span className={`text-xs ${aAdvance.predictedTeam === m.winnerTeam ? 'text-[#C9A84C]' : 'text-white/40'}`}>
+                          ↑ {aAdvance.predictedTeam}
+                        </span>
+                      )}
+                      <span className="text-base tabular-nums">{m.aPoints}</span>
+                    </div>
+                  </td>
+
+                  {/* Player B */}
+                  <td className={`px-3 py-3 text-center ${m.bPoints > m.aPoints ? 'font-bold text-blue-400' : 'text-white/60'}`}>
+                    <div className="flex flex-col items-center gap-0.5">
+                      {bExact && (
+                        <span className="tabular-nums text-xs">{bExact}</span>
+                      )}
+                      {isKnockout && bAdvance && (
+                        <span className={`text-xs ${bAdvance.predictedTeam === m.winnerTeam ? 'text-[#C9A84C]' : 'text-white/40'}`}>
+                          ↑ {bAdvance.predictedTeam}
+                        </span>
+                      )}
+                      <span className="text-base tabular-nums">{m.bPoints}</span>
+                    </div>
+                  </td>
+                </tr>
+              )
+            })}
             {h2h.matches.length === 0 && (
               <tr>
                 <td colSpan={3} className="px-4 py-8 text-center text-white/30">
@@ -138,16 +198,6 @@ export default async function HeadToHeadPage({
           </tbody>
         </table>
       </div>
-
-      {/* Stats comparison */}
-      {(aStats.matchesPlayed > 0 || bStats.matchesPlayed > 0) && (
-        <div className="space-y-3">
-          <h3 className="text-base font-semibold text-white">{aName} — Statistics</h3>
-          <PlayerStatsPanel stats={aStats} />
-          <h3 className="mt-2 text-base font-semibold text-white">{bName} — Statistics</h3>
-          <PlayerStatsPanel stats={bStats} />
-        </div>
-      )}
     </div>
   )
 }

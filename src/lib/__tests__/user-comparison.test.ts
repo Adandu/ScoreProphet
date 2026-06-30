@@ -3,7 +3,7 @@ import { computeHeadToHead } from '@/lib/user-comparison'
 
 const m = (home: string, away: string, kickoff: number) => ({
   homeTeam: home, awayTeam: away, homeTeamCrest: '', awayTeamCrest: '',
-  homeScore: null, awayScore: null, kickoff,
+  homeScore: null, awayScore: null, stage: 'GROUP', winnerTeam: null, kickoff,
 })
 
 const meta = {

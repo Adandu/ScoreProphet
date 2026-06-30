@@ -8,6 +8,8 @@ export interface H2HMatchResult {
   awayTeamCrest: string
   homeScore: number | null
   awayScore: number | null
+  stage: string
+  winnerTeam: string | null
   kickoff: number
   aPoints: number
   bPoints: number
@@ -27,6 +29,8 @@ type MatchMeta = {
   awayTeamCrest: string
   homeScore: number | null
   awayScore: number | null
+  stage: string
+  winnerTeam: string | null
   kickoff: number
 }
 
@@ -49,7 +53,7 @@ export function computeHeadToHead(
     if (aPoints > bPoints) aWins++
     else if (bPoints > aPoints) bWins++
     else ties++
-    const info = meta[matchId] ?? { homeTeam: '', awayTeam: '', homeTeamCrest: '', awayTeamCrest: '', homeScore: null, awayScore: null, kickoff: 0 }
+    const info = meta[matchId] ?? { homeTeam: '', awayTeam: '', homeTeamCrest: '', awayTeamCrest: '', homeScore: null, awayScore: null, stage: 'GROUP', winnerTeam: null, kickoff: 0 }
     matches.push({ matchId, ...info, aPoints, bPoints })
   }
 
@@ -70,7 +74,7 @@ export async function getHeadToHead(
       userId: { in: [userAId, userBId] },
       pointsAwarded: { not: null },
     },
-    select: { userId: true, matchId: true, type: true, pointsAwarded: true, match: { select: { homeTeam: true, awayTeam: true, homeTeamCrest: true, awayTeamCrest: true, homeScore: true, awayScore: true, kickoff: true } } },
+    select: { userId: true, matchId: true, type: true, pointsAwarded: true, match: { select: { homeTeam: true, awayTeam: true, homeTeamCrest: true, awayTeamCrest: true, homeScore: true, awayScore: true, stage: true, winnerTeam: true, kickoff: true } } },
   })
 
   const meta: Record<number, MatchMeta> = {}
@@ -85,6 +89,8 @@ export async function getHeadToHead(
       awayTeamCrest: p.match.awayTeamCrest,
       homeScore: p.match.homeScore,
       awayScore: p.match.awayScore,
+      stage: p.match.stage,
+      winnerTeam: p.match.winnerTeam,
       kickoff: p.match.kickoff.getTime(),
     }
     const byMatch = points.get(p.userId)
