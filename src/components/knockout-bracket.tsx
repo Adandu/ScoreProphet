@@ -221,6 +221,24 @@ function MobileBracket({
       })}
 
       <section className="rounded-xl border border-white/10 bg-white/5 p-4">
+        {/* Champion banner — mobile */}
+        {(() => {
+          const champion = final?.status === 'FINISHED' ? final.winnerTeam : null
+          const championCrest = champion
+            ? (champion === final!.homeTeam ? final!.homeTeamCrest : final!.awayTeamCrest)
+            : null
+          return champion ? (
+            <div className="mb-4 flex flex-col items-center gap-2 rounded-lg border border-[#C9A84C]/50 bg-[#C9A84C]/10 py-4">
+              <span className="text-[10px] font-semibold uppercase tracking-widest text-[#C9A84C]/70">World Champion</span>
+              {championCrest && <Image src={championCrest} alt="" width={48} height={48} className="h-12 w-12 object-contain drop-shadow-md" />}
+              <span className="text-lg font-bold text-[#C9A84C]">{champion}</span>
+            </div>
+          ) : (
+            <div className="mb-4 flex flex-col items-center gap-1 rounded-lg border border-dashed border-white/15 py-3">
+              <span className="text-[10px] font-semibold uppercase tracking-widest text-white/25">World Champion</span>
+            </div>
+          )
+        })()}
         <div className="mb-4 flex items-center justify-center gap-4">
           <Image src="/World_Cup_Trophy.png" alt="World Cup Trophy" width={76} height={96} className="h-20 w-auto object-contain drop-shadow-lg" />
           <div>
