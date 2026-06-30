@@ -64,16 +64,13 @@ const ROUND_LABELS: Record<Stage, string> = {
 
 const MAIN_ROUNDS: Stage[] = ['ROUND_OF_32', 'ROUND_OF_16', 'QUARTER_FINAL', 'SEMI_FINAL']
 
-// R32 slots in kickoff order (verified from API + Wikipedia official match numbers).
-// Official FIFA matchNos 73-88 are assigned by bracket position which equals kickoff order.
-// R16 pairings from Wikipedia wikitext bracket table (rows in visual bracket order, adjacent rows pair):
-//   Row1=M75(Paraguay)+Row2=M78(France/Swe)→M89(LEFT); Row3=M73(Canada)+Row4=M76(Morocco)→M90(LEFT)
-//   Row5=M84+Row6=M83→M93(LEFT); Row7=M82+Row8=M81→M94(LEFT)
-//   Row9=M74(Brazil)+Row10=M77(IvoryCoast/Nor)→M91(RIGHT); Row11=M79+Row12=M80→M92(RIGHT)
-//   Row13=M87+Row14=M86→M95 pairs: M86+M88→M95, M85+M87→M96 (RIGHT)
-// QF pairings: M97=W89vsW90→SF101, M98=W93vsW94→SF101,
-//              M99=W91vsW92→SF102, M100=W95vsW96→SF102
-// Left arm →SF101 (M89,M90,M93,M94); Right arm →SF102 (M91,M92,M95,M96)
+// R32 matchNos assigned by kickoff order (API verified: M73=1st,…,M77=5th=IvoryCst/Nor,M78=6th=Fra/Swe).
+// R16 pairings from Wikipedia wikitext section headings (authoritative):
+//   M89="Paraguay vs Winner Match 77"=W75+W77 (LEFT); M90=W73+W76=Canada/Morocco (LEFT)
+//   M91="Brazil vs Winner Match 78"=W74+W78 (RIGHT);  M92=W79+W80 (RIGHT)
+//   M93=W83+W84 (LEFT); M94=W81+W82 (LEFT); M95=W86+W88 (RIGHT); M96=W85+W87 (RIGHT)
+// QF: M97=W89vsW90→SF101, M98=W93vsW94→SF101, M99=W91vsW92→SF102, M100=W95vsW96→SF102
+// Left arm→SF101; Right arm→SF102
 const BRACKET_SLOTS: BracketSlot[] = [
   { matchNo: 73, stage: 'ROUND_OF_32', homeSlot: '2A', awaySlot: '2B' },
   { matchNo: 74, stage: 'ROUND_OF_32', homeSlot: '1E', awaySlot: '3ABCDF' },
@@ -93,8 +90,8 @@ const BRACKET_SLOTS: BracketSlot[] = [
   { matchNo: 88, stage: 'ROUND_OF_32', homeSlot: '2D', awaySlot: '2G' },
   // R16 entries listed in kickoff order (537376→M90, 537375→M89, 537377→M91, ...)
   { matchNo: 90, stage: 'ROUND_OF_16', homeSlot: 'W73', awaySlot: 'W76' },
-  { matchNo: 89, stage: 'ROUND_OF_16', homeSlot: 'W75', awaySlot: 'W78' },
-  { matchNo: 91, stage: 'ROUND_OF_16', homeSlot: 'W74', awaySlot: 'W77' },
+  { matchNo: 89, stage: 'ROUND_OF_16', homeSlot: 'W75', awaySlot: 'W77' },
+  { matchNo: 91, stage: 'ROUND_OF_16', homeSlot: 'W74', awaySlot: 'W78' },
   { matchNo: 92, stage: 'ROUND_OF_16', homeSlot: 'W79', awaySlot: 'W80' },
   { matchNo: 93, stage: 'ROUND_OF_16', homeSlot: 'W83', awaySlot: 'W84' },
   { matchNo: 94, stage: 'ROUND_OF_16', homeSlot: 'W81', awaySlot: 'W82' },
@@ -115,14 +112,14 @@ const BRACKET_SLOTS: BracketSlot[] = [
 // Right arm (→SF M102): M91,M92 feed QF99; M95,M96 feed QF100.
 // Adjacent R32 pairs in each arm feed the same R16 (home R32 listed first/top).
 const LEFT_ARM: Partial<Record<Stage, number[]>> = {
-  ROUND_OF_32: [75, 78, 73, 76, 83, 84, 81, 82],
+  ROUND_OF_32: [75, 77, 73, 76, 83, 84, 81, 82],
   ROUND_OF_16: [89, 90, 93, 94],
   QUARTER_FINAL: [97, 98],
   SEMI_FINAL: [101],
 }
 
 const RIGHT_ARM: Partial<Record<Stage, number[]>> = {
-  ROUND_OF_32: [74, 77, 79, 80, 86, 88, 85, 87],
+  ROUND_OF_32: [74, 78, 79, 80, 86, 88, 85, 87],
   ROUND_OF_16: [91, 92, 95, 96],
   QUARTER_FINAL: [99, 100],
   SEMI_FINAL: [102],
