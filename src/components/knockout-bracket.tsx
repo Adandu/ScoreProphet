@@ -66,10 +66,11 @@ const MAIN_ROUNDS: Stage[] = ['ROUND_OF_32', 'ROUND_OF_16', 'QUARTER_FINAL', 'SE
 
 // R32 slots in kickoff order (verified from API + Wikipedia official match numbers).
 // Official FIFA matchNos 73-88 are assigned by bracket position which equals kickoff order.
-// R16 pairings verified from Wikipedia wikitext (en.wikipedia.org/wiki/2026_FIFA_World_Cup_knockout_stage):
-//   M89=W75vsW77(Paraguay/R16-2), M90=W73vsW76(Canada/Morocco/R16-1),
-//   M91=W74vsW78(Brazil/R16-3), M92=W79vsW80, M93=W83vsW84,
-//   M94=W81vsW82, M95=W86vsW88, M96=W85vsW87
+// R16 pairings from Wikipedia wikitext bracket table (rows in visual bracket order, adjacent rows pair):
+//   Row1=M75(Paraguay)+Row2=M78(France/Swe)→M89(LEFT); Row3=M73(Canada)+Row4=M76(Morocco)→M90(LEFT)
+//   Row5=M84+Row6=M83→M93(LEFT); Row7=M82+Row8=M81→M94(LEFT)
+//   Row9=M74(Brazil)+Row10=M77(IvoryCoast/Nor)→M91(RIGHT); Row11=M79+Row12=M80→M92(RIGHT)
+//   Row13=M87+Row14=M86→M95 pairs: M86+M88→M95, M85+M87→M96 (RIGHT)
 // QF pairings: M97=W89vsW90→SF101, M98=W93vsW94→SF101,
 //              M99=W91vsW92→SF102, M100=W95vsW96→SF102
 // Left arm →SF101 (M89,M90,M93,M94); Right arm →SF102 (M91,M92,M95,M96)
@@ -92,8 +93,8 @@ const BRACKET_SLOTS: BracketSlot[] = [
   { matchNo: 88, stage: 'ROUND_OF_32', homeSlot: '2D', awaySlot: '2G' },
   // R16 entries listed in kickoff order (537376→M90, 537375→M89, 537377→M91, ...)
   { matchNo: 90, stage: 'ROUND_OF_16', homeSlot: 'W73', awaySlot: 'W76' },
-  { matchNo: 89, stage: 'ROUND_OF_16', homeSlot: 'W75', awaySlot: 'W77' },
-  { matchNo: 91, stage: 'ROUND_OF_16', homeSlot: 'W74', awaySlot: 'W78' },
+  { matchNo: 89, stage: 'ROUND_OF_16', homeSlot: 'W75', awaySlot: 'W78' },
+  { matchNo: 91, stage: 'ROUND_OF_16', homeSlot: 'W74', awaySlot: 'W77' },
   { matchNo: 92, stage: 'ROUND_OF_16', homeSlot: 'W79', awaySlot: 'W80' },
   { matchNo: 93, stage: 'ROUND_OF_16', homeSlot: 'W83', awaySlot: 'W84' },
   { matchNo: 94, stage: 'ROUND_OF_16', homeSlot: 'W81', awaySlot: 'W82' },
@@ -114,14 +115,14 @@ const BRACKET_SLOTS: BracketSlot[] = [
 // Right arm (→SF M102): M91,M92 feed QF99; M95,M96 feed QF100.
 // Adjacent R32 pairs in each arm feed the same R16 (home R32 listed first/top).
 const LEFT_ARM: Partial<Record<Stage, number[]>> = {
-  ROUND_OF_32: [75, 77, 73, 76, 83, 84, 81, 82],
+  ROUND_OF_32: [75, 78, 73, 76, 83, 84, 81, 82],
   ROUND_OF_16: [89, 90, 93, 94],
   QUARTER_FINAL: [97, 98],
   SEMI_FINAL: [101],
 }
 
 const RIGHT_ARM: Partial<Record<Stage, number[]>> = {
-  ROUND_OF_32: [74, 78, 79, 80, 86, 88, 85, 87],
+  ROUND_OF_32: [74, 77, 79, 80, 86, 88, 85, 87],
   ROUND_OF_16: [91, 92, 95, 96],
   QUARTER_FINAL: [99, 100],
   SEMI_FINAL: [102],
