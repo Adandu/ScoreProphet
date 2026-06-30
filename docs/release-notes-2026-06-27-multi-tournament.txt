@@ -1,0 +1,104 @@
+Release Notes — ScoreProphet Multi-Tournament Update
+Released: 27 June 2026
+
+========================================================
+WHAT'S NEW: MULTI-TOURNAMENT SUPPORT
+========================================================
+
+ScoreProphet can now run multiple tournaments at the same time. WC 2026
+continues exactly as before — nothing has changed for you there. This update
+lays the groundwork so that when Champions League 2026–27 or Euro 2028 is
+added, you'll be able to switch between them without losing your WC
+predictions or leaderboard history.
+
+
+FOR ALL USERS
+========================================================
+
+Tournament Switcher in the Navbar
+----------------------------------
+A dropdown will appear in the navigation bar whenever 2 or more active
+tournaments are running simultaneously. Right now it's hidden (there's only
+WC 2026), so your nav looks identical to before. When a second tournament
+launches, the switcher appears automatically — your selected tournament is
+remembered across sessions.
+
+Past Tournaments on Your Profile
+----------------------------------
+Your profile page now has a "Past Tournaments" section. After WC 2026 is
+archived, it will appear there showing which championships you participated
+in and a button to browse the final results. The section is hidden until you
+have at least one past tournament.
+
+Archive Mode (Read-Only View)
+----------------------------------
+Finished tournaments can be archived by the admin. When you're viewing an
+archived tournament:
+- A gold banner appears at the top: "This tournament has ended — viewing
+  historical results"
+- All prediction forms are locked — you can read your past predictions but
+  can't change them
+- The Reset Prediction button is hidden
+- The Live Matches tab disappears from the nav (no live data for finished
+  tournaments)
+- A "Back to active tournament" button returns you to the current live
+  tournament
+
+Championship Isolation
+----------------------------------
+Your championship's team selector in the nav now only shows championships
+belonging to the currently selected tournament. When you switch tournaments,
+the championship list switches with it — no cross-tournament confusion.
+
+Match Access Protection
+----------------------------------
+If you try to navigate directly to a match URL from a different tournament
+(e.g. via a saved link), you'll be redirected to the home page rather than
+seeing the wrong tournament's match data.
+
+
+FOR THE ADMIN
+========================================================
+
+Tournament Management Panel
+----------------------------------
+The admin page has a new Tournaments section replacing the old global Sync
+and Recalculate buttons:
+
+- Add Tournament: Browse all competitions available from football-data.org,
+  pick one, and ScoreProphet creates the tournament and imports all its
+  fixtures automatically. You can only add competitions the API actually has
+  data for — no empty placeholders.
+
+- Sync Fixtures (per tournament): Pull the latest match results and schedule
+  updates for a specific tournament.
+
+- Recalculate Points (per tournament): Recompute prediction scores for all
+  finished matches in a specific tournament.
+
+- Archive: Mark a tournament as finished. It disappears from the navbar
+  switcher and enters read-only mode for all users. Still accessible from
+  their profile history.
+
+Each tournament gets its own row with independent action buttons — clicking
+Sync on one tournament doesn't disable the buttons on the others.
+
+Championship Creation
+----------------------------------
+When you create a new championship, it's automatically attached to whichever
+tournament is currently selected. No need to specify the tournament manually.
+
+Sync Scripts
+----------------------------------
+The background sync scripts that keep match data up to date now loop over
+all active tournaments automatically. Adding a second tournament means its
+matches get synced on the same schedule as WC 2026 — no script changes
+needed.
+
+
+BUG FIXES
+========================================================
+
+- Dropdown menus (competition selector, prediction score pickers,
+  head-to-head selector) now show readable text — the white-on-white native
+  dropdown text issue is fixed.

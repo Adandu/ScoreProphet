@@ -1,10 +1,9 @@
-import { fetchLiveMatchDetails, type NormalizedMatch, type LiveMatchDetails } from '@/lib/football-api'
+import { fetchLiveMatchDetails, type NormalizedMatch, type LiveMatchDetails, type LiveMatchEvent, type LiveMatchBooking, type LiveMatchSubstitution } from '@/lib/football-api'
 import { PitchFormation } from '@/components/pitch-formation'
 import { resolveMatchColors } from '@/lib/match-visuals'
 import { TeamBlock } from './team-block'
 import { CardBadge } from './card-badge'
 import { MatchStatsRow } from './match-stats-row'
-import { MatchTimeline } from './match-timeline'
 
 function fmtMin(minute: number, injuryTime?: number | null, scoreDuration?: string): string {
   if (injuryTime != null && injuryTime > 0) return `${minute}+${injuryTime}'`
@@ -29,6 +28,47 @@ function finishedLabel(scoreDuration: string): string {
   if (scoreDuration === 'PENALTY_SHOOTOUT') return 'Penalties'
   if (scoreDuration === 'EXTRA_TIME') return 'AET'
   return 'Full Time'
+}
+
+type GoalEvent    = LiveMatchEvent    & { kind: 'goal' }
+type BookingEvent = LiveMatchBooking  & { kind: 'booking' }
+type SubEvent     = LiveMatchSubstitution & { kind: 'sub' }
+type TimelineItem = (GoalEvent | BookingEvent | SubEvent) & { sortKey: number }
+
+function GoalLabel({ event }: { event: GoalEvent }) {
+  return (
+    <span className="flex items-center gap-1 text-sm">
+      <span>⚽</span>
+      <span className="font-semibold text-white/80">{event.playerName}</span>
+      {event.type === 'OWN_GOAL' && <span className="text-[10px] font-bold text-orange-400">OG</span>}
+      {event.type === 'PENALTY'   && <span className="text-[10px] font-bold text-yellow-400">P</span>}
+      {event.assistName && <span className="text-xs text-white/35">({event.assistName})</span>}
+    </span>
+  )
+}
+
+function BookingLabel({ event }: { event: BookingEvent }) {
+  return (
+    <span className="flex items-center gap-1 text-sm">
+      <CardBadge card={event.card} />
+      <span className="font-semibold text-white/80">{event.playerName}</span>
+    </span>
+  )
+}
+
+function SubLabel({ event }: { event: SubEvent }) {
+  return (
+    <span className="flex flex-col text-sm leading-tight">
+      <span className="flex items-center gap-1">
+        <span className="text-xs font-bold text-green-400">↑</span>
+        <span className="font-semibold text-white/80">{event.playerInName}</span>
+      </span>
+      <span className="flex items-center gap-1">
+        <span className="text-xs font-bold text-red-400">↓</span>
+        <span className="text-white/40">{event.playerOutName}</span>
+      </span>
+    </span>
+  )
 }
 
 export async function LiveMatchPanel({ liveMatch, prefetchedDetails, homeTeamUrl, awayTeamUrl }: { liveMatch: NormalizedMatch; prefetchedDetails?: LiveMatchDetails; homeTeamUrl?: string; awayTeamUrl?: string }) {
@@ -80,6 +120,13 @@ export async function LiveMatchPanel({ liveMatch, prefetchedDetails, homeTeamUrl
   const awayBookings = mergeBookings(details.bookings.filter((b) => b.teamId === awayId))
   const homeSubs = details.substitutions.filter((s) => s.teamId === homeId)
   const awaySubs = details.substitutions.filter((s) => s.teamId === awayId)
+
+  // Timeline — merge all events, sorted by minute
+  const timelineItems: TimelineItem[] = [
+    ...details.goals.map((g) => ({ ...g, kind: 'goal' as const, sortKey: g.minute * 100 + (g.injuryTime ?? 0) })),
+    ...mergeBookings(details.bookings).map((b) => ({ ...b, kind: 'booking' as const, sortKey: b.minute * 100 + (b.injuryTime ?? 0) + 1 })),
+    ...details.substitutions.map((s) => ({ ...s, kind: 'sub' as const, sortKey: s.minute * 100 + (s.injuryTime ?? 0) + 2 })),
+  ].sort((a, b) => a.sortKey - b.sortKey)
 
   return (
     <div className="space-y-4">
@@ -312,13 +359,43 @@ export async function LiveMatchPanel({ liveMatch, prefetchedDetails, homeTeamUrl
         </div>
       )}
 
-      {/* Timeline — always last */}
-      <MatchTimeline
-        homeId={String(homeId)}
-        goals={details.goals}
-        bookings={mergeBookings(details.bookings)}
-        substitutions={details.substitutions}
-      />
+      {/* Match Timeline */}
+      {timelineItems.length > 0 && (
+        <div className="overflow-hidden rounded-xl border border-white/10 bg-[#0a1628]">
+          <div className="border-b border-white/5 px-4 py-2.5 text-center text-xs font-bold uppercase tracking-widest text-white/40">
+            Match Timeline
+          </div>
+          <div className="px-2 py-2">
+            {timelineItems.map((item, i) => {
+              const isHome = item.teamId === homeId
+              const min = fmtMin(item.minute, item.injuryTime, liveMatch.scoreDuration)
+              return (
+                <div key={i} className="grid grid-cols-[1fr_48px_1fr] items-center gap-1 py-1">
+                  <div className="flex justify-end pr-1">
+                    {isHome && (
+                      item.kind === 'goal'    ? <GoalLabel    event={item} /> :
+                      item.kind === 'booking' ? <BookingLabel event={item} /> :
+                      <SubLabel event={item} />
+                    )}
+                  </div>
+                  <div className="flex flex-col items-center">
+                    <span className="rounded-full border border-white/10 bg-white/5 px-1.5 py-0.5 text-[10px] font-bold tabular-nums text-white/50">
+                      {min}
+                    </span>
+                  </div>
+                  <div className="flex justify-start pl-1">
+                    {!isHome && (
+                      item.kind === 'goal'    ? <GoalLabel    event={item} /> :
+                      item.kind === 'booking' ? <BookingLabel event={item} /> :
+                      <SubLabel event={item} />
+                    )}
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+        </div>
+      )}
     </div>
   )
 }
