@@ -75,11 +75,17 @@ function extractScores(apiScore: ApiScore | undefined) {
 async function recalculateMatchPoints(match: Match) {
   if (match.homeScore === null || match.awayScore === null) return
 
+  // Outcome predictions (1/X/2, double chance, exact score) are judged on the
+  // 90-minute result. Extra time and penalties only affect the ADVANCE pick.
+  const isET = match.scoreDuration === 'EXTRA_TIME' || match.scoreDuration === 'PENALTY_SHOOTOUT'
+  const outcomeHome = isET ? (match.regularTimeHomeScore ?? match.homeScore)! : match.homeScore!
+  const outcomeAway = isET ? (match.regularTimeAwayScore ?? match.awayScore)! : match.awayScore!
+
   const predictions = await prisma.prediction.findMany({ where: { matchId: match.id } })
   const ops: Prisma.PrismaPromise<unknown>[] = predictions.map(p =>
     prisma.prediction.update({
       where: { id: p.id },
-      data: { pointsAwarded: calculatePredictionPoints(p.type as PredictionType, p.value, match.homeScore!, match.awayScore!) },
+      data: { pointsAwarded: calculatePredictionPoints(p.type as PredictionType, p.value, outcomeHome, outcomeAway) },
     })
   )
 

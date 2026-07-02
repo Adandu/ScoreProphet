@@ -131,6 +131,8 @@ type MatchWithRelations = {
   id: number
   homeScore: number | null
   awayScore: number | null
+  regularTimeHomeScore: number | null
+  regularTimeAwayScore: number | null
   winnerTeam: string | null
   scoreDuration: string
   stage: string
@@ -143,10 +145,14 @@ type WinnerPredictionRecord = { id: number; predictedTeam: string }
 
 function buildPointsOps(match: MatchWithRelations, winnerPredictions: WinnerPredictionRecord[]) {
   if (match.homeScore === null || match.awayScore === null) return []
+  // Outcome predictions (1/X/2, double chance, exact score) are judged on the 90-min result.
+  const isET = match.scoreDuration === 'EXTRA_TIME' || match.scoreDuration === 'PENALTY_SHOOTOUT'
+  const outcomeHome = isET ? (match.regularTimeHomeScore ?? match.homeScore) : match.homeScore
+  const outcomeAway = isET ? (match.regularTimeAwayScore ?? match.awayScore) : match.awayScore
   const operations = []
 
   for (const pred of match.predictions) {
-    const pts = calculatePredictionPoints(pred.type as PredictionType, pred.value, match.homeScore, match.awayScore)
+    const pts = calculatePredictionPoints(pred.type as PredictionType, pred.value, outcomeHome!, outcomeAway!)
     operations.push(prisma.prediction.update({ where: { id: pred.id }, data: { pointsAwarded: pts } }))
   }
 

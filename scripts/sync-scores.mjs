@@ -97,11 +97,14 @@ function extractScores(apiScore) {
 }
 async function recalculateMatchPoints(match) {
   if (match.homeScore === null || match.awayScore === null) return;
+  const isET = match.scoreDuration === "EXTRA_TIME" || match.scoreDuration === "PENALTY_SHOOTOUT";
+  const outcomeHome = isET ? match.regularTimeHomeScore ?? match.homeScore : match.homeScore;
+  const outcomeAway = isET ? match.regularTimeAwayScore ?? match.awayScore : match.awayScore;
   const predictions = await prisma.prediction.findMany({ where: { matchId: match.id } });
   const ops = predictions.map(
     (p) => prisma.prediction.update({
       where: { id: p.id },
-      data: { pointsAwarded: calculatePredictionPoints(p.type, p.value, match.homeScore, match.awayScore) }
+      data: { pointsAwarded: calculatePredictionPoints(p.type, p.value, outcomeHome, outcomeAway) }
     })
   );
   if (match.status === "FINISHED") {
