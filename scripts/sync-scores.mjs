@@ -149,7 +149,6 @@ async function main() {
     prisma.match.findMany({ where: { status: "LIVE", tournamentId: { in: activeTournamentIds } } }),
     prisma.match.count({ where: { kickoff: { gte: windowStart, lte: windowEnd }, status: "SCHEDULED", tournamentId: { in: activeTournamentIds } } })
   ]);
-  const recentWindow = new Date(now.getTime() - 24 * 60 * 60 * 1e3);
   const nullScoreFinished = await prisma.match.findMany({
     where: {
       status: "FINISHED",
@@ -157,12 +156,7 @@ async function main() {
       tournamentId: { in: activeTournamentIds },
       OR: [
         { homeScore: null },
-        { awayScore: null },
-        // ET/penalty matches in last 24h may have stale regularTime score
-        {
-          scoreDuration: { in: ["PENALTY_SHOOTOUT", "EXTRA_TIME"] },
-          kickoff: { gte: recentWindow }
-        }
+        { awayScore: null }
       ]
     }
   });

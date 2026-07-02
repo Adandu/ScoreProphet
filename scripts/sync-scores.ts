@@ -143,10 +143,9 @@ async function main() {
     prisma.match.count({ where: { kickoff: { gte: windowStart, lte: windowEnd }, status: 'SCHEDULED', tournamentId: { in: activeTournamentIds } } }),
   ])
 
-  // Always run stale-score recovery before the live-match early exit.
+  // Always run null-score recovery before the live-match early exit.
   // FINISHED matches with null scores (caused by API returning null during post-match
   // transitions) would otherwise never be re-synced, since they are not LIVE or near kickoff.
-  const recentWindow = new Date(now.getTime() - 24 * 60 * 60 * 1000)
   const nullScoreFinished = await prisma.match.findMany({
     where: {
       status: 'FINISHED',
@@ -155,11 +154,6 @@ async function main() {
       OR: [
         { homeScore: null },
         { awayScore: null },
-        // ET/penalty matches in last 24h may have stale regularTime score
-        {
-          scoreDuration: { in: ['PENALTY_SHOOTOUT', 'EXTRA_TIME'] },
-          kickoff: { gte: recentWindow },
-        },
       ],
     },
   })
