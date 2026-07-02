@@ -137,6 +137,57 @@ async function main() {
     prisma.match.count({ where: { kickoff: { gte: windowStart, lte: windowEnd }, status: 'SCHEDULED', tournamentId: { in: activeTournamentIds } } }),
   ])
 
+  // Always run stale-score recovery before the live-match early exit.
+  // FINISHED matches with null scores (caused by API returning null during post-match
+  // transitions) would otherwise never be re-synced, since they are not LIVE or near kickoff.
+  const recentWindow = new Date(now.getTime() - 24 * 60 * 60 * 1000)
+  const nullScoreFinished = await prisma.match.findMany({
+    where: {
+      status: 'FINISHED',
+      adminOverride: false,
+      tournamentId: { in: activeTournamentIds },
+      OR: [
+        { homeScore: null },
+        { awayScore: null },
+        // ET/penalty matches in last 24h may have stale regularTime score
+        {
+          scoreDuration: { in: ['PENALTY_SHOOTOUT', 'EXTRA_TIME'] },
+          kickoff: { gte: recentWindow },
+        },
+      ],
+    },
+  })
+  if (nullScoreFinished.length > 0) {
+    let staleUpdated = 0
+    for (const dbMatch of nullScoreFinished) {
+      try {
+        const r = await fetch(`${BASE_URL}/matches/${dbMatch.externalId}`, { headers: getHeaders() })
+        if (!r.ok) {
+          if (r.status === 429) { console.warn('[score-sync] Rate limited on stale match re-fetch'); break }
+          continue
+        }
+        const m = await r.json()
+        if ((STATUS_MAP[m.status] ?? '') !== 'FINISHED') continue
+        const scores = extractScores(m.score)
+        const winner = m.score?.winner ?? null
+        const winnerTeam = winner === 'HOME_TEAM' ? (m.homeTeam?.name ?? null)
+          : winner === 'AWAY_TEAM' ? (m.awayTeam?.name ?? null) : null
+        // Skip if API also has null scores or no winner yet
+        if (scores.homeScore === null || scores.awayScore === null || !winnerTeam) continue
+        const patched = await prisma.match.update({
+          where: { id: dbMatch.id },
+          data: { ...scores, winnerTeam },
+        })
+        await recalculateMatchPoints(patched)
+        staleUpdated++
+        console.log(`[score-sync] Recovered: ${dbMatch.homeTeam} ${scores.homeScore}-${scores.awayScore} ${dbMatch.awayTeam} (winner: ${winnerTeam})`)
+      } catch (err) {
+        console.warn(`[score-sync] Failed to recover match ${dbMatch.externalId}:`, err instanceof Error ? err.message : err)
+      }
+    }
+    if (staleUpdated > 0) console.log(`[score-sync] Recovered ${staleUpdated} match(es) with missing/stale scores`)
+  }
+
   if (dbLiveMatches.length === 0 && nearKickoffCount === 0) return
 
   // Collect live matches from API for each active tournament
@@ -213,53 +264,6 @@ async function main() {
       console.log(`[score-sync] ${dbMatch.homeTeam} ${finishedMatch.homeScore}-${finishedMatch.awayScore} ${dbMatch.awayTeam} FINISHED — points recalculated`)
     } catch (err) {
       console.warn(`[score-sync] Failed to check match ${dbMatch.externalId}:`, err instanceof Error ? err.message : err)
-    }
-  }
-
-  // Re-sync FINISHED ET/penalty matches that may have stale scores.
-  // Covers two cases: missing winner (API lag at match end) and wrong score
-  // (regularTime score was frozen instead of fullTime score — now fixed, but
-  // existing rows with homeScore = regularTimeHomeScore need correction).
-  const recentWindow = new Date(now.getTime() - 24 * 60 * 60 * 1000)
-  const stalePenaltyMatches = await prisma.match.findMany({
-    where: {
-      status: 'FINISHED',
-      scoreDuration: { in: ['PENALTY_SHOOTOUT', 'EXTRA_TIME'] },
-      adminOverride: false,
-      tournamentId: { in: activeTournamentIds },
-      OR: [
-        { winnerTeam: null },
-        // Matches where fullTime score may differ from stored homeScore (ET bug)
-        { kickoff: { gte: recentWindow } },
-      ],
-    },
-  })
-  for (const dbMatch of stalePenaltyMatches) {
-    try {
-      const r = await fetch(`${BASE_URL}/matches/${dbMatch.externalId}`, { headers: getHeaders() })
-      if (!r.ok) {
-        if (r.status === 429) { console.warn('[score-sync] Rate limited on stale match re-fetch'); break }
-        continue
-      }
-      const m = await r.json()
-      const scores = extractScores(m.score)
-      const winner = m.score?.winner ?? null
-      const winnerTeam = winner === 'HOME_TEAM' ? (m.homeTeam?.name ?? null)
-        : winner === 'AWAY_TEAM' ? (m.awayTeam?.name ?? null) : null
-      if (!winnerTeam) continue
-      // Never overwrite a valid score with null — API sometimes returns null during post-match transitions
-      if (scores.homeScore === null && dbMatch.homeScore !== null) continue
-      if (scores.awayScore === null && dbMatch.awayScore !== null) continue
-
-      const patched = await prisma.match.update({
-        where: { id: dbMatch.id },
-        data: { ...scores, winnerTeam },
-      })
-      await recalculateMatchPoints(patched)
-      updated++
-      console.log(`[score-sync] Patched stale penalty match: ${dbMatch.homeTeam} ${dbMatch.awayTeam} — winner: ${winnerTeam}`)
-    } catch (err) {
-      console.warn(`[score-sync] Failed to re-sync stale match ${dbMatch.externalId}:`, err instanceof Error ? err.message : err)
     }
   }
 
