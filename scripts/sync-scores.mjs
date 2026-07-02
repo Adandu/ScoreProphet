@@ -242,6 +242,8 @@ async function main() {
       const winner = m.score?.winner ?? null;
       const winnerTeam = winner === "HOME_TEAM" ? m.homeTeam?.name ?? null : winner === "AWAY_TEAM" ? m.awayTeam?.name ?? null : null;
       if (!winnerTeam) continue;
+      if (scores.homeScore === null && dbMatch.homeScore !== null) continue;
+      if (scores.awayScore === null && dbMatch.awayScore !== null) continue;
       const patched = await prisma.match.update({
         where: { id: dbMatch.id },
         data: { ...scores, winnerTeam }

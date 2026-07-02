@@ -247,6 +247,9 @@ async function main() {
       const winnerTeam = winner === 'HOME_TEAM' ? (m.homeTeam?.name ?? null)
         : winner === 'AWAY_TEAM' ? (m.awayTeam?.name ?? null) : null
       if (!winnerTeam) continue
+      // Never overwrite a valid score with null — API sometimes returns null during post-match transitions
+      if (scores.homeScore === null && dbMatch.homeScore !== null) continue
+      if (scores.awayScore === null && dbMatch.awayScore !== null) continue
 
       const patched = await prisma.match.update({
         where: { id: dbMatch.id },
