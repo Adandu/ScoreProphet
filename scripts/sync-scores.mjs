@@ -11,6 +11,9 @@ var SCORING = {
   TOURNAMENT_WINNER: 50
 };
 function getOutcome(homeScore, awayScore) {
+  if (homeScore === null || homeScore === void 0 || awayScore === null || awayScore === void 0) {
+    return null;
+  }
   if (homeScore > awayScore) return "1";
   if (homeScore === awayScore) return "X";
   return "2";
@@ -22,6 +25,7 @@ var DOUBLE_CHANCE_MAP = {
 };
 function calculatePredictionPoints(type, value, homeScore, awayScore) {
   const outcome = getOutcome(homeScore, awayScore);
+  if (outcome === null) return 0;
   switch (type) {
     case "SINGLE_OUTCOME":
       return value === outcome ? SCORING.SINGLE_OUTCOME : 0;
@@ -85,8 +89,10 @@ function extractScores(apiScore) {
     penaltiesHomeScore: scorePart(apiScore, "penalties", "home"),
     penaltiesAwayScore: scorePart(apiScore, "penalties", "away"),
     scoreDuration: apiScore?.duration === "EXTRA_TIME" || apiScore?.duration === "PENALTY_SHOOTOUT" ? apiScore.duration : "REGULAR",
-    homeScore: rh ?? fh,
-    awayScore: ra ?? fa
+    // fullTime is the definitive final score (includes ET/penalties).
+    // regularTime is only the 90-min score — never use it as the primary.
+    homeScore: fh ?? rh,
+    awayScore: fa ?? ra
   };
 }
 async function recalculateMatchPoints(match) {
@@ -154,7 +160,7 @@ async function main() {
       throw new Error(`[score-sync] API error ${res.status}: ${res.statusText}`);
     }
     const data = await res.json();
-    apiLiveMatches.push(...(data.matches ?? []));
+    apiLiveMatches.push(...data.matches ?? []);
   }
   const apiLiveIds = new Set(apiLiveMatches.map((m) => String(m.id)));
   let updated = 0;
@@ -205,6 +211,46 @@ async function main() {
       console.log(`[score-sync] ${dbMatch.homeTeam} ${finishedMatch.homeScore}-${finishedMatch.awayScore} ${dbMatch.awayTeam} FINISHED \u2014 points recalculated`);
     } catch (err) {
       console.warn(`[score-sync] Failed to check match ${dbMatch.externalId}:`, err instanceof Error ? err.message : err);
+    }
+  }
+  const recentWindow = new Date(now.getTime() - 24 * 60 * 60 * 1e3);
+  const stalePenaltyMatches = await prisma.match.findMany({
+    where: {
+      status: "FINISHED",
+      scoreDuration: { in: ["PENALTY_SHOOTOUT", "EXTRA_TIME"] },
+      adminOverride: false,
+      tournamentId: { in: activeTournamentIds },
+      OR: [
+        { winnerTeam: null },
+        // Matches where fullTime score may differ from stored homeScore (ET bug)
+        { kickoff: { gte: recentWindow } }
+      ]
+    }
+  });
+  for (const dbMatch of stalePenaltyMatches) {
+    try {
+      const r = await fetch(`${BASE_URL}/matches/${dbMatch.externalId}`, { headers: getHeaders() });
+      if (!r.ok) {
+        if (r.status === 429) {
+          console.warn("[score-sync] Rate limited on stale match re-fetch");
+          break;
+        }
+        continue;
+      }
+      const m = await r.json();
+      const scores = extractScores(m.score);
+      const winner = m.score?.winner ?? null;
+      const winnerTeam = winner === "HOME_TEAM" ? m.homeTeam?.name ?? null : winner === "AWAY_TEAM" ? m.awayTeam?.name ?? null : null;
+      if (!winnerTeam) continue;
+      const patched = await prisma.match.update({
+        where: { id: dbMatch.id },
+        data: { ...scores, winnerTeam }
+      });
+      await recalculateMatchPoints(patched);
+      updated++;
+      console.log(`[score-sync] Patched stale penalty match: ${dbMatch.homeTeam} ${dbMatch.awayTeam} \u2014 winner: ${winnerTeam}`);
+    } catch (err) {
+      console.warn(`[score-sync] Failed to re-sync stale match ${dbMatch.externalId}:`, err instanceof Error ? err.message : err);
     }
   }
   if (updated > 0) console.log(`[score-sync] Recalculated points for ${updated} match(es)`);

@@ -65,8 +65,10 @@ function extractScores(apiScore: ApiScore | undefined) {
     penaltiesAwayScore: scorePart(apiScore, 'penalties', 'away'),
     scoreDuration: apiScore?.duration === 'EXTRA_TIME' || apiScore?.duration === 'PENALTY_SHOOTOUT'
       ? apiScore.duration : 'REGULAR',
-    homeScore: rh ?? fh,
-    awayScore: ra ?? fa,
+    // fullTime is the definitive final score (includes ET/penalties).
+    // regularTime is only the 90-min score — never use it as the primary.
+    homeScore: fh ?? rh,
+    awayScore: fa ?? ra,
   }
 }
 
@@ -214,14 +216,22 @@ async function main() {
     }
   }
 
-  // Re-sync FINISHED penalty/ET matches that are missing winner data (API lag at match end)
+  // Re-sync FINISHED ET/penalty matches that may have stale scores.
+  // Covers two cases: missing winner (API lag at match end) and wrong score
+  // (regularTime score was frozen instead of fullTime score — now fixed, but
+  // existing rows with homeScore = regularTimeHomeScore need correction).
+  const recentWindow = new Date(now.getTime() - 24 * 60 * 60 * 1000)
   const stalePenaltyMatches = await prisma.match.findMany({
     where: {
       status: 'FINISHED',
       scoreDuration: { in: ['PENALTY_SHOOTOUT', 'EXTRA_TIME'] },
-      winnerTeam: null,
       adminOverride: false,
       tournamentId: { in: activeTournamentIds },
+      OR: [
+        { winnerTeam: null },
+        // Matches where fullTime score may differ from stored homeScore (ET bug)
+        { kickoff: { gte: recentWindow } },
+      ],
     },
   })
   for (const dbMatch of stalePenaltyMatches) {
