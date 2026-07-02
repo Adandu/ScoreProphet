@@ -98,6 +98,12 @@ export default async function ChampionshipResultsPage({
                 <ArrowUpRight className="h-3.5 w-3.5 text-white/20 group-hover:text-white/50 transition-colors" />
               </span>
               <span className="text-xs text-white/40">{formatMatchTime(match.kickoff, timezone)}</span>
+              {(match.scoreDuration === 'EXTRA_TIME' || match.scoreDuration === 'PENALTY_SHOOTOUT') &&
+               match.regularTimeHomeScore !== null && match.regularTimeAwayScore !== null && (
+                <span className="text-[10px] text-amber-400/70">
+                  Scored on 90 min: {match.regularTimeHomeScore}–{match.regularTimeAwayScore}
+                </span>
+              )}
             </Link>
             {/* Away team */}
             {teamUrlByName[match.awayTeam] ? (

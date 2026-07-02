@@ -31,17 +31,18 @@ export default async function MatchDetailPage({ params }: { params: Promise<{ ma
 
   type PredictionRow = { userId: number; type: string; value: string; pointsAwarded: number | null; user: { username: string } }
   type AggRow = { value: string; _count: { value: number } }
+  type AdvanceRow = { userId: number; predictedTeam: string; pointsAwarded: number | null; user: { username: string } }
 
   let predictionReveal: PredictionRow[] | null = null
   let predictionAgg: AggRow[] | null = null
+  let advanceReveal: AdvanceRow[] | null = null
 
   if (selectedChampionship) {
-    ;[predictionReveal, predictionAgg] = await Promise.all([
+    ;[predictionReveal, predictionAgg, advanceReveal] = await Promise.all([
       prisma.prediction.findMany({
         where: {
           matchId: match.id,
           championshipId: selectedChampionship.id,
-          type: 'SINGLE_OUTCOME',
         },
         select: {
           userId: true,
@@ -50,14 +51,59 @@ export default async function MatchDetailPage({ params }: { params: Promise<{ ma
           pointsAwarded: true,
           user: { select: { username: true } },
         },
-        orderBy: { pointsAwarded: 'desc' },
       }),
       prisma.prediction.groupBy({
         by: ['value'],
         where: { matchId: match.id, type: 'SINGLE_OUTCOME', championshipId: selectedChampionship.id },
         _count: { value: true },
       }),
+      prisma.knockoutAdvance.findMany({
+        where: { matchId: match.id, championshipId: selectedChampionship.id },
+        select: {
+          userId: true,
+          predictedTeam: true,
+          pointsAwarded: true,
+          user: { select: { username: true } },
+        },
+      }),
     ])
+  }
+
+  // Build per-user reveal data sorted by total points desc
+  type UserReveal = {
+    userId: number
+    username: string
+    outcome: string | null
+    outcomePoints: number | null
+    exactScore: string | null
+    exactPoints: number | null
+    advance: string | null
+    advancePoints: number | null
+    total: number
+  }
+
+  const isKnockout = match.stage !== 'GROUP'
+  let revealRows: UserReveal[] | null = null
+  if (predictionReveal && predictionReveal.length > 0) {
+    const byUser = new Map<number, UserReveal>()
+    for (const p of predictionReveal) {
+      const row = byUser.get(p.userId) ?? {
+        userId: p.userId,
+        username: p.user.username,
+        outcome: null, outcomePoints: null,
+        exactScore: null, exactPoints: null,
+        advance: null, advancePoints: null,
+        total: 0,
+      }
+      if (p.type === 'SINGLE_OUTCOME') { row.outcome = p.value; row.outcomePoints = p.pointsAwarded; row.total += p.pointsAwarded ?? 0 }
+      if (p.type === 'EXACT_SCORE') { row.exactScore = p.value; row.exactPoints = p.pointsAwarded; row.total += p.pointsAwarded ?? 0 }
+      byUser.set(p.userId, row)
+    }
+    for (const a of (advanceReveal ?? [])) {
+      const row = byUser.get(a.userId)
+      if (row) { row.advance = a.predictedTeam; row.advancePoints = a.pointsAwarded; row.total += a.pointsAwarded ?? 0 }
+    }
+    revealRows = [...byUser.values()].sort((a, b) => b.total - a.total)
   }
 
   const teamUrlByName: Record<string, string> = {}
@@ -158,24 +204,42 @@ export default async function MatchDetailPage({ params }: { params: Promise<{ ma
       })()}
 
       {/* Feature 2 — Prediction reveal */}
-      {predictionReveal && predictionReveal.length > 0 && (
+      {revealRows && revealRows.length > 0 && (
         <section className="mt-6">
           <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-white/40">How everyone predicted</h2>
-          <div className="overflow-hidden rounded-lg border border-white/10">
+          <div className="overflow-x-auto overflow-hidden rounded-lg border border-white/10">
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-white/10 text-[11px] uppercase tracking-wide text-white/30">
                   <th className="px-3 py-2 text-left">Player</th>
-                  <th className="px-3 py-2 text-center">Prediction</th>
+                  <th className="px-3 py-2 text-center">Result</th>
+                  <th className="px-3 py-2 text-center">Score (90 min)</th>
+                  {isKnockout && <th className="px-3 py-2 text-center">Advance</th>}
                   <th className="px-3 py-2 text-right">Points</th>
                 </tr>
               </thead>
               <tbody>
-                {predictionReveal.map((pred) => (
-                  <tr key={pred.userId} className="border-b border-white/5 last:border-0">
-                    <td className="px-3 py-2 text-white/80">{pred.user.username}</td>
-                    <td className="px-3 py-2 text-center font-mono text-white/60">{pred.value}</td>
-                    <td className="px-3 py-2 text-right font-semibold text-white">{pred.pointsAwarded ?? 0}</td>
+                {revealRows.map((row) => (
+                  <tr key={row.userId} className="border-b border-white/5 last:border-0">
+                    <td className="px-3 py-2 text-white/80">{row.username}</td>
+                    <td className="px-3 py-2 text-center">
+                      {row.outcome
+                        ? <span className={`font-mono ${row.outcomePoints ? 'text-green-400' : 'text-white/50'}`}>{row.outcome}</span>
+                        : <span className="text-white/20">-</span>}
+                    </td>
+                    <td className="px-3 py-2 text-center">
+                      {row.exactScore
+                        ? <span className={`font-mono ${row.exactPoints ? 'text-yellow-300' : 'text-white/50'}`}>{row.exactScore}</span>
+                        : <span className="text-white/20">-</span>}
+                    </td>
+                    {isKnockout && (
+                      <td className="px-3 py-2 text-center">
+                        {row.advance
+                          ? <span className={`text-xs ${row.advancePoints ? 'text-purple-300' : 'text-white/50'}`}>{row.advance}</span>
+                          : <span className="text-white/20">-</span>}
+                      </td>
+                    )}
+                    <td className="px-3 py-2 text-right font-semibold text-[#C9A84C]">{row.total}</td>
                   </tr>
                 ))}
               </tbody>
