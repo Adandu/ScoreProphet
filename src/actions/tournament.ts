@@ -12,6 +12,7 @@ export async function setSelectedTournament(tournamentId: number): Promise<void>
   if (!tournament) return
 
   const session = await getSession()
+  if (!session.userId) return
   session.selectedTournamentId = tournamentId
   await session.save()
   redirect('/')

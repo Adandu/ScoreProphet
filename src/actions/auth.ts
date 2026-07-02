@@ -10,7 +10,11 @@ import { getAppUrl, getSafeRedirectPath } from '@/lib/app-url'
 import { normalizeEmail } from '@/lib/utils'
 import { formatMatchTime } from '@/lib/format-date'
 import { stageLabel } from '@/lib/prediction-reminder-rules'
-import { rateLimitLogin, rateLimitRegister, rateLimitResetRequest, rateLimitResetExecute } from '@/lib/rate-limit'
+import { rateLimitLogin, rateLimitRegister, rateLimitResetRequest, rateLimitResetExecute, RateLimitStore, checkRateLimit } from '@/lib/rate-limit'
+import { logUserAction } from '@/lib/audit'
+
+const testReminderStore = new RateLimitStore()
+const changePasswordStore = new RateLimitStore()
 
 export async function register(prevState: unknown, formData: FormData) {
   if (!await rateLimitRegister()) return { error: 'Too many registration attempts. Try again later.' }
@@ -18,6 +22,7 @@ export async function register(prevState: unknown, formData: FormData) {
   const password = formData.get('password') as string
   const redirectTo = getSafeRedirectPath(formData.get('redirectTo'))
   if (!username || username.length < 2 || username.length > 30) return { error: 'Username must be 2–30 characters' }
+  if (!/^[\w\s\-\.]{2,30}$/.test(username)) return { error: 'Username may only contain letters, numbers, spaces, hyphens, underscores, and dots' }
   if (!password || password.length < 8) return { error: 'Password must be at least 8 characters' }
   const existing = await prisma.user.findUnique({ where: { username } })
   if (existing) return { error: 'Username already taken' }
@@ -39,6 +44,7 @@ export async function register(prevState: unknown, formData: FormData) {
   session.timezone = user.timezone
   session.theme = user.theme
   await session.save()
+  void logUserAction({ userId: user.id, username: user.username, action: 'USER_REGISTER' })
   redirect(redirectTo)
 }
 
@@ -63,6 +69,7 @@ export async function login(prevState: unknown, formData: FormData) {
   session.timezone = user.timezone
   session.theme = user.theme
   await session.save()
+  void logUserAction({ userId: user.id, username: user.username, action: 'USER_LOGIN' })
   redirect(redirectTo)
 }
 
@@ -105,6 +112,7 @@ export async function updateProfile(prevState: unknown, formData: FormData) {
   const validHours = [1, 6, 12, 24].includes(reminderHours) ? reminderHours : 12
 
   if (!username || username.length < 2 || username.length > 30) return { error: 'Username must be 2-30 characters' }
+  if (!/^[\w\s\-\.]{2,30}$/.test(username)) return { error: 'Username may only contain letters, numbers, spaces, hyphens, underscores, and dots' }
   if (emailValue === null) return { error: 'Enter a valid email address' }
   if (predictionReminderEnabled && !emailValue) return { error: 'Add an email address before enabling prediction reminders' }
   if (!timezone || !isValidTimezone(timezone)) return { error: 'Choose a valid timezone' }
@@ -136,6 +144,10 @@ export async function changePassword(prevState: unknown, formData: FormData) {
   const currentPassword = formData.get('currentPassword') as string
   const newPassword = formData.get('newPassword') as string
   const confirmPassword = formData.get('confirmPassword') as string
+
+  if (!checkRateLimit(changePasswordStore, String(session.userId!), 10, 15 * 60_000)) {
+    return { error: 'Too many attempts. Try again later.' }
+  }
 
   if (!currentPassword) return { error: 'Enter your current password' }
   if (!newPassword || newPassword.length < 8) return { error: 'New password must be at least 8 characters' }
@@ -201,6 +213,7 @@ export async function requestPasswordReset(prevState: unknown, formData: FormDat
         // response as the non-existent-email path; log for operators.
         console.error('[requestPasswordReset] Failed to send reset email:', err)
       }
+      void logUserAction({ userId: user.id, username: user.username, action: 'PASSWORD_RESET_REQUEST' })
     }
   }
 
@@ -224,10 +237,11 @@ export async function resetPassword(prevState: unknown, formData: FormData) {
     const reset = await tx.passwordResetToken.findUnique({ where: { tokenHash } })
     if (!reset || reset.usedAt || reset.expiresAt <= now) return null
 
-    await Promise.all([
+    const [updatedUser] = await Promise.all([
       tx.user.update({
         where: { id: reset.userId },
         data: { passwordHash: await hashPassword(password) },
+        select: { id: true, username: true },
       }),
       tx.passwordResetToken.update({
         where: { id: reset.id },
@@ -237,15 +251,19 @@ export async function resetPassword(prevState: unknown, formData: FormData) {
         where: { userId: reset.userId, id: { not: reset.id }, usedAt: null },
       }),
     ])
-    return reset.userId
+    return updatedUser
   })
 
   if (!result) return { error: 'Password reset link has expired' }
+  void logUserAction({ userId: result.id, username: result.username, action: 'PASSWORD_RESET_COMPLETE' })
   return { success: true }
 }
 
 export async function sendTestReminderEmail(): Promise<{ error?: string; success?: boolean }> {
   const session = await requireAuth()
+  if (!checkRateLimit(testReminderStore, String(session.userId!), 3, 60 * 60_000)) {
+    return { error: 'Too many test emails. Try again later.' }
+  }
   const user = await prisma.user.findUnique({ where: { id: session.userId! } })
   if (!user?.email) return { error: 'No email address saved on your account.' }
   if (!user.predictionReminderEnabled) return { error: 'Save your profile with reminders enabled first.' }

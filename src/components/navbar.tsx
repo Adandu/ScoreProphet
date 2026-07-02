@@ -93,15 +93,11 @@ export async function Navbar({ activeTournaments = [], selectedTournamentId = nu
           <>
             <div className="hidden lg:block" />
             <div className="hidden items-center gap-2 lg:flex sm:gap-3">
-              <Link href="/login">
-                <button type="button" className="rounded-md border border-white/20 px-3 py-1.5 text-sm text-white/70 hover:text-white bg-transparent transition-colors">
-                  Login
-                </button>
+              <Link href="/login" className="rounded-md border border-white/20 px-3 py-1.5 text-sm text-white/70 hover:text-white bg-transparent transition-colors">
+                Login
               </Link>
-              <Link href="/register">
-                <button type="button" className="rounded-md bg-[#C9A84C] px-3 py-1.5 text-sm font-semibold text-[#0A1628] hover:bg-[#C9A84C]/90 transition-colors">
-                  Register
-                </button>
+              <Link href="/register" className="rounded-md bg-[#C9A84C] px-3 py-1.5 text-sm font-semibold text-[#0A1628] hover:bg-[#C9A84C]/90 transition-colors">
+                Register
               </Link>
             </div>
           </>

@@ -149,9 +149,18 @@ export function ProfileClient({ user }: { user: ProfileUser }) {
         <section className="rounded-xl border border-white/10 bg-white/5 p-5">
           <h2 className="text-lg font-semibold text-[#C9A84C]">Change Password</h2>
           <form action={passwordAction} className="mt-4 grid gap-3">
-            <Input name="currentPassword" type="password" autoComplete="current-password" placeholder="Current password" className="bg-white/10 text-white border-white/20" />
-            <Input name="newPassword" type="password" autoComplete="new-password" placeholder="New password" className="bg-white/10 text-white border-white/20" />
-            <Input name="confirmPassword" type="password" autoComplete="new-password" placeholder="Confirm new password" className="bg-white/10 text-white border-white/20" />
+            <div className="grid gap-1">
+              <label htmlFor="currentPassword" className="text-sm text-white/60">Current password</label>
+              <Input id="currentPassword" name="currentPassword" type="password" autoComplete="current-password" placeholder="Current password" className="bg-white/10 text-white border-white/20" />
+            </div>
+            <div className="grid gap-1">
+              <label htmlFor="newPassword" className="text-sm text-white/60">New password</label>
+              <Input id="newPassword" name="newPassword" type="password" autoComplete="new-password" placeholder="New password" className="bg-white/10 text-white border-white/20" />
+            </div>
+            <div className="grid gap-1">
+              <label htmlFor="confirmPassword" className="text-sm text-white/60">Confirm new password</label>
+              <Input id="confirmPassword" name="confirmPassword" type="password" autoComplete="new-password" placeholder="Confirm new password" className="bg-white/10 text-white border-white/20" />
+            </div>
             <div>
               <Button type="submit" disabled={passwordPending} variant="outline" className="border-white/20 text-white hover:bg-white/10 bg-transparent">
                 {passwordPending ? 'Updating...' : 'Update password'}

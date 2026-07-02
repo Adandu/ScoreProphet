@@ -12,6 +12,7 @@ import Link from 'next/link'
 import { CalendarClock, Trophy } from 'lucide-react'
 import { stageLabel } from '@/lib/prediction-reminder-rules'
 import type { Stage } from '@/lib/types'
+import { DeadlineBadge } from '@/components/deadline-badge'
 
 const COMPETITION_LABEL: Record<string, string> = {
   WC: 'World Cup', CL: 'Champions League', PL: 'Premier League',
@@ -172,6 +173,7 @@ export default async function ChampionshipPredictionsPage({
                         <span className="tabular-nums">{formatMatchTime(match.kickoff, timezone)}</span>
                       </span>
                       <div className="flex flex-wrap items-center justify-end gap-2">
+                        <DeadlineBadge kickoff={match.kickoff} />
                         <span className={predictionsSet ? 'text-xs font-semibold text-green-400' : 'text-xs font-semibold text-orange-400'}>
                           {predictionsSet ? 'Predictions set' : 'Predictions not set'}
                         </span>

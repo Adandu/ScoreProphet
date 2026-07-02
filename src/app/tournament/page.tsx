@@ -86,7 +86,7 @@ export default async function TournamentPage() {
   return (
     <div className="space-y-6">
       <h1 className="text-2xl font-bold text-white">Tournament</h1>
-      <Suspense>
+      <Suspense fallback={<div className="flex justify-center py-8"><div className="h-6 w-6 animate-spin rounded-full border-2 border-white/20 border-t-white/80" /></div>}>
         <TournamentTabs
           groups={
             <GroupStageTab

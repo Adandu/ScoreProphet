@@ -10,10 +10,23 @@ const adapter = new PrismaBetterSqlite3({ url: dbUrl })
 const prisma = new PrismaClient({ adapter })
 
 async function main() {
-  console.log('[seed] Syncing WC2026 matches from football-data.org...')
+  const competitionCode = process.env.COMPETITION_CODE ?? 'WC'
+  console.log(`[seed] Syncing ${competitionCode} matches from football-data.org...`)
+
+  const tournament = await prisma.tournament.findFirst({
+    where: { competitionCode },
+    orderBy: { createdAt: 'desc' },
+  })
+  if (!tournament) {
+    console.error(`[seed] No tournament found for competition ${competitionCode}. Run the tournament setup first.`)
+    await prisma.$disconnect()
+    process.exit(1)
+  }
+  const tournamentId = tournament.id
+
   let matches
   try {
-    matches = await fetchAllMatches()
+    matches = await fetchAllMatches(competitionCode)
   } catch (err) {
     console.warn('[seed] API unavailable, skipping match sync:', err)
     await prisma.$disconnect()
@@ -66,7 +79,7 @@ async function main() {
         homeScore: m.homeScore,
         awayScore: m.awayScore,
         winnerTeam: m.winnerTeam,
-        tournamentId: 1,
+        tournamentId,
       },
     })
 
@@ -89,7 +102,7 @@ async function main() {
 
   console.log('[seed] Syncing teams...')
   try {
-    const teams = await fetchAllTeams()
+    const teams = await fetchAllTeams(competitionCode)
     for (const t of teams) {
       await prisma.team.upsert({
         where: { externalId: t.externalId },

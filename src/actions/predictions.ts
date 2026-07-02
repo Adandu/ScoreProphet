@@ -50,56 +50,52 @@ export async function savePrediction(prevState: unknown, formData: FormData) {
     if (!parsed) return { error: 'Invalid score format. Choose scores from 0 to 10' }
   }
 
-  const existing = await prisma.prediction.findMany({
-    where: { userId: session.userId!, matchId, championshipId },
-  })
+  const result = await prisma.$transaction(async (tx) => {
+    const existing = await tx.prediction.findMany({
+      where: { userId: session.userId!, matchId, championshipId },
+    })
 
-  const existingOtherTypes = existing.filter((p) => p.type !== type)
-  const validationError = validatePredictionCombination(type, existingOtherTypes)
-  if (validationError) return { error: validationError }
+    const existingOtherTypes = existing.filter((p) => p.type !== type)
+    const validationError = validatePredictionCombination(type, existingOtherTypes)
+    if (validationError) return { error: validationError }
 
-  if (type === 'EXACT_SCORE') {
-    const exactError = validateExactScoreAgainstSelections(parseExactScore(value)!, existingOtherTypes)
-    if (exactError) return { error: exactError }
-  } else {
-    const selectionError = validateSelectionsAgainstExactScore({ type, value }, existingOtherTypes)
-    if (selectionError) return { error: selectionError }
-  }
+    if (type === 'EXACT_SCORE') {
+      const exactError = validateExactScoreAgainstSelections(parseExactScore(value)!, existingOtherTypes)
+      if (exactError) return { error: exactError }
+    } else {
+      const selectionError = validateSelectionsAgainstExactScore({ type, value }, existingOtherTypes)
+      if (selectionError) return { error: selectionError }
+    }
 
-  const operations = [
-    prisma.prediction.upsert({
+    await tx.prediction.upsert({
       where: { userId_matchId_type_championshipId: { userId: session.userId!, matchId, type, championshipId } },
       update: { value },
       create: { userId: session.userId!, matchId, type, value, championshipId },
-    }),
-  ]
+    })
 
-  // Determine the effective result outcome after this save
-  let effectiveOutcome: string | null = null
-  if (type === 'SINGLE_OUTCOME') effectiveOutcome = value
-  if (type === 'EXACT_SCORE' && !membership.championship.doubleChanceEnabled) {
-    const parsed = parseExactScore(value)!
-    effectiveOutcome = getScoreOutcome(parsed.home, parsed.away)
-    operations.push(
-      prisma.prediction.upsert({
+    // Determine the effective result outcome after this save
+    let effectiveOutcome: string | null = null
+    if (type === 'SINGLE_OUTCOME') effectiveOutcome = value
+    if (type === 'EXACT_SCORE' && !membership.championship.doubleChanceEnabled) {
+      const parsed = parseExactScore(value)!
+      effectiveOutcome = getScoreOutcome(parsed.home, parsed.away)
+      await tx.prediction.upsert({
         where: { userId_matchId_type_championshipId: { userId: session.userId!, matchId, type: 'SINGLE_OUTCOME', championshipId } },
         update: { value: effectiveOutcome },
         create: { userId: session.userId!, matchId, type: 'SINGLE_OUTCOME', value: effectiveOutcome, championshipId },
       })
-    )
-  }
+    }
 
-  // Clear advance pick when result is confirmed non-draw
-  if (effectiveOutcome !== null && effectiveOutcome !== 'X' && match.stage !== 'GROUP') {
-    operations.push(
-      prisma.knockoutAdvance.deleteMany({ where: { userId: session.userId!, matchId, championshipId } }) as never
-    )
-  }
+    // Clear advance pick when result is confirmed non-draw
+    if (effectiveOutcome !== null && effectiveOutcome !== 'X' && match.stage !== 'GROUP') {
+      await tx.knockoutAdvance.deleteMany({ where: { userId: session.userId!, matchId, championshipId } })
+    }
 
-  await prisma.$transaction(operations)
+    return { success: true as const }
+  })
 
   revalidatePath(`/championships/${championshipId}/predictions`)
-  return { success: true }
+  return result
 }
 
 export async function deletePrediction(prevState: unknown, formData: FormData) {
@@ -193,14 +189,24 @@ export async function saveTournamentWinnerPrediction(prevState: unknown, formDat
   if (!championship) return { error: 'Championship not found' }
   if (!membership) return { error: 'You are not a member of this championship' }
 
-  const firstGroupMatch = await prisma.match.findFirst({
+  const firstMatch = await prisma.match.findFirst({
     where: { stage: 'GROUP', competitionCode: championship.competitionCode },
     orderBy: { kickoff: 'asc' },
-    select: { kickoff: true },
+  }) ?? await prisma.match.findFirst({
+    where: { competitionCode: championship.competitionCode },
+    orderBy: { kickoff: 'asc' },
   })
-
-  if (firstGroupMatch && firstGroupMatch.kickoff <= new Date()) {
+  if (firstMatch && firstMatch.kickoff <= new Date()) {
     return { error: 'Tournament winner prediction is locked' }
+  }
+
+  const matches = await prisma.match.findMany({
+    where: { competitionCode: championship.competitionCode },
+    select: { homeTeam: true, awayTeam: true },
+  })
+  const validTeams = new Set(matches.flatMap(m => [m.homeTeam, m.awayTeam]).filter(Boolean))
+  if (!validTeams.has(predictedTeam)) {
+    return { error: 'Invalid team selection' }
   }
 
   await prisma.tournamentWinnerPrediction.upsert({
@@ -231,12 +237,14 @@ export async function resetTournamentWinnerPrediction(prevState: unknown, formDa
   if (!championship) return { error: 'Championship not found' }
   if (!membership) return { error: 'You are not a member of this championship' }
 
-  const firstGroupMatch = await prisma.match.findFirst({
+  const firstMatch = await prisma.match.findFirst({
     where: { stage: 'GROUP', competitionCode: championship.competitionCode },
     orderBy: { kickoff: 'asc' },
-    select: { kickoff: true },
+  }) ?? await prisma.match.findFirst({
+    where: { competitionCode: championship.competitionCode },
+    orderBy: { kickoff: 'asc' },
   })
-  if (firstGroupMatch && firstGroupMatch.kickoff <= new Date()) {
+  if (firstMatch && firstMatch.kickoff <= new Date()) {
     return { error: 'Tournament winner prediction is locked' }
   }
 

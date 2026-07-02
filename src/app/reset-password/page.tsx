@@ -1,5 +1,6 @@
 'use client'
 
+import { Suspense } from 'react'
 import { useActionState } from 'react'
 import Link from 'next/link'
 import { useSearchParams } from 'next/navigation'
@@ -9,7 +10,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 
-export default function ResetPasswordPage() {
+function ResetPasswordContent() {
   const token = useSearchParams().get('token') ?? ''
   const [state, action, isPending] = useActionState(resetPassword, null)
 
@@ -83,5 +84,13 @@ export default function ResetPasswordPage() {
         </CardContent>
       </Card>
     </main>
+  )
+}
+
+export default function ResetPasswordPage() {
+  return (
+    <Suspense fallback={null}>
+      <ResetPasswordContent />
+    </Suspense>
   )
 }

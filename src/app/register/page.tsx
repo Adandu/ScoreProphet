@@ -1,5 +1,6 @@
 'use client'
 
+import { Suspense } from 'react'
 import { useActionState } from 'react'
 import Link from 'next/link'
 import { useSearchParams } from 'next/navigation'
@@ -9,7 +10,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 
-export default function RegisterPage() {
+function RegisterContent() {
   const [state, action, isPending] = useActionState(register, null)
   const searchParams = useSearchParams()
   const redirectTo = searchParams.get('next') ?? '/'
@@ -83,5 +84,13 @@ export default function RegisterPage() {
         </CardContent>
       </Card>
     </main>
+  )
+}
+
+export default function RegisterPage() {
+  return (
+    <Suspense fallback={null}>
+      <RegisterContent />
+    </Suspense>
   )
 }

@@ -4,19 +4,22 @@ import { PrismaBetterSqlite3 } from '@prisma/adapter-better-sqlite3'
 
 function createPrismaClient() {
   const url = (process.env.DATABASE_URL ?? 'file:./dev.db').replace(/^file:/, '')
-  // Set file-level pragmas using a temporary connection — journal_mode and synchronous persist to the SQLite file
+  // Set file-level pragmas via a temporary connection — journal_mode and synchronous persist to the SQLite file.
   const setup = new Database(url)
   setup.pragma('journal_mode = WAL')
   setup.pragma('synchronous = NORMAL')
-  // foreign_keys is per-connection only and does NOT persist to the file.
-  // Setting it here on the setup connection has no effect on the Prisma connection.
-  // Prisma enforces relations at the ORM level, so this is safe to omit.
   setup.close()
+  // The adapter creates its own Database connection internally; foreign_keys (per-connection only)
+  // is enforced at startup via $executeRawUnsafe below.
   const adapter = new PrismaBetterSqlite3({ url })
-  return new PrismaClient({
+  const client = new PrismaClient({
     adapter,
     log: process.env.NODE_ENV === 'development' ? ['query'] : [],
   })
+  // Enable FK enforcement on the adapter's connection. better-sqlite3 is synchronous so this
+  // runs immediately before the first ORM query, even though the API is async.
+  client.$executeRawUnsafe('PRAGMA foreign_keys = ON').catch(() => {})
+  return client
 }
 
 const globalForPrisma = globalThis as unknown as { prisma: PrismaClient }

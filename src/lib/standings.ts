@@ -74,11 +74,37 @@ function computeH2HRecord(team: string, tiedTeams: Set<string>, matches: GroupMa
 }
 
 function sortGroupRows(rows: StandingRow[], matches: GroupMatch[]) {
+  // Pre-compute stable H2H mini-table ranks for tied groups of 3+ teams.
+  // Aggregating all H2H matches per team and sorting by those totals avoids
+  // non-transitive comparisons that arise from inline pairwise H2H in a comparator.
+  const h2hRanks = new Map<string, number>()
+  const byPts = new Map<number, StandingRow[]>()
+  for (const row of rows) {
+    const group = byPts.get(row.pts) ?? []
+    group.push(row)
+    byPts.set(row.pts, group)
+  }
+  for (const [, tied] of byPts) {
+    if (tied.length < 3) continue
+    const tiedTeams = new Set(tied.map((r) => r.team))
+    const sorted = [...tied].sort((a, b) => {
+      const h2hA = computeH2HRecord(a.team, tiedTeams, matches)
+      const h2hB = computeH2HRecord(b.team, tiedTeams, matches)
+      return h2hB.pts - h2hA.pts || h2hB.gd - h2hA.gd || h2hB.gf - h2hA.gf || a.team.localeCompare(b.team)
+    })
+    sorted.forEach((row, idx) => h2hRanks.set(row.team, idx))
+  }
+
   rows.sort((a, b) => {
     if (b.pts !== a.pts) return b.pts - a.pts
 
     const tiedTeams = new Set(rows.filter((row) => row.pts === a.pts).map((row) => row.team))
-    if (tiedTeams.size > 1 && tiedTeams.has(b.team)) {
+    if (tiedTeams.size >= 3) {
+      // Use the stable pre-computed rank to avoid non-transitive inline H2H
+      const rankDiff = (h2hRanks.get(a.team) ?? 0) - (h2hRanks.get(b.team) ?? 0)
+      if (rankDiff !== 0) return rankDiff
+    } else if (tiedTeams.size === 2 && tiedTeams.has(b.team)) {
+      // Pairwise H2H is safe and transitive for exactly 2 teams
       const h2hA = computeH2HRecord(a.team, tiedTeams, matches)
       const h2hB = computeH2HRecord(b.team, tiedTeams, matches)
       if (h2hB.pts !== h2hA.pts) return h2hB.pts - h2hA.pts

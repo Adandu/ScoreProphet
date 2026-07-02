@@ -34,7 +34,10 @@ export function LeaderboardTabs({
     { id: 'group', label: 'Group Stage' },
     { id: 'knockout', label: 'Knockout' },
   ]
-  const colCount = doubleChanceEnabled ? 8 : 7
+  const colCount = (() => {
+    const base = scope === 'overall' ? 7 : scope === 'knockout' ? 6 : 5
+    return doubleChanceEnabled ? base + 1 : base
+  })()
 
   return (
     <div className="space-y-4">

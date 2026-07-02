@@ -27,6 +27,14 @@ interface Props {
 
 const SINGLE_OPTS = ['1', 'X', '2']
 const DOUBLE_OPTS = ['1X', 'X2', '12']
+const OUTCOME_LABELS: Record<string, string> = {
+  '1': 'Home win',
+  'X': 'Draw',
+  '2': 'Away win',
+  '1X': 'Home win or Draw',
+  'X2': 'Draw or Away win',
+  '12': 'Home win or Away win',
+}
 const SCORE_OPTS = Array.from({ length: 11 }, (_, i) => i)
 
 function parseScore(value?: string): { home: number; away: number } | null {
@@ -129,6 +137,7 @@ export function PredictionForm({
                   <input type="hidden" name="type" value="SINGLE_OUTCOME" />
                   <input type="hidden" name="value" value={opt} />
                   <Button type="submit" size="sm" disabled={pending}
+                    aria-label={OUTCOME_LABELS[opt]}
                     variant={active ? 'default' : 'outline'}
                     className={active ? 'bg-green-600 text-white border-0' : 'border-white/20 text-white/70 bg-transparent hover:bg-white/10'}>
                     {opt}
@@ -154,6 +163,7 @@ export function PredictionForm({
                   <input type="hidden" name="type" value="DOUBLE_CHANCE" />
                   <input type="hidden" name="value" value={opt} />
                   <Button type="submit" size="sm" disabled={pending}
+                    aria-label={OUTCOME_LABELS[opt]}
                     variant={active ? 'default' : 'outline'}
                     className={active ? 'bg-blue-600 text-white border-0' : 'border-white/20 text-white/70 bg-transparent hover:bg-white/10'}>
                     {opt}
@@ -237,7 +247,7 @@ function ExactScoreForm({
     if (!state) return
     if (state.error) {
       setIsEditing(true)
-    } else if (state.success) {
+    } else if (!state.error) {
       setSavedScore({ home: activeHomeScore, away: activeAwayScore })
       setIsEditing(false)
     }
@@ -375,6 +385,7 @@ function KnockoutAdvanceForm({
         <select
           name="predictedTeam"
           defaultValue={existingTeam ?? ''}
+          required
           className="h-8 min-w-48 rounded-md border border-white/20 bg-[#0A1628] px-2 text-sm text-white"
         >
           <option value="" disabled>Choose advancing team</option>

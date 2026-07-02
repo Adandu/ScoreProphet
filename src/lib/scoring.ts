@@ -9,7 +9,10 @@ export const SCORING = {
   TOURNAMENT_WINNER: 50,
 } as const
 
-function getOutcome(homeScore: number, awayScore: number): '1' | 'X' | '2' {
+function getOutcome(homeScore: number | null | undefined, awayScore: number | null | undefined): '1' | 'X' | '2' | null {
+  if (homeScore === null || homeScore === undefined || awayScore === null || awayScore === undefined) {
+    return null;
+  }
   if (homeScore > awayScore) return '1';
   if (homeScore === awayScore) return 'X';
   return '2';
@@ -24,10 +27,11 @@ const DOUBLE_CHANCE_MAP: Record<string, Array<'1' | 'X' | '2'>> = {
 export function calculatePredictionPoints(
   type: PredictionType,
   value: string,
-  homeScore: number,
-  awayScore: number
+  homeScore: number | null | undefined,
+  awayScore: number | null | undefined
 ): number {
   const outcome = getOutcome(homeScore, awayScore);
+  if (outcome === null) return 0;
 
   switch (type) {
     case 'SINGLE_OUTCOME':

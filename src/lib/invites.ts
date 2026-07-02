@@ -2,6 +2,7 @@ import crypto from 'crypto'
 import { revalidatePath } from 'next/cache'
 import { prisma } from '@/lib/db'
 import { getSession } from '@/lib/session'
+import { logUserAction } from '@/lib/audit'
 
 export function hashInviteToken(token: string): string {
   return crypto.createHash('sha256').update(token).digest('hex')
@@ -64,6 +65,14 @@ export async function acceptInviteToken(token: string) {
 
   session.selectedChampionshipId = invite.championshipId
   await session.save()
+
+  void logUserAction({
+    userId,
+    username: session.username ?? String(userId),
+    action: 'INVITE_REDEEMED',
+    entityType: 'Championship',
+    entityId: String(invite.championshipId),
+  })
 
   revalidatePath('/', 'layout')
   revalidatePath(`/championships/${invite.championshipId}/leaderboard`)

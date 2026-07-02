@@ -11,7 +11,7 @@ type MatchStatus = 'SCHEDULED' | 'LIVE' | 'FINISHED'
 type ScoreDuration = 'REGULAR' | 'EXTRA_TIME' | 'PENALTY_SHOOTOUT'
 const TEAMS_CACHE_MS = 60 * 60 * 1000
 
-let teamsCache: { expiresAt: number; teams: NormalizedTeam[] } | null = null
+const teamsCacheByCode = new Map<string, { expiresAt: number; teams: NormalizedTeam[] }>()
 
 export interface NormalizedMatch {
   externalId: string
@@ -353,8 +353,9 @@ export async function fetchLiveMatches(competitionCode = 'WC'): Promise<Normaliz
 }
 
 export async function fetchAllTeams(competitionCode = 'WC'): Promise<NormalizedTeam[]> {
-  if (process.env.NODE_ENV !== 'test' && teamsCache && Date.now() < teamsCache.expiresAt) {
-    return teamsCache.teams
+  const cached = teamsCacheByCode.get(competitionCode)
+  if (process.env.NODE_ENV !== 'test' && cached && Date.now() < cached.expiresAt) {
+    return cached.teams
   }
 
   const res = await fetch(
@@ -371,7 +372,7 @@ export async function fetchAllTeams(competitionCode = 'WC'): Promise<NormalizedT
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const teams = (data.teams ?? []).map((t: any): NormalizedTeam => normalizeTeam(t))
   if (process.env.NODE_ENV !== 'test') {
-    teamsCache = { expiresAt: Date.now() + TEAMS_CACHE_MS, teams }
+    teamsCacheByCode.set(competitionCode, { expiresAt: Date.now() + TEAMS_CACHE_MS, teams })
   }
   return teams
 }

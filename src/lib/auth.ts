@@ -24,6 +24,11 @@ export async function fakeVerifyPassword(password: string): Promise<void> {
 export async function requireAuth() {
   const session = await getSession()
   if (!session.userId) redirect('/login')
+  const user = await prisma.user.findUnique({ where: { id: session.userId }, select: { id: true } })
+  if (!user) {
+    session.destroy()
+    redirect('/login')
+  }
   return session
 }
 

@@ -129,7 +129,7 @@ export function getTournamentStatistics(tournamentId: number) {
   return unstable_cache(
     async (): Promise<TournamentStatistics> => {
       const matchFilter = { status: 'FINISHED' as const, tournamentId }
-      const [matches, events, teamStats, teams] = await Promise.all([
+      const [matches, events, teamStats] = await Promise.all([
         prisma.match.findMany({
           where: matchFilter,
           orderBy: { kickoff: 'asc' },
@@ -166,11 +166,14 @@ export function getTournamentStatistics(tournamentId: number) {
           where: { match: { tournamentId } },
           select: { type: true, value: true },
         }),
-        prisma.team.findMany({
-          orderBy: { name: 'asc' },
-          select: { externalId: true, name: true, crest: true, squadJson: true },
-        }),
       ])
+      // Scope team query to teams that appear in this tournament's matches
+      const tournamentTeamNames = [...new Set(matches.flatMap((m) => [m.homeTeam, m.awayTeam]))]
+      const teams = await prisma.team.findMany({
+        where: { name: { in: tournamentTeamNames } },
+        orderBy: { name: 'asc' },
+        select: { externalId: true, name: true, crest: true, squadJson: true },
+      })
       return computeTournamentStatistics({ matches, events, teamStats, teams })
     },
     [`tournament-statistics-${tournamentId}`],

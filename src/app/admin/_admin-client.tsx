@@ -214,7 +214,7 @@ export function AdminClient({
                 {jobStatuses.map((job) => (
                   <tr key={job.jobName} className="border-b border-white/5 last:border-0">
                     <td className="px-4 py-2 font-mono text-white">{job.jobName}</td>
-                    <td className="whitespace-nowrap px-4 py-2 text-white/60">{relativeTime(job.lastRunAt)}</td>
+                    <td className="whitespace-nowrap px-4 py-2 text-white/60"><span suppressHydrationWarning>{relativeTime(job.lastRunAt)}</span></td>
                     <td className="px-4 py-2">
                       <span className={job.lastResult === 'ok' ? 'text-green-400' : 'text-red-400'}>
                         {job.lastResult}

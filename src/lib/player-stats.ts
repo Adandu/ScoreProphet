@@ -42,7 +42,7 @@ export function computePlayerStats(
   let exactCorrect = 0, exactTotal = 0
   let doubleCorrect = 0, doubleTotal = 0
   let advanceCorrect = 0, advanceTotal = 0
-  let currentStreak = 0, longestStreak = 0, streakActive = true
+  let currentStreak = 0, longestStreak = 0
 
   for (const match of finished) {
     const preds = match.predictions
@@ -84,13 +84,21 @@ export function computePlayerStats(
       if (advance.pointsAwarded > 0) advanceCorrect++
     }
 
-    // Streak (chronological — we iterate oldest→newest, track from the end)
-    if (matchPts > 0) {
-      if (streakActive) currentStreak++
-      longestStreak = Math.max(longestStreak, currentStreak)
+  }
+
+  // Longest streak (forward pass — same algorithm as achievements.ts hot_streak)
+  let run = 0
+  for (const entry of finished) {
+    const advance = advanceByMatch.get(entry.id)
+    if (entry.predictions.length === 0 && !advance) continue
+    const pts =
+      entry.predictions.reduce((s, p) => s + (p.pointsAwarded ?? 0), 0) +
+      (advance?.pointsAwarded ?? 0)
+    if (pts > 0) {
+      run++
+      longestStreak = Math.max(longestStreak, run)
     } else {
-      streakActive = false
-      currentStreak = 0
+      run = 0
     }
   }
 

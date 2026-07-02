@@ -45,7 +45,7 @@ const CATALOG = {
   first_blood: { emoji: '🎬', name: 'First Blood', description: 'Your first points on the board' },
 } as const
 
-const RESULT_THRESHOLD = 3 // points that mean the match result was predicted correctly
+const RESULT_THRESHOLD = 1 // any points scored counts as a correct prediction (includes double-chance hits)
 
 function badge(id: keyof typeof CATALOG): Achievement {
   return { id, ...CATALOG[id] }

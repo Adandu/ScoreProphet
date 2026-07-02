@@ -6,12 +6,13 @@ import { LiveMatchPanel } from '@/components/live/live-match-panel'
 import { fetchLiveMatchDetails, type NormalizedMatch, type LiveMatchDetails } from '@/lib/football-api'
 import { canCallMatchDetailApi } from '@/lib/api-call-budget'
 import { getCurrentTournament } from '@/lib/selected-tournament'
+import { getSelectedChampionship } from '@/lib/championships'
 import type { Stage } from '@/lib/types'
 
 export const revalidate = 0
 
 export default async function MatchDetailPage({ params }: { params: Promise<{ matchId: string }> }) {
-  await requireAuth()
+  const session = await requireAuth()
   const { matchId } = await params
 
   const [match, dbTeams, tournament] = await Promise.all([
@@ -22,6 +23,42 @@ export default async function MatchDetailPage({ params }: { params: Promise<{ ma
   if (!match || match.status !== 'FINISHED') notFound()
   // Verify the match belongs to the currently selected tournament
   if (tournament && match.tournamentId !== tournament.id) redirect('/')
+
+  // Feature 2 + 5: fetch championship-scoped prediction data for finished matches
+  const selectedChampionship = session.userId
+    ? await getSelectedChampionship(session.userId, tournament?.id)
+    : null
+
+  type PredictionRow = { userId: number; type: string; value: string; pointsAwarded: number | null; user: { username: string } }
+  type AggRow = { value: string; _count: { value: number } }
+
+  let predictionReveal: PredictionRow[] | null = null
+  let predictionAgg: AggRow[] | null = null
+
+  if (selectedChampionship) {
+    ;[predictionReveal, predictionAgg] = await Promise.all([
+      prisma.prediction.findMany({
+        where: {
+          matchId: match.id,
+          championshipId: selectedChampionship.id,
+          type: 'SINGLE_OUTCOME',
+        },
+        select: {
+          userId: true,
+          type: true,
+          value: true,
+          pointsAwarded: true,
+          user: { select: { username: true } },
+        },
+        orderBy: { pointsAwarded: 'desc' },
+      }),
+      prisma.prediction.groupBy({
+        by: ['value'],
+        where: { matchId: match.id, type: 'SINGLE_OUTCOME', championshipId: selectedChampionship.id },
+        _count: { value: true },
+      }),
+    ])
+  }
 
   const teamUrlByName: Record<string, string> = {}
   for (const t of dbTeams) if (t.externalId) teamUrlByName[t.name] = t.externalId
@@ -95,6 +132,57 @@ export default async function MatchDetailPage({ params }: { params: Promise<{ ma
         homeTeamUrl={teamUrlByName[match.homeTeam] ? `/teams/${teamUrlByName[match.homeTeam]}` : undefined}
         awayTeamUrl={teamUrlByName[match.awayTeam] ? `/teams/${teamUrlByName[match.awayTeam]}` : undefined}
       />
+
+      {/* Feature 5 — Fan predictions poll */}
+      {predictionAgg && predictionAgg.length > 0 && (() => {
+        const total = predictionAgg!.reduce((sum, p) => sum + p._count.value, 0)
+        return (
+          <section className="mt-4">
+            <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-white/40">Fan predictions</h2>
+            <div className="flex gap-2">
+              {(['1', 'X', '2'] as const).map((outcome) => {
+                const count = predictionAgg!.find((p) => p.value === outcome)?._count.value ?? 0
+                const pct = total > 0 ? Math.round((count / total) * 100) : 0
+                const label = outcome === '1' ? 'Home' : outcome === 'X' ? 'Draw' : 'Away'
+                return (
+                  <div key={outcome} className="flex flex-1 flex-col items-center gap-1.5 rounded-lg border border-white/10 py-3">
+                    <span className="text-xs text-white/40">{label}</span>
+                    <span className="text-xl font-bold text-white">{pct}%</span>
+                    <span className="text-[10px] text-white/30">{count} picks</span>
+                  </div>
+                )
+              })}
+            </div>
+          </section>
+        )
+      })()}
+
+      {/* Feature 2 — Prediction reveal */}
+      {predictionReveal && predictionReveal.length > 0 && (
+        <section className="mt-6">
+          <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-white/40">How everyone predicted</h2>
+          <div className="overflow-hidden rounded-lg border border-white/10">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-white/10 text-[11px] uppercase tracking-wide text-white/30">
+                  <th className="px-3 py-2 text-left">Player</th>
+                  <th className="px-3 py-2 text-center">Prediction</th>
+                  <th className="px-3 py-2 text-right">Points</th>
+                </tr>
+              </thead>
+              <tbody>
+                {predictionReveal.map((pred) => (
+                  <tr key={pred.userId} className="border-b border-white/5 last:border-0">
+                    <td className="px-3 py-2 text-white/80">{pred.user.username}</td>
+                    <td className="px-3 py-2 text-center font-mono text-white/60">{pred.value}</td>
+                    <td className="px-3 py-2 text-right font-semibold text-white">{pred.pointsAwarded ?? 0}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </section>
+      )}
     </div>
   )
 }

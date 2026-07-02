@@ -261,6 +261,9 @@ export async function revokeChampionshipInvite(prevState: unknown, formData: For
   const inviteId = parseId(formData.get('inviteId'))
   if (!inviteId) return { error: 'Missing invite ID' }
 
+  // Auth check before DB lookup — prevents unauthenticated callers from probing invite IDs
+  await requireAuth()
+
   const invite = await prisma.championshipInvite.findUnique({ where: { id: inviteId } })
   if (!invite) return { error: 'Invite not found' }
   if (!await requireChampionshipEditor(invite.championshipId)) return { error: 'Not authorized' }
